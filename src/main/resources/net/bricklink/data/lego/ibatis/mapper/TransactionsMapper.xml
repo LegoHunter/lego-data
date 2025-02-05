@@ -1,5 +1,5 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.bricklink.data.lego.ibatis.mapper.TransactionMapper">
+<mapper namespace="net.bricklink.data.lego.ibatis.mapper.TransactionsMapper">
     <resultMap type="net.bricklink.data.lego.dto.Transaction" id="transactionResultMap">
         <result column="transaction_id" property="transactionId"/>
         <result column="transaction_date" property="transactionDate"/>
