@@ -22,8 +22,12 @@ public interface PartyMapper {
             INSERT INTO party (party_id, party_first_name, party_middle_initial, party_last_name, party_address1, party_address2, party_city, party_state, party_postal_code, party_country_code, party_country, party_phone, party_email, party_type, party_activation_date) \
             VALUES (#{partyId}, #{partyFirstName}, #{partyMiddleInitial}, #{partyLastName}, #{partyAddress1}, #{partyAddress2}, #{partyCity}, #{partyState}, #{partyPostalCode}, #{partyCountryCode}, #{partyCountry}, #{partyPhone}, #{partyEmail}, #{partyType}, #{partyActivationDate}) \
             """)
-    @Options(useGeneratedKeys = false, keyProperty = "partyId")
     void migrate(Party party);
+
+    @Update("""
+            SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';
+            """)
+    void setAutoIncrementMode();
 
     @Update("""
             UPDATE party SET \

@@ -17,6 +17,14 @@ public class PartyDao {
         partyMapper.insert(party);
     }
 
+    public void migrate(final Party party) {
+        partyMapper.migrate(party);
+    }
+
+    public void setAutoIncrementMode() {
+        partyMapper.setAutoIncrementMode();
+    }
+
     public void update(final Party party) {
         partyMapper.update(party);
     }
