@@ -8,15 +8,15 @@ import java.util.Optional;
 
 public interface TransactionsMapper {
     @Insert("""
-            insert into transactions (transaction_date, notes, from_party_id, to_party_id, transaction_platform_code) 
-            values (#{transactionDate}, #{notes}, #{fromPartyId}, #{toPartyId}, #{transactionPlatformCode})
+            insert into transactions (transaction_date, notes, from_party_id, to_party_id, transaction_platform_id, transaction_order_id) 
+            values (#{transactionDateTime}, #{notes}, #{fromPartyId}, #{toPartyId}, #{transactionPlatformId}, #{transactionOrderId})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "transactionId")
     void insert(Transactions transactions);
 
     @Insert("""
-            insert into transactions (transaction_id, transaction_date, notes, from_party_id, to_party_id, transaction_platform_code) 
-            values (#{transactionId}, #{transactionDate}, #{notes}, #{fromPartyId}, #{toPartyId}, #{transactionPlatformCode})
+            insert into transactions (transaction_id, transaction_date, notes, from_party_id, to_party_id, transaction_platform_id, transaction_order_id) 
+            values (#{transactionId}, #{transactionDateTime}, #{notes}, #{fromPartyId}, #{toPartyId}, #{transactionPlatformId}, #{transactionOrderId})
             """)
     @Options(useGeneratedKeys = false, keyProperty = "partyId")
     void migrate(Transactions transactions);
@@ -27,7 +27,8 @@ public interface TransactionsMapper {
             notes = #{notes}, 
             from_party_id = #{fromPartyId}, 
             to_party_id = #{toPartyId}, 
-            transaction_platform_code = #{transactionPlatformCode} 
+            transaction_platform_id = #{transactionPlatformId}, 
+            transaction_order_id = #{transactionOrderId} 
             where transaction_id = #{transactionId}
             """)
     void update(Transactions transactions);
@@ -38,9 +39,9 @@ public interface TransactionsMapper {
                    notes,
                    from_party_id,
                    to_party_id,
-                   transaction_platform_id
+                   transaction_platform_id,
+                   transaction_order_id
             from transactions
-            where transaction_id = #{transactionId}
             """)
     @ResultMap("transactionResultMap")
     List<Transactions> findAll();
@@ -51,8 +52,10 @@ public interface TransactionsMapper {
                    notes,
                    from_party_id,
                    to_party_id,
-                   transaction_platform_id
+                   transaction_platform_id,
+                   transaction_order_id
             from transactions
+            where transaction_id = #{transactionId}
             """)
     @ResultMap("transactionResultMap")
     Optional<Transactions> findById(Long transactionId);

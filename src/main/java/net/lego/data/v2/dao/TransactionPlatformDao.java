@@ -22,6 +22,10 @@ public class TransactionPlatformDao {
         return transactionPlatformMapper.findTransactionPlatformById(transactionPlatformId);
     }
 
+    public Optional<TransactionPlatform> findTransactionPlatformByName(final String transactionPlatformName) {
+        return transactionPlatformMapper.findTransactionPlatformByName(transactionPlatformName);
+    }
+
     public void insert(TransactionPlatform transactionPlatform) {
         transactionPlatformMapper.insert(transactionPlatform);
     }

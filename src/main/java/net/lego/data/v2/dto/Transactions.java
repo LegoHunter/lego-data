@@ -14,4 +14,5 @@ public class Transactions {
     private Long fromPartyId;
     private Long toPartyId;
     private Integer transactionPlatformId;
+    private String transactionOrderId;
 }

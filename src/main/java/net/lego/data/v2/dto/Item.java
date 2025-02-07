@@ -10,5 +10,5 @@ public class Item {
     private String itemNumber;
     private String itemName;
     private String notes;
-    private Integer categoryId;
+    private Boolean isObsolete;
 }

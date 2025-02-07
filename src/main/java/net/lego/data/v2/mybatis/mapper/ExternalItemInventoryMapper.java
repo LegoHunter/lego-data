@@ -69,7 +69,7 @@ public interface ExternalItemInventoryMapper {
                 last_synchronized_timestamp)
             VALUES (#{externalItemId}, #{itemInventoryId}, #{fixedPrice}, #{orderId}, #{extendedDescription}, #{extraDescription}, #{internalComments}, #{updateTimestamp}, #{lastSynchronizedTimestamp})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "externalItemId")
+    @Options(useGeneratedKeys = true, keyProperty = "itemId")
     void insert(ExternalItemInventory externalItemInventory);
 
     @Update("""

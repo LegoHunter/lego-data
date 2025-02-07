@@ -29,6 +29,10 @@ public class ExternalItemDao {
         return externalItemMapper.findByExternalNumber(externalNumber);
     }
 
+    public Optional<ExternalItem> findByExternalServiceNumber(String externalNumber, String externalServiceName) {
+        return externalItemMapper.findByExternalServiceNumber(externalNumber, externalServiceName);
+    }
+
     public void insert(ExternalItem externalItem) {
         externalItemMapper.insert(externalItem);
     }

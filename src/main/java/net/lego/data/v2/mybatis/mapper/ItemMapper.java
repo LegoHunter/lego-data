@@ -12,7 +12,7 @@ public interface ItemMapper {
                  item_number, \
                  item_name, \
                  notes, \
-                 category_id \
+                 is_obsolete \
           FROM item \
           """)
     @ResultMap("itemResultMap")
@@ -23,7 +23,7 @@ public interface ItemMapper {
                  item_number, \
                  item_name, \
                  notes, \
-                 category_id \
+                 is_obsolete \
           FROM item \
           WHERE item_id = #{itemId} \
             """)
@@ -35,7 +35,7 @@ public interface ItemMapper {
                  item_number, \
                  item_name, \
                  notes, \
-                 category_id \
+                 is_obsolete \
           FROM item \
           WHERE item_number = #{itemNumber} \
             """)
@@ -43,8 +43,8 @@ public interface ItemMapper {
     Optional<Item> findByItemNumber(String itemNumber);
 
     @Insert("""
-            INSERT INTO item (item_id, item_number, item_name, notes, category_id) \
-            VALUES (#{itemId}, #{itemNumber}, #{itemName}, #{notes}, #{categoryId}) \
+            INSERT INTO item (item_id, item_number, item_name, notes, is_obsolete) \
+            VALUES (#{itemId}, #{itemNumber}, #{itemName}, #{notes}, #{isObsolete}) \
             """)
     @Options(useGeneratedKeys = false, keyProperty = "itemId")
     void insert(Item item);
@@ -54,7 +54,7 @@ public interface ItemMapper {
           SET item_number = #{itemNumber}, \
               item_name = #{itemName}, \
               notes = #{notes}, \
-              category_id = #{categoryId} \
+              category_id = #{is_obsolete} \
           WHERE item_id = #{itemId} \
           """)
     void update(Item item);

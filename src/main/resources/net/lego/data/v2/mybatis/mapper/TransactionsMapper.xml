@@ -7,5 +7,6 @@
     <result column="from_party_id" property="fromPartyId"/>
     <result column="to_party_id" property="toPartyId"/>
     <result column="transaction_platform_id" property="transactionPlatformId"/>
+    <result column="transaction_order_id" property="transactionOrderId"/>
   </resultMap>
 </mapper>

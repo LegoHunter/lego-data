@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
-public interface TransactionsMapper {
+public interface TransactionMapper {
 
     @Insert("""
             INSERT INTO transactions (transaction_date, notes, shipping_amount, from_party_id, to_party_id) \

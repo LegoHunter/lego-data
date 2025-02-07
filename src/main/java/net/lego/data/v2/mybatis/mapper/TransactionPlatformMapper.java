@@ -38,4 +38,13 @@ public interface TransactionPlatformMapper {
             """)
     @ResultMap("transactionPlatformResultMap")
     Optional<TransactionPlatform> findTransactionPlatformById(Integer transactionPlatformId);
+
+    @Select("""
+            SELECT transaction_platform_id, \
+                   transaction_platform_name \
+            FROM transaction_platform \
+            WHERE transaction_platform_name = #{transactionPlatformName}\
+            """)
+    @ResultMap("transactionPlatformResultMap")
+    Optional<TransactionPlatform> findTransactionPlatformByName(String transactionPlatformName);
 }
