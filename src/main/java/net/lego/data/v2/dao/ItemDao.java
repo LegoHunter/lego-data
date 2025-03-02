@@ -29,6 +29,10 @@ public class ItemDao {
         itemMapper.insert(item);
     }
 
+    public void migrate(Item item) {
+        itemMapper.migrate(item);
+    }
+
     public void update(Item item) {
         itemMapper.update(item);
     }

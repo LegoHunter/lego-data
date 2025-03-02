@@ -49,8 +49,8 @@ public interface ExternalItemMapper {
           SELECT ei.external_item_id, ei.external_number, ei.external_unique_id, ei.external_name, ei.external_item_type, ei.external_url, ei.external_service_id, ei.external_category_id, ei.external_year_released
           FROM external_item ei
           JOIN external_service es on es.external_service_id = ei.external_service_id
-          WHERE ei.external_number = #{number}
-          AND es.external_service_name = #{serviceName}
+          WHERE ei.external_number = #{externalNumber}
+          AND es.external_service_name = #{externalServiceName}
           """)
     @ResultMap("externalItemResultMap")
     Optional<ExternalItem> findByExternalServiceNumber(String externalNumber, String externalServiceName);

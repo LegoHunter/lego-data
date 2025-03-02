@@ -46,8 +46,14 @@ public interface ItemMapper {
             INSERT INTO item (item_id, item_number, item_name, notes, is_obsolete) \
             VALUES (#{itemId}, #{itemNumber}, #{itemName}, #{notes}, #{isObsolete}) \
             """)
-    @Options(useGeneratedKeys = false, keyProperty = "itemId")
+    @Options(useGeneratedKeys = true, keyProperty = "itemId")
     void insert(Item item);
+
+    @Insert("""
+            INSERT INTO item (item_id, item_number, item_name, notes, is_obsolete) \
+            VALUES (#{itemId}, #{itemNumber}, #{itemName}, #{notes}, #{isObsolete}) \
+            """)
+    void migrate(Item item);
 
     @Update("""
           UPDATE item

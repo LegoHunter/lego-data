@@ -33,6 +33,11 @@ public interface TransactionsMapper {
             """)
     void update(Transactions transactions);
 
+    @Delete("""
+            delete from transactions where transaction_id = #{transactionId}
+            """)
+    void delete(Transactions transactions);
+
     @Select("""
             select transaction_id,
                    transaction_date,
