@@ -20,6 +20,7 @@
     <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
     <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
     <github.organization>LegoHunter</github.organization>
+    <github.repo.url>https://github.com/${github.organization}/lego-data.git</github.repo.url>
   </properties>
 
   <distributionManagement>
@@ -29,6 +30,12 @@
       <url>https://maven.pkg.github.com/${github.organization}/${project.artifactId}</url>
     </repository>
   </distributionManagement>
+
+  <scm>
+    <url>${github.repo.url}</url>
+    <connection>scm:git:${github.repo.url</connection>
+    <developerConnection>scm:git:${github.repo.url</developerConnection>
+  </scm>
 
   <repositories>
     <repository>
