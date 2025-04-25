@@ -5,6 +5,6 @@
         <result column="item_number" property="itemNumber"/>
         <result column="item_name"   property="itemName"/>
         <result column="notes"       property="notes"/>
-        <result column="is_obsolete" property="obsolete" typeHandler="ByteTypeHandler" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
+        <result column="is_obsolete" property="obsolete" typeHandler="org.apache.ibatis.type.ByteTypeHandler" javaType="java.lang.Boolean" jdbcType="TINYINT"/>
     </resultMap>
 </mapper>
