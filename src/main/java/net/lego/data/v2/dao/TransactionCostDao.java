@@ -2,9 +2,9 @@ package net.lego.data.v2.dao;
 
 import lombok.RequiredArgsConstructor;
 import net.lego.data.v2.dto.TransactionCost;
-import net.lego.data.v2.dto.TransactionItem;
+import net.lego.data.v2.dto.TransactionItemCost;
 import net.lego.data.v2.mybatis.mapper.TransactionCostMapper;
-import org.apache.ibatis.annotations.Delete;
+import net.lego.data.v2.mybatis.mapper.TransactionItemCostMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -15,23 +15,24 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TransactionCostDao {
     private final TransactionCostMapper transactionCostMapper;
+    private final TransactionItemCostMapper transactionItemCostMapper;
 
     public void setTransactionCosts(Long transactionId, List<TransactionCost> transactionCosts) {
         if (!CollectionUtils.isEmpty(transactionCosts)) {
             deleteTransactionCosts(transactionId);
             transactionCosts.forEach(transactionCost -> {
-                transactionCost.setCostReferenceId(transactionId);
+                transactionCost.setTransactionId(transactionId);
                 insert(transactionCost);
             });
         }
     }
 
-    public void setTransactionItemCosts(Long transactionItemId, List<TransactionCost> transactionCosts) {
-        if (!CollectionUtils.isEmpty(transactionCosts)) {
+    public void setTransactionItemCosts(Long transactionItemId, List<TransactionItemCost> transactionItemCosts) {
+        if (!CollectionUtils.isEmpty(transactionItemCosts)) {
             deleteTransactionItemCosts(transactionItemId);
-            transactionCosts.forEach(transactionCost -> {
-                transactionCost.setCostReferenceId(transactionItemId);
-                insert(transactionCost);
+            transactionItemCosts.forEach(transactionItemCost -> {
+                transactionItemCost.setTransactionItemId(transactionItemId);
+                insert(transactionItemCost);
             });
         }
     }
@@ -41,7 +42,7 @@ public class TransactionCostDao {
     }
 
     public void deleteTransactionItemCosts(Long transactionItemId) {
-        transactionCostMapper.deleteTransactionItemCosts(transactionItemId);
+        transactionCostMapper.deleteTransactionCosts(transactionItemId);
     }
 
     public void delete(Long transactionCostId) {
@@ -51,6 +52,11 @@ public class TransactionCostDao {
     public void insert(TransactionCost transactionCost) {
         transactionCostMapper.insert(transactionCost);
     }
+
+    public void insert(TransactionItemCost transactionItemCost) {
+        transactionItemCostMapper.insert(transactionItemCost);
+    }
+
 
     public void migrate(TransactionCost transactionCost) {
         transactionCostMapper.migrate(transactionCost);

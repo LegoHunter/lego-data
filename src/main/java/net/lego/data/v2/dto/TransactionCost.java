@@ -9,8 +9,7 @@ import net.lego.data.v2.enums.CurrencyCode;
 @Builder
 public class TransactionCost {
     private Long transactionCostId;
-    private CostCategory costCategoryCode;
-    private Long costReferenceId;
+    private Long transactionId;
     private String costTypeCode;
     private CurrencyCode currencyCode;
     private Double amount;
