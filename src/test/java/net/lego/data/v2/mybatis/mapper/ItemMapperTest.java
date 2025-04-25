@@ -12,6 +12,7 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -39,10 +40,12 @@ class ItemMapperTest {
     }
 
     @Test
+    @Sql(scripts = {"/scripts/db/h2/item_schema_v2.ddl", "/scripts/db/h2/truncate-table-item.sql"})
     void findByItemId() {
     }
 
     @Test
+    @Sql(scripts = {"/scripts/db/h2/item_schema_v2.ddl", "/scripts/db/h2/truncate-table-item.sql"})
     void findByItemNumber() {
     }
 
@@ -64,10 +67,12 @@ class ItemMapperTest {
     }
 
     @Test
+    @Sql(scripts = {"/scripts/db/h2/item_schema_v2.ddl", "/scripts/db/h2/truncate-table-item.sql"})
     void migrate() {
     }
 
     @Test
+    @Sql(scripts = {"/scripts/db/h2/item_schema_v2.ddl", "/scripts/db/h2/truncate-table-item.sql"})
     void update() {
         Item item = Item.builder()
                 .itemName("Item 1")

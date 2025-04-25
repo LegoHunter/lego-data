@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS item (
+drop table if exists item;
+CREATE TABLE item (
     item_id INT NOT NULL AUTO_INCREMENT,
     item_number VARCHAR(20) NULL DEFAULT NULL,
     item_name VARCHAR(100) NOT NULL,
