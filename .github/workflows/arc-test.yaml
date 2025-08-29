@@ -1,4 +1,4 @@
-name: Test ARC Runners
+name: Test ARC Runners 2
 on: [push]
 
 jobs:
