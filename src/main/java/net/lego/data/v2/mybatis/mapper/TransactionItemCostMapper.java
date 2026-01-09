@@ -13,7 +13,7 @@ public interface TransactionItemCostMapper {
             insert into transaction_item_cost (transaction_item_id, cost_type_code, currency_code, amount, notes) 
             values (#{transactionItemId}, #{costTypeCode}, #{currencyCode}, #{amount}, #{notes})
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "transactionCostId")
+    @Options(useGeneratedKeys = true, keyProperty = "transactionItemCostId")
     void insert(TransactionItemCost transactionItemCost);
 
     @Insert("""
