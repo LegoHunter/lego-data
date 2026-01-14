@@ -60,7 +60,7 @@ public interface ItemMapper {
           SET item_number = #{itemNumber}, \
               item_name = #{itemName}, \
               notes = #{notes}, \
-              category_id = #{is_obsolete} \
+              is_obsolete = #{isObsolete} \
           WHERE item_id = #{itemId} \
           """)
     void update(Item item);

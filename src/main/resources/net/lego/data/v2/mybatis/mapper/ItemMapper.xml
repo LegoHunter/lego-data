@@ -5,6 +5,6 @@
         <result column="item_number" property="itemNumber"/>
         <result column="item_name"   property="itemName"/>
         <result column="notes"       property="notes"/>
-        <result column="is_obsolete" property="obsolete" javaType="java.lang.Boolean" jdbcType="INT" typeHandler="BooleanTypeHandler"/>
+        <result column="is_obsolete" property="isObsolete"/>
     </resultMap>
 </mapper>

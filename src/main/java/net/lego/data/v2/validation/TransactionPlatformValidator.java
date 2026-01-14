@@ -34,7 +34,7 @@ public class TransactionPlatformValidator implements ConstraintValidator<Transac
                 .map(_ -> true)
                 .orElseGet(() -> {
                     context.disableDefaultConstraintViolation();
-                    context.buildConstraintViolationWithTemplate(String.format("Must be one of %s", acceptedValues))
+                    context.buildConstraintViolationWithTemplate(String.format("Transaction Platform [%s] is invalid. Must be one of %s", value, acceptedValues))
                             .addConstraintViolation();
                     return false;
                 });

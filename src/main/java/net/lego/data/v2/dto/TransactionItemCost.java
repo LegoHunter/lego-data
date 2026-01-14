@@ -11,4 +11,5 @@ public class TransactionItemCost {
     private String costTypeCode;
     private String currencyCode;
     private Double amount;
+    private String notes;
 }
