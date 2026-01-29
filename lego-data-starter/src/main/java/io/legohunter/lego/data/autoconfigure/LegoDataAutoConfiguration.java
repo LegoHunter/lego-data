@@ -29,7 +29,8 @@ import java.util.Optional;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnMissingBean(DataSource.class)
 @ConditionalOnProperty(
-        name = "lego.databases.site5-dev-lego.url"
+        name = "lego.data.enabled",
+        havingValue = "true"
 
 )
 @EnableConfigurationProperties({

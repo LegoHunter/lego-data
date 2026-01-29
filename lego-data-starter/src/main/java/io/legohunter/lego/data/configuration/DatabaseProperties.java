@@ -1,6 +1,5 @@
 package io.legohunter.lego.data.configuration;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +15,16 @@ import java.util.Map;
 public class DatabaseProperties {
     private Map<String, Database> databases = new HashMap<>();
 
-    @Data
+    @lombok.Data
     public static class Database {
         private String url;
         private String username;
         private String password;
         private String driverClassName;
+    }
+
+    @lombok.Data
+    public static class Data {
+        private boolean enabled;
     }
 }
