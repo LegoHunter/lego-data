@@ -6,7 +6,6 @@ import io.legohunter.lego.data.configuration.SourceDataSourceProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -27,7 +26,6 @@ import java.util.Optional;
 @AutoConfiguration
 @ConditionalOnClass({ DataSource.class, HikariDataSource.class })
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnMissingBean(DataSource.class)
 @ConditionalOnProperty(
         name = "lego.data.enabled",
         havingValue = "true"
