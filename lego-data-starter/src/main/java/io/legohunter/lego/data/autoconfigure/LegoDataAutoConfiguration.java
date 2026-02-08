@@ -1,69 +1,101 @@
 package io.legohunter.lego.data.autoconfigure;
 
+import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.legohunter.lego.data.configuration.DatabaseProperties;
-import io.legohunter.lego.data.configuration.SourceDataSourceProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 
 import javax.sql.DataSource;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Auto-configuration for Lego Data.
- *
+ * <p>
  * Activated when:
- *  - No DataSource bean is already defined
- *  - Property 'databases.enabled' is present
+ * - No DataSource bean is already defined
+ * - Property 'databases.enabled' is present
  */
 @Slf4j
 @AutoConfiguration
-@ConditionalOnClass({ DataSource.class, HikariDataSource.class })
+@ConditionalOnClass({DataSource.class, HikariDataSource.class})
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(
         name = "lego.data.enabled",
         havingValue = "true"
 
 )
-@EnableConfigurationProperties({
-        SourceDataSourceProperties.class,
-        DatabaseProperties.class
-})
+//@EnableConfigurationProperties(DatabaseProperties.class)
+@RequiredArgsConstructor
 public class LegoDataAutoConfiguration {
 
+    private final Environment environment;
+
     @Bean
-    public DataSource dataSource(SourceDataSourceProperties properties) {
+    @ConfigurationProperties("spring.datasource.hikari")
+    public HikariConfig hikariConfig() {
+        return new HikariConfig();
+    }
 
-        log.info("Creating DataSource using database key [{}]", properties.getDatabaseKeyName());
-        DatabaseProperties databaseProperties = Optional.ofNullable(properties.getDatabaseProperties()).orElseThrow(() -> new IllegalStateException("lego.databases configuration map not found"));
-        Map<String, DatabaseProperties.Database> databasesMap = databaseProperties.getDatabases();
+    @Bean
+    @ConfigurationProperties("lego.databases")
+    public Map<String, Object> databasesMap() {
+        return new HashMap<>();
+    }
 
-        log.info("Found [{}] configured database keys : {}", databasesMap.size(), databasesMap.keySet());
+    @Bean
+    public DataSource dataSource(Map<String, Object> databasesMap) {
 
-        DatabaseProperties.Database database = properties.getDatabase(properties.getDatabaseKeyName()).orElseThrow(() -> new IllegalStateException(String.format("Unable to get database configuration for key [%s]", properties.getDatabaseKeyName())));
+        String databaseKeyName = environment.getProperty("spring.datasource.database-key-name");
+        if (databaseKeyName == null) {
+            throw new IllegalStateException("spring.datasource.database-key-name property not set");
+        }
 
-        HikariDataSource dataSource = properties
+        Map<String, Object> databaseConfigurationMap = Optional.of(databasesMap)
+                .map(m -> m.get(databaseKeyName))
+                .map(m -> (Map<String, Object>) m)
+                .orElseThrow();
+
+        // 1️⃣ Bind lego.databases[key] -> DataSourceProperties
+        Binder dbBinder = new Binder(new MapConfigurationPropertySource(databaseConfigurationMap));
+        DataSourceProperties dsp = dbBinder
+                .bind("", DataSourceProperties.class)
+                .orElseThrow(() -> new IllegalStateException("Something bad happened"));
+
+        // 2️⃣ Let Spring build the real HikariDataSource
+        HikariDataSource ds = dsp
                 .initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
 
-        // Apply Hikari-specific properties if present
-        if (properties.getHikari() != null) {
-            properties.getHikari().forEach((key, value) -> {
-                try {
-                    dataSource.addDataSourceProperty(key.toString(), value);
-                } catch (Exception ex) {
-                    log.warn("Could not apply Hikari property '{}'", key, ex);
-                }
-            });
-        }
+        // 3️⃣ Overlay spring.datasource.hikari directly
+        Binder.get(environment)
+                .bind("spring.datasource.hikari", Bindable.ofInstance(ds));
 
-        return dataSource;
+        log.info(
+                "Created HikariDataSource jdbcUrl={}, user={}, poolName={}, minIdle={}, maxPoolSize={}",
+                ds.getJdbcUrl(),
+                ds.getUsername(),
+                ds.getPoolName(),
+                ds.getMinimumIdle(),
+                ds.getMaximumPoolSize()
+        );
+
+        return ds;
     }
+
+
 }
