@@ -40,4 +40,8 @@ public class ExternalItemDao {
     public void update(ExternalItem externalItem) {
         externalItemMapper.update(externalItem);
     }
+
+    public void upsert(ExternalItem externalItem) {
+        externalItemMapper.upsert(externalItem);
+    }
 }

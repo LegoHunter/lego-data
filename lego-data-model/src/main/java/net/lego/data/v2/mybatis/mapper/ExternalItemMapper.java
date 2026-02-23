@@ -72,4 +72,36 @@ public interface ExternalItemMapper {
           WHERE external_item_id = #{itemId} \
           """)
     void update(ExternalItem externalItem);
+
+    @Insert("""
+    INSERT INTO external_item (
+        external_number,
+        external_unique_id,
+        external_name,
+        external_item_type,
+        external_url,
+        external_category_id,
+        external_year_released,
+        external_service_id
+    )
+    VALUES (
+        #{number},
+        #{uniqueId},
+        #{name},
+        #{itemType},
+        #{url},
+        #{categoryId},
+        #{yearReleased},
+        #{serviceId}
+    )
+    ON DUPLICATE KEY UPDATE
+        external_unique_id = VALUES(external_unique_id),
+        external_name = VALUES(external_name),
+        external_item_type = VALUES(external_item_type),
+        external_url = VALUES(external_url),
+        external_category_id = VALUES(external_category_id),
+        external_year_released = VALUES(external_year_released)
+""")
+    @Options(useGeneratedKeys = true, keyProperty = "itemId")
+    void upsert(ExternalItem externalItem);
 }
