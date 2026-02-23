@@ -11,19 +11,20 @@ import java.util.Optional;
 
 public interface CategoryMapper {
     @Insert("""
-            INSERT INTO category (category_id, category_name, parent_id) \
-            VALUES (#{categoryId}, #{categoryName}, #{parentId})\
+            INSERT INTO category (external_service_id, external_category_id, category_name, parent_id) \
+            VALUES (#{externalServiceId}, #{externalCategoryId}, #{categoryName}, #{parentId})\
             """)
     void insert(Category category);
 
     @Update("""
             UPDATE category SET category_name = #{categoryName}, parent_id = #{parentId} \
-            WHERE category_id = #{categoryId}\
+            WHERE external_category_id = #{externalCategoryId}\
             """)
     void update(Category category);
 
     @Select("""
-            SELECT category_id,\
+            SELECT external_service_id,\
+                   external_category_id,\
                    category_name, \
                    parent_id \
             FROM category\
@@ -32,12 +33,14 @@ public interface CategoryMapper {
     List<Category> findAll();
 
     @Select("""
-            SELECT category_id,\
+            SELECT external_service_id,\
+                   external_category_id,\
                    category_name, \
                    parent_id \
             FROM category \
-            WHERE category_id = #{categoryId}\
+            WHERE external_service_id = #{externalServiceId}\
+            AND external_category_id = #{externalCategoryId}\
             """)
     @ResultMap("categoryResultMap")
-    Optional<Category> findCategoryById(Integer categoryId);
+    Optional<Category> findCategoryByExternalServiceAndCategoryId(Integer externalServiceId, Integer externalCategoryId);
 }

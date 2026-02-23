@@ -6,7 +6,8 @@ import lombok.Data;
 @Data
 @Builder
 public class Category {
-    private Integer categoryId;
+    private Integer externalServiceId;
+    private Integer externalCategoryId;
     private String categoryName;
     private Integer parentId;
 }

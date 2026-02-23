@@ -19,8 +19,8 @@ public class CategoryDao {
         return categoryMapper.findAll();
     }
 
-    public Optional<Category> findCategoryById(final Integer categoryId) {
-        return categoryMapper.findCategoryById(categoryId);
+    public Optional<Category> findCategoryByExternalServiceAndCategoryId(final Integer externalServiceId, final Integer externalCategoryId) {
+        return categoryMapper.findCategoryByExternalServiceAndCategoryId(externalServiceId, externalCategoryId);
     }
 
     public void insert(Category category) {
