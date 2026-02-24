@@ -34,4 +34,8 @@ public class CategoryDao {
     public void update(Category category) {
         categoryMapper.update(category);
     }
+
+    public void upsert(Category category) {
+        categoryMapper.upsert(category);
+    }
 }

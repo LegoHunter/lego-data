@@ -43,4 +43,21 @@ public interface CategoryMapper {
             """)
     @ResultMap("categoryResultMap")
     Optional<Category> findCategoryByExternalServiceAndCategoryId(Integer externalServiceId, Integer externalCategoryId);
+
+    @Insert("""
+                INSERT INTO category (external_service_id, 
+                                      external_category_id, 
+                                      category_name, 
+                                      parent_id)
+                VALUES (
+                    #{externalServiceId},
+                    #{externalCategoryId},
+                    #{categoryName},
+                    #{parentId}
+                )
+                ON DUPLICATE KEY UPDATE
+                    category_name = VALUES(category_name),
+                    parent_id = VALUES(parent_id)
+            """)
+    void upsert(Category category);
 }
