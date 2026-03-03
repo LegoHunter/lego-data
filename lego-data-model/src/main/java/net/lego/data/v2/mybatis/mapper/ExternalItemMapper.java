@@ -20,28 +20,31 @@ public interface ExternalItemMapper {
           SELECT ei.external_item_id, ei.external_number, ei.external_unique_id, ei.external_name, ei.external_item_type, ei.external_url, ei.external_service_id, ei.external_category_id, ei.external_year_released, esi.item_id
           FROM external_item ei
           LEFT OUTER JOIN external_service_item esi on ei.external_item_id = esi.external_item_id
-          WHERE esi.item_id = #{itemId}
+          WHERE ei.external_service_id = #{externalServiceId} 
+          AND esi.item_id = #{itemId}
           """)
     @ResultMap("externalItemResultMap")
-    Optional<ExternalItem> findByItemId(Integer itemId);
+    Optional<ExternalItem> findByItemId(Integer externalServiceId, Integer itemId);
 
     @Select("""
           SELECT ei.external_item_id, ei.external_number, ei.external_unique_id, ei.external_name, ei.external_item_type, ei.external_url, ei.external_service_id, ei.external_category_id, ei.external_year_released, esi.item_id
           FROM external_item ei
           LEFT OUTER JOIN external_service_item esi on ei.external_item_id = esi.external_item_id
-          WHERE ei.external_unique_id = #{uniqueId}
+          WHERE ei.external_service_id = #{externalServiceId} 
+          AND ei.external_unique_id = #{uniqueId}
           """)
     @ResultMap("externalItemResultMap")
-    Optional<ExternalItem> findByExternalUniqueId(Integer externalUniqueId);
+    Optional<ExternalItem> findByExternalUniqueId(Integer externalServiceId, Integer externalUniqueId);
 
     @Select("""
           SELECT ei.external_item_id, ei.external_number, ei.external_unique_id, ei.external_name, ei.external_item_type, ei.external_url, ei.external_service_id, ei.external_category_id, ei.external_year_released, esi.item_id
           FROM external_item ei
           LEFT OUTER JOIN external_service_item esi on ei.external_item_id = esi.external_item_id
-          WHERE ei.external_number = #{number}
+          WHERE ei.external_service_id = #{externalServiceId} 
+          AND ei.external_number = #{externalNumber}
           """)
     @ResultMap("externalItemResultMap")
-    Optional<ExternalItem> findByExternalNumber(String externalNumber);
+    Optional<ExternalItem> findByExternalNumber(Integer externalServiceId, String externalNumber);
 
     @Select("""
           SELECT ei.external_item_id, ei.external_number, ei.external_unique_id, ei.external_name, ei.external_item_type, ei.external_url, ei.external_service_id, ei.external_category_id, ei.external_year_released
