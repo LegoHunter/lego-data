@@ -11,16 +11,16 @@ import java.util.Optional;
 public interface ExternalServiceItemMapper {
 
     @Select("""
-            SELECT external_item_id, item_id 
+            SELECT external_item_id, item_inventory_id 
             FROM external_service_item
             WHERE external_item_id = #{externalItemId}
-            AND item_id = #{itemId}
+            AND item_inventory_id = #{itemInventoryId}
             """)
     @ResultMap("externalServiceItemResultMap")
-    Optional<ExternalServiceItem> findByExternalItemIdAndItemId(Integer externalItemId,Integer itemId);
+    Optional<ExternalServiceItem> findByExternalItemIdAndItemId(Integer externalItemId,Integer itemInventoryId);
 
     @Select("""
-            SELECT external_item_id, item_id
+            SELECT external_item_id, item_inventory_id
             FROM external_service_item
             WHERE external_item_id = #{externalItemId}
             """)
@@ -30,21 +30,21 @@ public interface ExternalServiceItemMapper {
     @Select("""
             SELECT external_item_id, item_id 
             FROM external_service_item
-            WHERE item_id = #{itemId}
+            WHERE item_inventory_id = #{itemInventoryId}
             """)
     @ResultMap("externalServiceItemResultMap")
-    Optional<ExternalServiceItem> findByItemId(Integer itemId);
+    Optional<ExternalServiceItem> findByItemInventoryId(Integer itemInventoryId);
 
     @Insert("""
-            INSERT INTO external_service_item (external_item_id, item_id)
-            VALUES (#{externalItemId}, #{itemId})
+            INSERT INTO external_service_item (external_item_id, item_inventory_id)
+            VALUES (#{externalItemId}, #{itemInventoryId})
             """)
     void insert(ExternalServiceItem externalServiceItem);
 
     @Delete("""
             DELETE FROM external_service_item 
             WHERE external_item_id = #{externalItemId}
-            AND item_id = #{itemId}
+            AND item_inventory_id = #{itemInventoryId}
             """)
     void delete(ExternalServiceItem externalServiceItem);
 }

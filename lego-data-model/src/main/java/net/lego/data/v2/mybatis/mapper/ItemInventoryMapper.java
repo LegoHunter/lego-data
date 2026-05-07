@@ -1,14 +1,14 @@
 package net.lego.data.v2.mybatis.mapper;
 
 import net.lego.data.v2.dto.ItemInventory;
+import org.apache.ibatis.annotations.*;
 
 import java.util.List;
 import java.util.Optional;
-import org.apache.ibatis.annotations.*;
 
 public interface ItemInventoryMapper {
     String ALL_COLUMNS = """
-                    
+            
                 item_inventory_id,
             uuid,
             item_id,
@@ -43,7 +43,7 @@ public interface ItemInventoryMapper {
             VALUES (#{uuid}, #{itemId}, #{boxNumber}, #{quantity}, #{description}, #{active}, #{forSale}, #{newOrUsed}, #{completeness}, #{itemConditionId}, #{boxConditionId}, #{instructionsConditionId}, #{sealed}, #{builtOnce}) \
             """)
     @Options(useGeneratedKeys = true, keyProperty = "itemInventoryId")
-    void insert(ItemInventory itemInventory);
+    ItemInventory insert(ItemInventory itemInventory);
 
     @Update("""
             UPDATE item_inventory SET
@@ -63,5 +63,5 @@ public interface ItemInventoryMapper {
                    built_once = #{builtOnce}
             WHERE item_inventory_id = #{itemInventoryId}
             """)
-    void update(ItemInventory itemInventory);
+    int update(ItemInventory itemInventory);
 }

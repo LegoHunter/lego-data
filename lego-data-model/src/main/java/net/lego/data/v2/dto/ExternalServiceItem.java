@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ExternalServiceItem {
     private Integer externalItemId;
-    private Integer itemId;
+    private Integer itemInventoryId;
 }

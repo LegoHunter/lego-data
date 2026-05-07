@@ -21,7 +21,7 @@ public class ExternalServiceItemDao {
     }
 
     public Optional<ExternalServiceItem> findByItemId(Integer itemId) {
-        return externalServiceItemMapper.findByItemId(itemId);
+        return externalServiceItemMapper.findByItemInventoryId(itemId);
     }
 
     public void insert(ExternalServiceItem externalServiceItem) {
