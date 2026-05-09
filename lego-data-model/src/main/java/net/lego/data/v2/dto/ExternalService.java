@@ -1,11 +1,9 @@
 package net.lego.data.v2.dto;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
 @Data
-@Builder
 public class ExternalService {
     private Integer externalServiceId;
     private String externalServiceName;

@@ -6,6 +6,7 @@ import net.lego.data.v2.mybatis.mapper.ExternalItemMapper;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -17,20 +18,16 @@ public class ExternalItemDao {
         return externalItemMapper.findByExternalItemId(externalItemId);
     }
 
-    public Optional<ExternalItem> findByItemId(Integer externalServiceId, Integer itemId) {
-        return externalItemMapper.findByItemId(externalServiceId, itemId);
+    public Optional<ExternalItem> findByExternalServiceAndUniqueId(Integer externalServiceId, Integer externalUniqueId) {
+        return externalItemMapper.findByExternalServiceAndUniqueId(externalServiceId, externalUniqueId);
     }
 
-    public Optional<ExternalItem> findByExternalUniqueId(Integer externalServiceId, Integer externalUniqueId) {
-        return externalItemMapper.findByExternalUniqueId(externalServiceId, externalUniqueId);
+    public Optional<ExternalItem> findByExternalServiceAndNumber(Integer externalServiceId, String externalNumber) {
+        return externalItemMapper.findByExternalServiceAndNumber(externalServiceId, externalNumber);
     }
 
-    public Optional<ExternalItem> findByExternalNumber(Integer externalServiceId, String externalNumber) {
-        return externalItemMapper.findByExternalNumber(externalServiceId, externalNumber);
-    }
-
-    public Optional<ExternalItem> findByExternalServiceNumber(String externalNumber, String externalServiceName) {
-        return externalItemMapper.findByExternalServiceNumber(externalNumber, externalServiceName);
+    public Set<ExternalItem> findAllByExternalService(String externalServiceName) {
+        return externalItemMapper.findAllByExternalService(externalServiceName);
     }
 
     public void insert(ExternalItem externalItem) {

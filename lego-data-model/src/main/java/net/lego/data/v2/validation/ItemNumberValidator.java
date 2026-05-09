@@ -8,6 +8,8 @@ import net.lego.data.v2.dao.ExternalItemDao;
 import net.lego.data.v2.dao.ExternalServiceDao;
 import org.springframework.stereotype.Component;
 
+import static net.lego.data.v2.dto.ExternalService.ExternalServiceType.BRICKLINK;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -25,7 +27,7 @@ public class ItemNumberValidator implements ConstraintValidator<ItemNumberExists
     public boolean isValid(CharSequence value, ConstraintValidatorContext context) {
         context.disableDefaultConstraintViolation();
         return externalServiceDao.findExternalServiceByName(externalServiceName)
-                .flatMap(_ -> externalItemDao.findByExternalServiceNumber(value.toString(), externalServiceName))
+                .flatMap(_ -> externalItemDao.findByExternalServiceAndNumber(BRICKLINK.getExternalServiceId(), externalServiceName))
                 .map(_ -> true)
                 .orElseGet(() -> {
                     context.disableDefaultConstraintViolation();
