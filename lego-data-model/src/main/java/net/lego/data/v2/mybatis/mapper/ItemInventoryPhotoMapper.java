@@ -38,8 +38,8 @@ public interface ItemInventoryPhotoMapper {
     Optional<ItemInventoryPhoto> findByMD5(String md5);
 
     @Insert("""
-            INSERT INTO item_inventory_photo (item_inventory_id,s3_bucket,s3_key,md5,file_name,file_size,is_primary,caption,status,created_at) \
-            VALUES (#{itemInventoryId}, #{s3Bucket}, #{s3Key}, #{md5}, #{fileName}, #{fileSize}, #{primary}, #{caption}, #{status}, #{createdAt}) \
+            INSERT INTO item_inventory_photo (item_inventory_id, s3_bucket,s3_key,md5,file_name,file_size,is_primary,caption,status,created_at) \
+            VALUES (#{itemInventoryId}, #{s3Bucket}, #{s3Key}, #{md5}, #{fileName}, #{fileSize}, #{primary}, #{caption}, #{status}, CURRENT_TIMESTAMP) \
             """)
     @Options(useGeneratedKeys = true, keyProperty = "itemInventoryPhotoId")
     void insert(ItemInventoryPhoto itemInventoryPhoto);
@@ -47,7 +47,7 @@ public interface ItemInventoryPhotoMapper {
     @Update("""
             UPDATE item_inventory_photo SET
                 status = #{to}
-            WHERE md5 = #{md5} 
+            WHERE md5 = #{md5}
             AND status = #{from}
             """)
     int updateStatus(String md5, PhotoStatus from, PhotoStatus to);
@@ -70,7 +70,7 @@ public interface ItemInventoryPhotoMapper {
 
     @Update("""
             UPDATE item_inventory_photo SET
-                is_primary = #{primary}, 
+                is_primary = 0,
                 updated_at = NOW() 
             WHERE item_inventory_id = #{itemInventoryId}
             AND is_primary = TRUE;
@@ -79,7 +79,7 @@ public interface ItemInventoryPhotoMapper {
 
     @Update("""
             UPDATE item_inventory_photo SET
-                is_primary = CASE WHEN (md5 = #{md5} AND status = 'PROCESSED') THEN 1 ELSE 0 END, 
+                is_primary = CASE WHEN (md5 = #{md5} AND status = 'PROCESSED') THEN 1 ELSE 0 END,
                 updated_at = CURRENT_TIMESTAMP
             WHERE item_inventory_id = #{itemInventoryId}
             """)

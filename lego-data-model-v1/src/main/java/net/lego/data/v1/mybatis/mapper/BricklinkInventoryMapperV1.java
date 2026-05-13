@@ -61,7 +61,7 @@ public interface BricklinkInventoryMapperV1 {
     @ResultMap("bricklinkInventoryResultMapV1")
     Optional<BricklinkInventory> findById(Integer blInventoryId);
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM bricklink_inventoryWHERE uuid = #{uuid}")
+    @Select("SELECT " + ALL_COLUMNS + " FROM bricklink_inventory WHERE uuid = #{uuid}")
     @ResultMap("bricklinkInventoryResultMapV1")
     Optional<BricklinkInventory> findByUuid(String uuid);
 }

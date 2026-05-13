@@ -6,7 +6,6 @@ import net.lego.data.v2.enums.PhotoStatus;
 import net.lego.data.v2.mybatis.mapper.ItemInventoryPhotoMapper;
 import org.springframework.stereotype.Component;
 
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,24 +31,26 @@ public class ItemInventoryPhotoDao {
         return itemInventoryPhoto;
     }
 
-    // =========================
-    // Insert
-    // =========================
-    ItemInventoryPhoto insertPhoto(
+    public ItemInventoryPhoto insertPhoto(
             Integer itemInventoryId,
             String md5,
             String filename,
-            boolean isPrimary,
+            String s3Bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
             PhotoStatus status) {
         ItemInventoryPhoto itemInventoryPhoto = ItemInventoryPhoto.builder()
                 .itemInventoryId(itemInventoryId)
                 .md5(md5)
                 .fileName(filename)
-                .primary(isPrimary)
+                .s3Bucket(s3Bucket)
+                .s3Key(s3Key)
+                .fileSize(fileSize)
+                .primary(primary)
                 .status(status)
-                .createdAt(ZonedDateTime.now())
                 .build();
-        itemInventoryPhotoMapper.insert(itemInventoryPhoto);
+        insert(itemInventoryPhoto);
         return itemInventoryPhoto;
     }
 
@@ -144,5 +145,10 @@ public class ItemInventoryPhotoDao {
 
     public Set<ItemInventoryPhoto> findWithoutS3Key() {
         return itemInventoryPhotoMapper.findWithoutS3Key();
+    }
+
+    public void setPrimaryPhoto(Integer itemInventoryId, String md5) {
+        clearPrimaryForItem(itemInventoryId);
+        setPrimary(itemInventoryId, md5);
     }
 }

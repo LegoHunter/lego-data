@@ -69,21 +69,21 @@ public interface ExternalItemMapper {
 
     @Insert("""
             INSERT INTO external_item (external_number, external_unique_id, external_name, external_item_type, external_url, external_category_id, external_year_released, external_service_id) \
-            VALUES (#{number}, #{uniqueId}, #{name}, #{itemType}, #{url}, #{categoryId}, #{yearReleased}, #{serviceId}) \
+            VALUES (#{externalNumber}, #{uniqueId}, #{name}, #{itemType}, #{url}, #{categoryId}, #{yearReleased}, #{serviceId}) \
             """)
-    @Options(useGeneratedKeys = true, keyProperty = "itemId")
+    @Options(useGeneratedKeys = true, keyProperty = "externalItemId")
     void insert(ExternalItem externalItem);
 
     @Update("""
           UPDATE external_item
-          SET external_number = #{number}, \
+          SET external_number = #{externalNumber}, \
               external_unique_id = #{uniqueId}, \
               external_name = #{name}, \
               external_item_type = #{itemType}, \
               external_url = #{url}, \
               external_category_id = #{categoryId}, \
               external_year_released = #{yearReleased} \
-          WHERE external_item_id = #{itemId} \
+          WHERE external_item_id = #{externalItemId} \
           """)
     void update(ExternalItem externalItem);
 

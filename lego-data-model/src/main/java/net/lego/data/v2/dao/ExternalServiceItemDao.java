@@ -12,8 +12,8 @@ import java.util.Optional;
 public class ExternalServiceItemDao {
     private final ExternalServiceItemMapper externalServiceItemMapper;
 
-    public Optional<ExternalServiceItem> findByExternalItemIdAndItemId(Integer externalItemId, Integer itemId) {
-        return externalServiceItemMapper.findByExternalItemIdAndItemId(externalItemId, itemId);
+    public Optional<ExternalServiceItem> findByExternalItemIdAndItemInventoryId(Integer externalItemId, Integer itemInventoryId) {
+        return externalServiceItemMapper.findByExternalItemIdAndItemInventoryId(externalItemId, itemInventoryId);
     }
 
     public Optional<ExternalServiceItem> findByExternalItemId(Integer externalItemId) {

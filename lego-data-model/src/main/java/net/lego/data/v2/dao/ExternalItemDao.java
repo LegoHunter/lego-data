@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 import java.util.Set;
 
+import static net.lego.data.v2.dto.ExternalService.ExternalServiceType.BRICKLINK;
+
 @Component
 @RequiredArgsConstructor
 public class ExternalItemDao {
@@ -39,6 +41,18 @@ public class ExternalItemDao {
     }
 
     public void upsert(ExternalItem externalItem) {
-        externalItemMapper.upsert(externalItem);
+        Optional.ofNullable(externalItem)
+                .map(ExternalItem::getExternalItemId)
+                .ifPresentOrElse(externalItemId -> {
+                    externalItemMapper.update(externalItem);
+                }, () -> {
+                    if (externalItemMapper
+                            .findByExternalServiceAndNumber(BRICKLINK.getExternalServiceId(), externalItem.getExternalNumber())
+                            .isPresent()) {
+                        externalItemMapper.update(externalItem);
+                    } else {
+                        externalItemMapper.insert(externalItem);
+                    }
+                });
     }
 }

@@ -37,7 +37,6 @@ public class InventoryIndexDao {
         return inventoryIndexMapper.findByItemNumber(itemNumber);
     }
 
-
     public Optional<InventoryIndex> findByBoxIdAndBoxIndex(Integer boxId, Integer boxIndex) {
         return inventoryIndexMapper.findByBoxIdAndBoxIndex(boxId, boxIndex);
     }

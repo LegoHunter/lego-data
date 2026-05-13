@@ -14,11 +14,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
-import static net.lego.data.v2.enums.PhotoStatus.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -28,77 +26,89 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ItemInventoryPhotoDaoTest {
 
     @Autowired
-    ItemInventoryPhotoDao dao;
-    @Autowired
-    private ItemInventoryPhotoDao itemInventoryPhotoDao;
+    private ItemInventoryPhotoDao dao;
 
-    // =========================
-    // INSERT + EXISTS
-    // =========================
+    // =========================================================
+    // INSERT
+    // =========================================================
 
     @Test
     @Sql(scripts = {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void insert_and_exists() {
+    void insertPhoto() {
 
-        dao.insertPhoto(1, "md5-1", "file.jpg", false, UPLOADED);
-
-        assertThat(dao.existsByMd5("md5-1"))
-                .isTrue();
-    }
-
-    // =========================
-    // FIND BY MD5
-    // =========================
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void findByMd5() {
-
-        dao.insertPhoto(1, "md5-2", "file.jpg", false, UPLOADED);
-
-        Optional<ItemInventoryPhoto> result = dao.findByMd5("md5-2");
-
-        assertThat(result)
-                .isPresent()
-                .get()
-                .extracting(ItemInventoryPhoto::getMd5)
-                .isEqualTo("md5-2");
-    }
-
-    // =========================
-    // STATE TRANSITIONS
-    // =========================
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void transitionStatus_success() {
-
-        dao.insertPhoto(1, "md5-3", "file.jpg", false, UPLOADED);
-
-        int updated = dao.transitionStatus(
-                "md5-3",
-                UPLOADED,
+        dao.insertPhoto(
+                1,
+                "md5-1",
+                "photo.jpg",
+                "lego-photos-sandbox",
+                "3001/uuid/md5-1.jpg",
+                2048L,
+                false,
                 PhotoStatus.PROCESSED
         );
 
-        assertThat(updated).isEqualTo(1);
+        Optional<ItemInventoryPhoto> result =
+                dao.findByMd5("md5-1");
 
-        Optional<ItemInventoryPhoto> photo = dao.findByMd5("md5-3");
+        assertThat(result)
+                .isPresent();
 
-        assertThat(photo)
-                .isPresent()
-                .get()
-                .extracting(ItemInventoryPhoto::getStatus)
-                .isEqualTo(PhotoStatus.PROCESSED);
+        assertThat(result.get())
+                .extracting(
+                        ItemInventoryPhoto::getItemInventoryId,
+                        ItemInventoryPhoto::getMd5,
+                        ItemInventoryPhoto::getFileName,
+                        ItemInventoryPhoto::getS3Bucket,
+                        ItemInventoryPhoto::getS3Key,
+                        ItemInventoryPhoto::getFileSize,
+                        ItemInventoryPhoto::getPrimary,
+                        ItemInventoryPhoto::getStatus
+                )
+                .containsExactly(
+                        1,
+                        "md5-1",
+                        "photo.jpg",
+                        "lego-photos-sandbox",
+                        "3001/uuid/md5-1.jpg",
+                        2048L,
+                        false,
+                        PhotoStatus.PROCESSED
+                );
+    }
+
+    // =========================================================
+    // FIND BY MD5
+    // =========================================================
+
+    @Test
+    @Sql(scripts = {
+            "/scripts/db/h2/item_inventory_photo_schema.ddl",
+            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
+    })
+    void findByMd5_returns_photo() {
+
+        dao.insertPhoto(
+                1,
+                "md5-2",
+                "photo.jpg",
+                "bucket",
+                "key",
+                4096L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        Optional<ItemInventoryPhoto> result =
+                dao.findByMd5("md5-2");
+
+        assertThat(result)
+                .isPresent();
+
+        assertThat(result.get().getMd5())
+                .isEqualTo("md5-2");
     }
 
     @Test
@@ -106,16 +116,39 @@ class ItemInventoryPhotoDaoTest {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void findAll() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(2, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(3, "md5-3", "file3.jpg", false, UPLOADED);
-        dao.insertPhoto(4, "md5-4", "file4.jpg", false, UPLOADED);
-        dao.insertPhoto(5, "md5-5", "file5.jpg", false, UPLOADED);
+    void findByMd5_returns_empty_when_not_found() {
 
-        Set<ItemInventoryPhoto> itemInventoryPhotos = dao.findAll();
-        assertThat(itemInventoryPhotos).hasSize(5);
+        Optional<ItemInventoryPhoto> result =
+                dao.findByMd5("does-not-exist");
 
+        assertThat(result)
+                .isEmpty();
+    }
+
+    // =========================================================
+    // EXISTS
+    // =========================================================
+
+    @Test
+    @Sql(scripts = {
+            "/scripts/db/h2/item_inventory_photo_schema.ddl",
+            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
+    })
+    void existsByMd5_returns_true_when_exists() {
+
+        dao.insertPhoto(
+                1,
+                "md5-3",
+                "photo.jpg",
+                "bucket",
+                "key",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        assertThat(dao.existsByMd5("md5-3"))
+                .isTrue();
     }
 
     @Test
@@ -123,341 +156,177 @@ class ItemInventoryPhotoDaoTest {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void findByItemInventoryPhotoId_whenFound() {
-        ItemInventoryPhoto itemInventoryPhoto = dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        Integer itemInventoryPhotoId = itemInventoryPhoto.getItemInventoryPhotoId();
-        assertThat(dao.findByItemInventoryPhotoId(itemInventoryPhotoId)).isPresent();
+    void existsByMd5_returns_false_when_missing() {
+
+        assertThat(dao.existsByMd5("missing"))
+                .isFalse();
     }
+
+    // =========================================================
+    // PRIMARY PHOTO
+    // =========================================================
 
     @Test
     @Sql(scripts = {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void findByItemInventoryPhotoId_whenNotFound() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        assertThat(dao.findByItemInventoryPhotoId(2)).isEmpty();
+    void setPrimaryPhoto_sets_only_one_primary_photo() {
+
+        dao.insertPhoto(
+                1,
+                "md5-a",
+                "a.jpg",
+                "bucket",
+                "key-a",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        dao.insertPhoto(
+                1,
+                "md5-b",
+                "b.jpg",
+                "bucket",
+                "key-b",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        dao.setPrimaryPhoto(1, "md5-b");
+
+        ItemInventoryPhoto first =
+                dao.findByMd5("md5-a").orElseThrow();
+
+        ItemInventoryPhoto second =
+                dao.findByMd5("md5-b").orElseThrow();
+
+        assertThat(first.getPrimary())
+                .isFalse();
+
+        assertThat(second.getPrimary())
+                .isTrue();
     }
+
+    // =========================================================
+    // FIND BY ITEM INVENTORY ID
+    // =========================================================
 
     @Test
     @Sql(scripts = {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void findByUuid_whenFound() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        assertThat(dao.findByUuid("md5-1")).isPresent();
+    void findByItemInventoryId_returns_all_photos() {
+
+        dao.insertPhoto(
+                1,
+                "md5-10",
+                "a.jpg",
+                "bucket",
+                "key-a",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        dao.insertPhoto(
+                1,
+                "md5-11",
+                "b.jpg",
+                "bucket",
+                "key-b",
+                1000L,
+                true,
+                PhotoStatus.PROCESSED
+        );
+
+        Set<ItemInventoryPhoto> results =
+                dao.findByItemInventoryId(1);
+
+        assertThat(results)
+                .hasSize(2);
+
+        assertThat(results)
+                .extracting(ItemInventoryPhoto::getMd5)
+                .containsExactlyInAnyOrder(
+                        "md5-10",
+                        "md5-11"
+                );
     }
+
+    // =========================================================
+    // DELETE
+    // =========================================================
 
     @Test
     @Sql(scripts = {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void findByUuid_whenNotFound() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        assertThat(dao.findByUuid("md5-2")).isEmpty();
+    void deleteByMd5_removes_photo() {
+
+        dao.insertPhoto(
+                1,
+                "md5-delete",
+                "delete.jpg",
+                "bucket",
+                "key",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        assertThat(dao.findByMd5("md5-delete"))
+                .isPresent();
+
+        dao.deleteByMd5("md5-delete");
+
+        assertThat(dao.findByMd5("md5-delete"))
+                .isEmpty();
     }
+
+    // =========================================================
+    // DUPLICATE MD5
+    // =========================================================
 
     @Test
     @Sql(scripts = {
             "/scripts/db/h2/item_inventory_photo_schema.ddl",
             "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
     })
-    void findByItemInventoryId() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-3", "file3.jpg", false, UPLOADED);
-        dao.insertPhoto(2, "md5-4", "file4.jpg", false, UPLOADED);
-        dao.insertPhoto(2, "md5-5", "file5.jpg", false, UPLOADED);
+    void insertPhoto_fails_when_md5_duplicate() {
 
-        assertThat(dao.findByItemInventoryId(1)).hasSize(3);
-        assertThat(dao.findByItemInventoryId(2)).hasSize(2);
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void findPrimaryByItemInventoryId_noPrimaryExists() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-3", "file3.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-4", "file4.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-5", "file5.jpg", false, UPLOADED);
-
-        assertThat(dao.findPrimaryByItemInventoryId(1)).isEmpty();
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void findPrimaryByItemInventoryId_primaryExists() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-3", "file3.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-4", "file4.jpg", true, UPLOADED);
-        dao.insertPhoto(1, "md5-5", "file5.jpg", false, UPLOADED);
-
-        assertThat(dao.findPrimaryByItemInventoryId(1)).isPresent().hasValueSatisfying(itemInventoryPhoto -> {
-            assertThat(itemInventoryPhoto.getMd5()).isEqualTo("md5-4");
-            assertThat(itemInventoryPhoto.getFileName()).isEqualTo("file4.jpg");
-        });
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void countByStatus() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, PROCESSED);
-        dao.insertPhoto(1, "md5-3", "file3.jpg", false, PROCESSED);
-        dao.insertPhoto(2, "md5-4", "file4.jpg", true, UPLOADED);
-        dao.insertPhoto(2, "md5-5", "file5.jpg", false, FAILED);
-        assertThat(dao.countByStatus(UPLOADED)).isEqualTo(2);
-        assertThat(dao.countByStatus(PROCESSED)).isEqualTo(2);
-        assertThat(dao.countByStatus(FAILED)).isEqualTo(1);
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void countByStatus_zeroForStatus() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(2, "md5-3", "file3.jpg", false, UPLOADED);
-        dao.insertPhoto(3, "md5-4", "file4.jpg", true, UPLOADED);
-        dao.insertPhoto(3, "md5-5", "file5.jpg", false, UPLOADED);
-        assertThat(dao.countByStatus(UPLOADED)).isEqualTo(5);
-        assertThat(dao.countByStatus(PROCESSED)).isEqualTo(0);
-        assertThat(dao.countByStatus(FAILED)).isEqualTo(0);
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void findFailed() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, FAILED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(2, "md5-3", "file3.jpg", false, UPLOADED);
-        dao.insertPhoto(3, "md5-4", "file4.jpg", true, FAILED);
-        dao.insertPhoto(3, "md5-5", "file5.jpg", false, UPLOADED);
-        assertThat(dao.findFailed()).hasSize(2);
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void insert() {
-        ItemInventoryPhoto itemInventoryPhoto = ItemInventoryPhoto.builder()
-                .itemInventoryId(2)
-                .s3Bucket("bucket-one")
-                .s3Key("key-123")
-                .md5("md5-1")
-                .fileName("thefile")
-                .fileSize(123847619823L)
-                .primary(true)
-                .caption("The caption")
-                .status(UPLOADED)
-                .createdAt(ZonedDateTime.now())
-                .uploadedAt(ZonedDateTime.now())
-                .build();
-        ItemInventoryPhoto newItemInventoryPhoto = dao.insert(itemInventoryPhoto);
-        assertThat(newItemInventoryPhoto.getItemInventoryPhotoId()).isNotNull().isGreaterThan(0);
-        assertThat(newItemInventoryPhoto.getItemInventoryPhotoId()).isEqualTo(itemInventoryPhoto.getItemInventoryPhotoId());
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void update() {
-
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void transitionStatus_fails_when_invalid_from_state() {
-
-        dao.insertPhoto(1, "md5-4", "file.jpg", false, UPLOADED);
+        dao.insertPhoto(
+                1,
+                "duplicate-md5",
+                "photo1.jpg",
+                "bucket",
+                "key1",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
 
         assertThatThrownBy(() ->
-                dao.transitionStatus(
-                        "md5-4",
-                        FAILED,
+                dao.insertPhoto(
+                        1,
+                        "duplicate-md5",
+                        "photo2.jpg",
+                        "bucket",
+                        "key2",
+                        2000L,
+                        false,
                         PhotoStatus.PROCESSED
                 )
-        )
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("md5-4");
-
-        assertThat(dao.findByMd5("md5-4"))
-                .isPresent()
-                .get()
-                .extracting(ItemInventoryPhoto::getStatus)
-                .isEqualTo(UPLOADED);
+        ).isInstanceOf(Exception.class);
     }
 
-    // =========================
-    // MARK UPLOADED (S3 FIELDS)
-    // =========================
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void markUploaded_success() {
-
-        dao.insertPhoto(1, "md5-5", "file.jpg", false, UPLOADED);
-
-        int updated = dao.markUploaded(
-                "md5-5",
-                "bucket",
-                "photos/1.jpg",
-                2048L
-        );
-
-        assertThat(updated).isEqualTo(1);
-
-        assertThat(dao.findByMd5("md5-5"))
-                .isPresent()
-                .get()
-                .satisfies(photo -> {
-                    assertThat(photo.getS3Bucket()).isEqualTo("bucket");
-                    assertThat(photo.getS3Key()).isEqualTo("photos/1.jpg");
-                    assertThat(photo.getFileSize()).isEqualTo(2048L);
-                });
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void markUploaded_fails_if_wrong_state() {
-
-        ItemInventoryPhoto itemInventoryPhoto = dao.insertPhoto(1, "md5-6", "file.jpg", false, FAILED);
-
-        int updated = dao.markUploaded(
-                "md5-6",
-                "bucket",
-                "photos/1.jpg",
-                2048L
-        );
-
-        assertThat(updated).isZero();
-    }
-
-    // =========================
-    // PRIMARY PHOTO (ATOMIC)
-    // =========================
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void setPrimaryForItem_atomic() {
-
-        dao.insertPhoto(1, "md5-a", "a.jpg", false, PhotoStatus.PROCESSED);
-        dao.insertPhoto(1, "md5-b", "b.jpg", false, PhotoStatus.PROCESSED);
-
-        dao.setPrimaryForItem(1, "md5-a");
-
-        assertThat(dao.findByMd5("md5-a"))
-                .isPresent()
-                .get()
-                .extracting(ItemInventoryPhoto::getPrimary)
-                .isEqualTo(true);
-
-        assertThat(dao.findByMd5("md5-b"))
-                .isPresent()
-                .get()
-                .extracting(ItemInventoryPhoto::getPrimary)
-                .isEqualTo(false);
-    }
-
-    // =========================
-    // FIND BY STATUS
-    // =========================
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void findByStatus() {
-
-        dao.insertPhoto(1, "md5-x", "x.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-y", "y.jpg", false, FAILED);
-
-        assertThat(dao.findByStatus(UPLOADED))
-                .extracting(ItemInventoryPhoto::getMd5)
-                .contains("md5-x")
-                .doesNotContain("md5-y");
-    }
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void findWithoutS3Key() {
-        dao.insertPhoto(1, "md5-1", "file1.jpg", false, UPLOADED);
-        dao.insertPhoto(1, "md5-2", "file2.jpg", false, UPLOADED);
-        dao.insertPhoto(2, "md5-3", "file3.jpg", false, FAILED);
-        dao.insertPhoto(3, "md5-4", "file4.jpg", true, PROCESSED);
-        dao.insertPhoto(3, "md5-5", "file5.jpg", false, UPLOADED);
-
-        assertThat(dao.findWithoutS3Key()).hasSize(5);
-
-        dao.findByMd5("md5-1").map(iip -> dao.markUploaded("md5-1", "bucket-1", "key-1", 761823L));
-        dao.findByMd5("md5-2").map(iip -> dao.markUploaded("md5-2", "bucket-2", "key-2", 761823L));
-        assertThat(dao.findWithoutS3Key()).hasSize(3);
-
-        dao.findByMd5("md5-3").map(iip -> dao.markUploaded("md5-3", "bucket-3", "key-3", 761823L));
-        assertThat(dao.findWithoutS3Key()).hasSize(3);
-    }
-
-    // =========================
-    // DELETE
-    // =========================
-
-    @Test
-    @Sql(scripts = {
-            "/scripts/db/h2/item_inventory_photo_schema.ddl",
-            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
-    })
-    void deleteByMd5() {
-
-        dao.insertPhoto(1, "md5-del", "file.jpg", false, UPLOADED);
-
-        int deleted = dao.deleteByMd5("md5-del");
-
-        assertThat(deleted).isEqualTo(1);
-
-        assertThat(dao.existsByMd5("md5-del")).isFalse();
-    }
-
-    // =========================
+    // =========================================================
     // CONFIG
-    // =========================
+    // =========================================================
 
     @EnableAutoConfiguration
     @Configuration

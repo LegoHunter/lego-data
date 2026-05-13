@@ -17,7 +17,7 @@ public interface ExternalServiceItemMapper {
             AND item_inventory_id = #{itemInventoryId}
             """)
     @ResultMap("externalServiceItemResultMap")
-    Optional<ExternalServiceItem> findByExternalItemIdAndItemId(Integer externalItemId,Integer itemInventoryId);
+    Optional<ExternalServiceItem> findByExternalItemIdAndItemInventoryId(Integer externalItemId, Integer itemInventoryId);
 
     @Select("""
             SELECT external_item_id, item_inventory_id
