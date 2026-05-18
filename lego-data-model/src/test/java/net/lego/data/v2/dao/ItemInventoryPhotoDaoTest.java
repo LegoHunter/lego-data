@@ -125,6 +125,45 @@ class ItemInventoryPhotoDaoTest {
                 .isEmpty();
     }
 
+    @Test
+    @Sql(scripts = {
+            "/scripts/db/h2/item_inventory_photo_schema.ddl",
+            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
+    })
+    void findByItemInventoryIdAndFileName_returnsMatchingPhoto() {
+
+        dao.insertPhoto(
+                1,
+                "md5-filename-1",
+                "same-name.jpg",
+                "bucket",
+                "key-one",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        dao.insertPhoto(
+                2,
+                "md5-filename-2",
+                "same-name.jpg",
+                "bucket",
+                "key-two",
+                1000L,
+                false,
+                PhotoStatus.PROCESSED
+        );
+
+        Optional<ItemInventoryPhoto> result =
+                dao.findByItemInventoryIdAndFileName(1, "same-name.jpg");
+
+        assertThat(result)
+                .isPresent();
+
+        assertThat(result.get().getMd5())
+                .isEqualTo("md5-filename-1");
+    }
+
     // =========================================================
     // EXISTS
     // =========================================================
@@ -286,6 +325,173 @@ class ItemInventoryPhotoDaoTest {
 
         assertThat(dao.findByMd5("md5-delete"))
                 .isEmpty();
+    }
+
+    @Test
+    @Sql(scripts = {
+            "/scripts/db/h2/item_inventory_photo_schema.ddl",
+            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
+    })
+    void deleteByMd5AndStorage_removesPhotoOnlyWhenStorageMatches() {
+
+        dao.insertPhoto(
+                1,
+                "md5-storage-delete",
+                "delete.jpg",
+                "lego-photos-sandbox",
+                "3001/uuid/md5-storage-delete.jpg",
+                1000L,
+                true,
+                PhotoStatus.PROCESSED
+        );
+
+        int mismatchDeleted =
+                dao.deleteByMd5AndStorage(
+                        "md5-storage-delete",
+                        "lego-photos-sandbox",
+                        "3001/other/md5-storage-delete.jpg"
+                );
+
+        assertThat(mismatchDeleted)
+                .isZero();
+
+        assertThat(dao.findByMd5("md5-storage-delete"))
+                .isPresent();
+
+        int deleted =
+                dao.deleteByMd5AndStorage(
+                        "md5-storage-delete",
+                        "lego-photos-sandbox",
+                        "3001/uuid/md5-storage-delete.jpg"
+                );
+
+        assertThat(deleted)
+                .isOne();
+
+        assertThat(dao.findByMd5("md5-storage-delete"))
+                .isEmpty();
+    }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    @Test
+    @Sql(scripts = {
+            "/scripts/db/h2/item_inventory_photo_schema.ddl",
+            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
+    })
+    void replaceStoredObject_updatesStorageAndMetadataOnExistingPhoto() {
+
+        ItemInventoryPhoto inserted =
+                dao.insertPhoto(
+                        1,
+                        "md5-old",
+                        "replace.jpg",
+                        "bucket",
+                        "old-key",
+                        1000L,
+                        false,
+                        "Old caption",
+                        PhotoStatus.PROCESSED
+                );
+
+        int updated =
+                dao.replaceStoredObject(
+                        inserted.getItemInventoryPhotoId(),
+                        "replace.jpg",
+                        "md5-new",
+                        "lego-photos-sandbox",
+                        "3001/uuid/md5-new.jpg",
+                        2000L,
+                        true,
+                        "New caption",
+                        PhotoStatus.PROCESSED
+                );
+
+        assertThat(updated)
+                .isOne();
+
+        ItemInventoryPhoto result =
+                dao.findByMd5("md5-new").orElseThrow();
+
+        assertThat(result)
+                .extracting(
+                        ItemInventoryPhoto::getMd5,
+                        ItemInventoryPhoto::getFileName,
+                        ItemInventoryPhoto::getS3Bucket,
+                        ItemInventoryPhoto::getS3Key,
+                        ItemInventoryPhoto::getFileSize,
+                        ItemInventoryPhoto::getPrimary,
+                        ItemInventoryPhoto::getCaption,
+                        ItemInventoryPhoto::getStatus
+                )
+                .containsExactly(
+                        "md5-new",
+                        "replace.jpg",
+                        "lego-photos-sandbox",
+                        "3001/uuid/md5-new.jpg",
+                        2000L,
+                        true,
+                        "New caption",
+                        PhotoStatus.PROCESSED
+                );
+    }
+
+    @Test
+    @Sql(scripts = {
+            "/scripts/db/h2/item_inventory_photo_schema.ddl",
+            "/scripts/db/h2/truncate-table-item-inventory-photo.sql"
+    })
+    void updateMetadata_updatesCaptionAndPrimaryWithoutChangingStorage() {
+
+        ItemInventoryPhoto inserted =
+                dao.insertPhoto(
+                        1,
+                        "md5-metadata",
+                        "metadata.jpg",
+                        "bucket",
+                        "metadata-key",
+                        1000L,
+                        true,
+                        "Old caption",
+                        PhotoStatus.PROCESSED
+                );
+
+        int updated =
+                dao.updateMetadata(
+                        inserted.getItemInventoryPhotoId(),
+                        "metadata.jpg",
+                        false,
+                        "New caption",
+                        PhotoStatus.PROCESSED
+                );
+
+        assertThat(updated)
+                .isOne();
+
+        ItemInventoryPhoto result =
+                dao.findByMd5("md5-metadata").orElseThrow();
+
+        assertThat(result)
+                .extracting(
+                        ItemInventoryPhoto::getMd5,
+                        ItemInventoryPhoto::getFileName,
+                        ItemInventoryPhoto::getS3Bucket,
+                        ItemInventoryPhoto::getS3Key,
+                        ItemInventoryPhoto::getFileSize,
+                        ItemInventoryPhoto::getPrimary,
+                        ItemInventoryPhoto::getCaption
+                )
+                .containsExactly(
+                        "md5-metadata",
+                        "metadata.jpg",
+                        "bucket",
+                        "metadata-key",
+                        1000L,
+                        false,
+                        "New caption"
+                );
     }
 
     // =========================================================

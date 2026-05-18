@@ -40,6 +40,29 @@ public class ItemInventoryPhotoDao {
             long fileSize,
             boolean primary,
             PhotoStatus status) {
+        return insertPhoto(
+                itemInventoryId,
+                md5,
+                filename,
+                s3Bucket,
+                s3Key,
+                fileSize,
+                primary,
+                null,
+                status
+        );
+    }
+
+    public ItemInventoryPhoto insertPhoto(
+            Integer itemInventoryId,
+            String md5,
+            String filename,
+            String s3Bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
+            String caption,
+            PhotoStatus status) {
         ItemInventoryPhoto itemInventoryPhoto = ItemInventoryPhoto.builder()
                 .itemInventoryId(itemInventoryId)
                 .md5(md5)
@@ -48,6 +71,7 @@ public class ItemInventoryPhotoDao {
                 .s3Key(s3Key)
                 .fileSize(fileSize)
                 .primary(primary)
+                .caption(caption)
                 .status(status)
                 .build();
         insert(itemInventoryPhoto);
@@ -63,6 +87,10 @@ public class ItemInventoryPhotoDao {
 
     public Optional<ItemInventoryPhoto> findByMd5(String md5) {
         return itemInventoryPhotoMapper.findByMD5(md5);
+    }
+
+    public Optional<ItemInventoryPhoto> findByItemInventoryIdAndFileName(Integer itemInventoryId, String fileName) {
+        return itemInventoryPhotoMapper.findByItemInventoryIdAndFileName(itemInventoryId, fileName);
     }
 
     // =========================
@@ -88,6 +116,44 @@ public class ItemInventoryPhotoDao {
     public int markUploaded(String md5, String bucket, String s3Key, long fileSize) {
         int updated = itemInventoryPhotoMapper.markUploaded(md5, bucket, s3Key, fileSize);
         return updated;
+    }
+
+    public int replaceStoredObject(
+            Integer itemInventoryPhotoId,
+            String fileName,
+            String md5,
+            String bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
+            String caption,
+            PhotoStatus status) {
+        return itemInventoryPhotoMapper.replaceStoredObject(
+                itemInventoryPhotoId,
+                fileName,
+                md5,
+                bucket,
+                s3Key,
+                fileSize,
+                primary,
+                caption,
+                status
+        );
+    }
+
+    public int updateMetadata(
+            Integer itemInventoryPhotoId,
+            String fileName,
+            boolean primary,
+            String caption,
+            PhotoStatus status) {
+        return itemInventoryPhotoMapper.updateMetadata(
+                itemInventoryPhotoId,
+                fileName,
+                primary,
+                caption,
+                status
+        );
     }
 
     // =========================
@@ -141,6 +207,10 @@ public class ItemInventoryPhotoDao {
     // =========================
     public int deleteByMd5(String md5) {
         return itemInventoryPhotoMapper.deleteByMd5(md5);
+    }
+
+    public int deleteByMd5AndStorage(String md5, String bucket, String s3Key) {
+        return itemInventoryPhotoMapper.deleteByMd5AndStorage(md5, bucket, s3Key);
     }
 
     public Set<ItemInventoryPhoto> findWithoutS3Key() {

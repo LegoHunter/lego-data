@@ -37,6 +37,14 @@ public interface ItemInventoryPhotoMapper {
     @ResultMap("itemInventoryPhotoResultMap")
     Optional<ItemInventoryPhoto> findByMD5(String md5);
 
+    @Select("SELECT " + ALL_COLUMNS + """
+            FROM item_inventory_photo
+            WHERE item_inventory_id = #{itemInventoryId}
+              AND file_name = #{fileName}
+            """)
+    @ResultMap("itemInventoryPhotoResultMap")
+    Optional<ItemInventoryPhoto> findByItemInventoryIdAndFileName(Integer itemInventoryId, String fileName);
+
     @Insert("""
             INSERT INTO item_inventory_photo (item_inventory_id, s3_bucket,s3_key,md5,file_name,file_size,is_primary,caption,status,created_at) \
             VALUES (#{itemInventoryId}, #{s3Bucket}, #{s3Key}, #{md5}, #{fileName}, #{fileSize}, #{primary}, #{caption}, #{status}, CURRENT_TIMESTAMP) \
@@ -87,6 +95,57 @@ public interface ItemInventoryPhotoMapper {
 
     @Delete("DELETE FROM item_inventory_photo WHERE md5 = #{md5}")
     int deleteByMd5(String md5);
+
+    @Update("""
+            UPDATE item_inventory_photo
+            SET
+                file_name = #{fileName},
+                s3_bucket = #{bucket},
+                s3_key = #{s3Key},
+                md5 = #{md5},
+                file_size = #{fileSize},
+                is_primary = #{primary},
+                caption = #{caption},
+                status = #{status},
+                uploaded_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE item_inventory_photo_id = #{itemInventoryPhotoId}
+            """)
+    int replaceStoredObject(
+            Integer itemInventoryPhotoId,
+            String fileName,
+            String md5,
+            String bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
+            String caption,
+            PhotoStatus status);
+
+    @Update("""
+            UPDATE item_inventory_photo
+            SET
+                file_name = #{fileName},
+                is_primary = #{primary},
+                caption = #{caption},
+                status = #{status},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE item_inventory_photo_id = #{itemInventoryPhotoId}
+            """)
+    int updateMetadata(
+            Integer itemInventoryPhotoId,
+            String fileName,
+            boolean primary,
+            String caption,
+            PhotoStatus status);
+
+    @Delete("""
+            DELETE FROM item_inventory_photo
+            WHERE md5 = #{md5}
+              AND s3_bucket = #{bucket}
+              AND s3_key = #{s3Key}
+            """)
+    int deleteByMd5AndStorage(String md5, String bucket, String s3Key);
 
     @Update("""
             UPDATE item_inventory_photo
