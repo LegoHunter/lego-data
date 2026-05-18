@@ -2,6 +2,6 @@
 <mapper namespace="io.legohunter.data.mybatis.mapper.ExternalServiceItemMapper">
   <resultMap type="io.legohunter.data.dto.ExternalServiceItem" id="externalServiceItemResultMap">
     <result column="external_item_id" property="externalItemId"/>
-    <result column="item_id"          property="itemId"/>
+    <result column="item_inventory_id" property="itemInventoryId"/>
   </resultMap>
 </mapper>

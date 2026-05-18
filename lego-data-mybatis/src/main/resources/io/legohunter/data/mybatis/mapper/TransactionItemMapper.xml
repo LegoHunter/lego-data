@@ -3,7 +3,7 @@
   <resultMap type="io.legohunter.data.dto.TransactionItem" id="transactionItemResultMap">
     <result column="transaction_item_id" property="transactionItemId"/>
     <result column="transaction_id" property="transactionId"/>
-    <result column="inventory_item_id" property="itemInventoryId"/>
+    <result column="item_inventory_id" property="itemInventoryId"/>
     <result column="transaction_type_code" property="transactionTypeCode"/>
     <result column="notes" property="notes"/>
   </resultMap>

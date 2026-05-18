@@ -42,7 +42,7 @@ public class TransactionCostDao {
     }
 
     public void deleteTransactionItemCosts(Long transactionItemId) {
-        transactionCostMapper.deleteTransactionCosts(transactionItemId);
+        transactionItemCostMapper.deleteTransactionCosts(transactionItemId);
     }
 
     public void delete(Long transactionCostId) {
@@ -75,6 +75,8 @@ public class TransactionCostDao {
     }
 
     public Optional<TransactionCost> findByTransactionIdAndCostTypeCode(Long transactionId, String costTypeCode) {
-        return Optional.empty();
+        return transactionCostMapper.findByTransactionIdAndCostTypeCode(transactionId, costTypeCode)
+                .stream()
+                .findFirst();
     }
 }

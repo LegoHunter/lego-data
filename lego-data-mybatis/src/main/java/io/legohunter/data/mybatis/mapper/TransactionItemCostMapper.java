@@ -16,8 +16,8 @@ public interface TransactionItemCostMapper {
     void insert(TransactionItemCost transactionItemCost);
 
     @Insert("""
-            insert into transaction_item_cost (transaction_cost_id, transaction_id, cost_type_code, currency_code, amount, notes) 
-            values (#{transactionCostId}, #{transactionId}, #{costTypeCode}, #{currencyCode}, #{amount}, #{notes})
+            insert into transaction_item_cost (transaction_item_cost_id, transaction_item_id, cost_type_code, currency_code, amount, notes) 
+            values (#{transactionItemCostId}, #{transactionItemId}, #{costTypeCode}, #{currencyCode}, #{amount}, #{notes})
             """)
     void migrate(TransactionItemCost transactionItemCost);
 
@@ -33,7 +33,7 @@ public interface TransactionItemCostMapper {
 
     @Delete("""
             delete from transaction_item_cost 
-            where transaction_item_id = #{transactionId}
+            where transaction_item_id = #{transactionItemId}
             """)
     void deleteTransactionCosts(Long transactionItemId);
 

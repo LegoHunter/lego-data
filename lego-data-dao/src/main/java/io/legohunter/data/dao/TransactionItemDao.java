@@ -2,7 +2,6 @@ package io.legohunter.data.dao;
 
 import lombok.RequiredArgsConstructor;
 import io.legohunter.data.dto.TransactionItem;
-import io.legohunter.data.dto.Transactions;
 import io.legohunter.data.mybatis.mapper.TransactionItemMapper;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +25,7 @@ public class TransactionItemDao {
         transactionItemMapper.update(transactionItem);
     }
 
-    public List<Transactions> findAll() {
+    public List<TransactionItem> findAll() {
         return transactionItemMapper.findAll();
     }
 

@@ -42,7 +42,7 @@ public interface BricklinkItemInventoryMapper {
     @ResultMap("bricklinkItemInventoryResultMap")
     Optional<BricklinkItemInventory> findByExternalItemIdAndItemInventoryId(Integer externalItemId, Integer itemInventoryId);
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM bricklink_item_inventory bii WHERE bii.bricklink_item_inventory_id = #{bricklink_item_inventory_id}")
+    @Select("SELECT " + ALL_COLUMNS + " FROM bricklink_item_inventory bii WHERE bii.bricklink_item_inventory_id = #{bricklinkItemInventoryId}")
     @ResultMap("bricklinkItemInventoryResultMap")
     Optional<BricklinkItemInventory> findByBricklinkItemInventoryId(Integer bricklinkItemInventoryId);
 

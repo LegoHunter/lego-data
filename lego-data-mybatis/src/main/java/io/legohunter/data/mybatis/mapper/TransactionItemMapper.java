@@ -1,7 +1,6 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.TransactionItem;
-import io.legohunter.data.dto.Transactions;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -35,11 +34,24 @@ public interface TransactionItemMapper {
     void delete(TransactionItem transactionItem);
 
     @Select("""
+            select transaction_item_id,
+                   transaction_id,
+                   transaction_type_code,
+                   item_inventory_id,
+                   notes
+            from transaction_item
             """)
     @ResultMap("transactionItemResultMap")
-    List<Transactions> findAll();
+    List<TransactionItem> findAll();
 
     @Select("""
+            select transaction_item_id,
+                   transaction_id,
+                   transaction_type_code,
+                   item_inventory_id,
+                   notes
+            from transaction_item
+            where transaction_item_id = #{transactionItemId}
             """)
     @ResultMap("transactionItemResultMap")
     Optional<TransactionItem> findById(Long transactionItemId);

@@ -48,6 +48,11 @@ public class ExternalItemDao {
                 }, () -> {
                     if (externalItemMapper
                             .findByExternalServiceAndNumber(BRICKLINK.getExternalServiceId(), externalItem.getExternalNumber())
+                            .map(ExternalItem::getExternalItemId)
+                            .map(existingExternalItemId -> {
+                                externalItem.setExternalItemId(existingExternalItemId);
+                                return existingExternalItemId;
+                            })
                             .isPresent()) {
                         externalItemMapper.update(externalItem);
                     } else {

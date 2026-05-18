@@ -22,7 +22,7 @@ public class PaymentPlatformDao {
         return paymentPlatformMapper.findPaymentPlatformById(paymentPlatformId);
     }
 
-    public Optional<PaymentPlatform> findPaymentPlatformByName(final Integer paymentPlatformName) {
+    public Optional<PaymentPlatform> findPaymentPlatformByName(final String paymentPlatformName) {
         return paymentPlatformMapper.findPaymentPlatformByName(paymentPlatformName);
     }
 

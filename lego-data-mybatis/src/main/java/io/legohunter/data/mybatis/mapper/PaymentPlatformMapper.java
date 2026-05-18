@@ -25,7 +25,7 @@ public interface PaymentPlatformMapper {
             FROM payment_platform
             WHERE payment_platform_name = #{paymentPlatformName}
             """)
-    Optional<PaymentPlatform> findPaymentPlatformByName(Integer paymentPlatformName);
+    Optional<PaymentPlatform> findPaymentPlatformByName(String paymentPlatformName);
 
     @Insert("""
             INSERT INTO payment_platform(payment_platform_id, payment_platform_name, payment_platform_url)

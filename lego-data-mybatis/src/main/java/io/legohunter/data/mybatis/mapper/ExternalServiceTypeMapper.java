@@ -26,7 +26,7 @@ public interface ExternalServiceTypeMapper {
     void updateExternalServiceType(ExternalServiceType externalServiceType);
 
     @Select("""
-            SELECT external_service_id, \
+            SELECT external_service_type_id, \
                    external_service_type_name, \
                    external_service_type_description \
             FROM external_service_type \

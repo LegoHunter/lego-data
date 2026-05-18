@@ -28,7 +28,7 @@ public interface ExternalServiceItemMapper {
     Optional<ExternalServiceItem> findByExternalItemId(Integer externalItemId);
 
     @Select("""
-            SELECT external_item_id, item_id 
+            SELECT external_item_id, item_inventory_id
             FROM external_service_item
             WHERE item_inventory_id = #{itemInventoryId}
             """)

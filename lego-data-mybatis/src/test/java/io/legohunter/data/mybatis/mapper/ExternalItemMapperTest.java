@@ -1,76 +1,41 @@
 package io.legohunter.data.mybatis.mapper;
 
-import lombok.extern.slf4j.Slf4j;
-import io.legohunter.data.config.MyBatisV2Configuration;
 import io.legohunter.data.dto.ExternalItem;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.test.context.jdbc.Sql;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.util.Set;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static io.legohunter.data.dto.ExternalService.ExternalServiceType.BRICKLINK;
-
-
-@ExtendWith(SpringExtension.class)
-@Import({MyBatisV2Configuration.class})
-@Slf4j
-class ExternalItemMapperTest {
-
-    @Autowired
-    ExternalItemMapper externalItemMapper;
-
-    @BeforeEach
-    void setUp() {
-    }
-
-    @AfterEach
-    void tearDown() {
-    }
+@MapperIntegrationTest
+class ExternalItemMapperTest extends MapperTestSupport {
 
     @Test
-    @Sql(scripts = {"/scripts/db/h2/external_item_schema.ddl", "/scripts/db/h2/truncate-table-external-item.sql", "/scripts/db/h2/external_item_data.sql"})
-    void findAll() {
-        Set<ExternalItem> externalItems = externalItemMapper.findAllByExternalService(BRICKLINK.name());
-        log.info("Found {} external items :: {}", externalItems.size(), externalItems);
-    }
+    void insertUpdateFindsAndUpsert() {
+        seedExternalCatalog();
+        ExternalItem externalItem = externalItem("3001-1", 123L, "Brick 2 x 4", 100, 2);
 
-    @Test
-    @Sql(scripts = {"/scripts/db/h2/external_item_schema.ddl", "/scripts/db/h2/truncate-table-external-item.sql"})
-    void findByItemId() {
-    }
+        externalItemMapper.insert(externalItem);
+        assertThat(externalItem.getExternalItemId()).isNotNull();
 
-    @Test
-    @Sql(scripts = {"/scripts/db/h2/external_item_schema.ddl", "/scripts/db/h2/truncate-table-external-item.sql"})
-    void findByItemNumber() {
-    }
+        externalItem.setName("Brick 2 x 4 Updated");
+        externalItemMapper.update(externalItem);
 
-    @Test
-    @Sql(scripts = {"/scripts/db/h2/external_item_schema.ddl", "/scripts/db/h2/truncate-table-external-item.sql"})
-    void insert() {
-    }
+        assertThat(externalItemMapper.findByExternalItemId(externalItem.getExternalItemId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getName()).isEqualTo("Brick 2 x 4 Updated");
+                    assertThat(found.getExternalService().getExternalServiceName()).isEqualTo("BRICKLINK");
+                    assertThat(found.getCategory().getCategoryName()).isEqualTo("Sets");
+                });
+        assertThat(externalItemMapper.findByExternalServiceAndUniqueId(2, 123))
+                .hasValueSatisfying(found -> assertThat(found.getExternalNumber()).isEqualTo("3001-1"));
+        assertThat(externalItemMapper.findByExternalServiceAndNumber(2, "3001-1"))
+                .hasValueSatisfying(found -> assertThat(found.getUniqueId()).isEqualTo(123L));
+        assertThat(externalItemMapper.findAllByExternalService("BRICKLINK"))
+                .extracting(ExternalItem::getExternalNumber)
+                .containsExactly("3001-1");
 
-    @Test
-    @Sql(scripts = {"/scripts/db/h2/external_item_schema.ddl", "/scripts/db/h2/truncate-table-external-item.sql"})
-    void migrate() {
-    }
+        externalItemMapper.upsert(externalItem("3001-1", 456L, "Brick 2 x 4 Upserted", 100, 2));
 
-    @Test
-    @Sql(scripts = {"/scripts/db/h2/external_item_schema.ddl", "/scripts/db/h2/truncate-table-external-item.sql"})
-    void update() {
-    }
-
-    @EnableAutoConfiguration
-    @Configuration
-    @PropertySource("application.properties")
-    static class DaoConfiguration {
+        assertThat(externalItemMapper.findByExternalServiceAndNumber(2, "3001-1"))
+                .hasValueSatisfying(found -> assertThat(found.getName()).isEqualTo("Brick 2 x 4 Upserted"));
     }
 }
