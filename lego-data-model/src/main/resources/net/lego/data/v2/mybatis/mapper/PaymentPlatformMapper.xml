@@ -1,8 +1,0 @@
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lego.data.v2.mybatis.mapper.PaymentPlatformMapper">
-  <resultMap type="net.lego.data.v2.dto.PaymentPlatform" id="paymentPlatformResultMap">
-    <result column="external_service_type_id"          property="paymentPlatformId"/>
-    <result column="external_service_type_code"        property="paymentPlatformCode"/>
-    <result column="external_service_type_description" property="paymentPlatformDescription"/>
-  </resultMap>
-</mapper>

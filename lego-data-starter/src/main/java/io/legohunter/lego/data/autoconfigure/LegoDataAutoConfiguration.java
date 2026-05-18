@@ -1,9 +1,12 @@
 package io.legohunter.lego.data.autoconfigure;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.legohunter.data.config.LegoDataDaoConfiguration;
+import io.legohunter.data.config.MyBatisV2Configuration;
 import io.legohunter.lego.data.builder.DataSourceBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.bricklink.data.lego.ibatis.configuration.MybatisV1Configuration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,6 +14,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.env.Environment;
 
 import javax.sql.DataSource;
@@ -33,6 +37,11 @@ import java.util.Map;
         havingValue = "true"
 
 )
+@Import({
+        MybatisV1Configuration.class,
+        MyBatisV2Configuration.class,
+        LegoDataDaoConfiguration.class
+})
 @RequiredArgsConstructor
 public class LegoDataAutoConfiguration {
 

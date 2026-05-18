@@ -1,9 +1,0 @@
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="net.lego.data.v2.mybatis.mapper.ConditionMapper">
-  <resultMap type="net.lego.data.v2.dto.Condition" id="conditionResultMap">
-    <result column="condition_id"          property="conditionId"/>
-    <result column="condition_code"        property="conditionCode"/>
-    <result column="condition_description" property="conditionDescription"/>
-    <result column="condition_text"        property="conditionText"/>
-  </resultMap>
-</mapper>
