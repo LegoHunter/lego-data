@@ -1,0 +1,11 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.TransactionItemCostMapper">
+  <resultMap type="net.lego.data.v2.dto.TransactionItemCost" id="transactionItemCostResultMap">
+    <result column="transaction_item_cost_id" property="transactionItemCostId"/>
+    <result column="transaction_item_id" property="transactionItemId"/>
+    <result column="cost_type_code" property="costTypeCode"/>
+    <result column="currency_code" property="currencyCode"/>
+    <result column="amount" property="amount"/>
+    <result column="notes" property="notes"/>
+  </resultMap>
+</mapper>

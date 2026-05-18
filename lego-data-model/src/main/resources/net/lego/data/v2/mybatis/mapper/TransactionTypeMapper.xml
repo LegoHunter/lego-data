@@ -1,0 +1,8 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.TransactionTypeMapper">
+  <resultMap type="net.lego.data.v2.dto.TransactionType" id="transactionTypeResultMap">
+    <result column="transaction_type_code"        property="transactionTypeCode"/>
+    <result column="transaction_type_description" property="transactionTypeDescription"/>
+    <result column="conversion_factor"            property="conversionFactor"/>
+  </resultMap>
+</mapper>

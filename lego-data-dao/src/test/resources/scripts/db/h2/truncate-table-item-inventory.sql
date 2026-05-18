@@ -1,1 +1,0 @@
-TRUNCATE TABLE item_inventory;

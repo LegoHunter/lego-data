@@ -1,0 +1,40 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.PartyMapper">
+  <resultMap type="net.lego.data.v2.dto.Party" id="partyResultMap">
+    <result column="party_id"               property="partyId"/>
+    <result column="party_first_name"       property="partyFirstName"/>
+    <result column="party_middle_initial"   property="partyMiddleInitial"/>
+    <result column="party_last_name"        property="partyLastName"/>
+    <result column="party_address1"         property="partyAddress1"/>
+    <result column="party_address2"         property="partyAddress2"/>
+    <result column="party_city"             property="partyCity"/>
+    <result column="party_state"            property="partyState"/>
+    <result column="party_postal_code"      property="partyPostalCode"/>
+    <result column="party_country_code"     property="partyCountryCode"/>
+    <result column="party_country"          property="partyCountry"/>
+    <result column="party_phone"            property="partyPhone"/>
+    <result column="party_email"            property="partyEmail"/>
+    <result column="party_type"             property="partyType"/>
+    <result column="party_activation_date"  property="partyActivationDate"/>
+  </resultMap>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

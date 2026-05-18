@@ -33,9 +33,8 @@
     <modules>
         <module>lego-data-model</module>
         <module>lego-data-model-v1</module>
-        <module>lego-data-mybatis</module>
-        <module>lego-data-dao</module>
         <module>lego-data-starter</module>
+        <module>lego-data-mybatis</module>
     </modules>
 
     <distributionManagement>

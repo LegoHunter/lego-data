@@ -1,0 +1,12 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.TransactionsMapper">
+  <resultMap type="net.lego.data.v2.dto.Transactions" id="transactionResultMap">
+    <result column="transaction_id" property="transactionId"/>
+    <result column="transaction_date" property="transactionDateTime"/>
+    <result column="notes" property="notes"/>
+    <result column="from_party_id" property="fromPartyId"/>
+    <result column="to_party_id" property="toPartyId"/>
+    <result column="transaction_platform_id" property="transactionPlatformId"/>
+    <result column="transaction_order_id" property="transactionOrderId"/>
+  </resultMap>
+</mapper>

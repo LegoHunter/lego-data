@@ -1,0 +1,7 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.TransactionPlatformMapper">
+  <resultMap type="net.lego.data.v2.dto.TransactionPlatform" id="transactionPlatformResultMap">
+    <result column="transaction_platform_id"   property="transactionPlatformId"/>
+    <result column="transaction_platform_name" property="transactionPlatformName"/>
+  </resultMap>
+</mapper>

@@ -1,5 +1,0 @@
-SET REFERENTIAL_INTEGRITY FALSE;
-TRUNCATE TABLE item_inventory_photo;
-SET REFERENTIAL_INTEGRITY TRUE;
-ALTER TABLE item_inventory_photo
-    ALTER COLUMN item_inventory_photo_id RESTART WITH 1;

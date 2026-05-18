@@ -1,0 +1,31 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.BricklinkItemInventoryMapper">
+  <resultMap type="net.lego.data.v2.dto.BricklinkItemInventory" id="bricklinkItemInventoryResultMap">
+    <result column="bricklink_item_inventory_id" property="bricklinkItemInventoryId"/>
+    <result column="external_item_id"            property="externalItemId"/>
+    <result column="item_inventory_id"           property="itemInventoryId"/>
+    <result column="inventory_id"                property="inventoryId"/>
+    <result column="item_type"                   property="itemType"/>
+    <result column="color_id"                    property="colorId"/>
+    <result column="color_name"                  property="colorName"/>
+    <result column="quantity"                    property="quantity"/>
+    <result column="unit_price"                  property="unitPrice"/>
+    <result column="bind_id"                     property="bindId"/>
+    <result column="description"                 property="description"/>
+    <result column="remarks"                     property="remarks"/>
+    <result column="bulk"                        property="bulk"/>
+    <result column="is_retain"                   property="isRetain"/>
+    <result column="is_stock_room"               property="isStockRoom"/>
+    <result column="stock_room_id"               property="stockRoomId"/>
+    <result column="date_created"                property="dateCreated"/>
+    <result column="my_cost"                     property="myCost"/>
+    <result column="sale_rate"                   property="saleRate"/>
+    <result column="tier_quantity1"              property="tierQuantity1"/>
+    <result column="tier_quantity2"              property="tierQuantity2"/>
+    <result column="tier_quantity3"              property="tierQuantity3"/>
+    <result column="tier_price1"                 property="tierPrice1"/>
+    <result column="tier_price2"                 property="tierPrice2"/>
+    <result column="tier_price3"                 property="tierPrice3"/>
+    <result column="my_weight"                   property="myWeight"/>
+  </resultMap>
+</mapper>

@@ -1,0 +1,14 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="net.lego.data.v2.mybatis.mapper.ExternalItemInventoryMapper">
+  <resultMap type="net.lego.data.v2.dto.ExternalItemInventory" id="externalItemInventoryResultMap">
+    <result column="external_item_id"            property="externalItemId"/>
+    <result column="item_inventory_id"           property="itemInventoryId"/>
+    <result column="fixed_price"                 property="fixedPrice"/>
+    <result column="order_id"                    property="orderId"/>
+    <result column="extended_description"        property="extendedDescription"/>
+    <result column="extra_description"           property="extraDescription"/>
+    <result column="internal_comments"           property="internalComments"/>
+    <result column="update_timestamp"            property="updateTimestamp"/>
+    <result column="last_synchronized_timestamp" property="lastSynchronizedTimestamp"/>
+  </resultMap>
+</mapper>
