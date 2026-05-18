@@ -1,0 +1,2 @@
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (211, '6481', 'Road Works with Warning Lights', 178, 1989, 'E', 10, 'S', null);
+commit;

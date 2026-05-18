@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: io.legohunter.data.dao.ItemInventoryPhotoDaoTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.821 s -- in io.legohunter.data.dao.ItemInventoryPhotoDaoTest

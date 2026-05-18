@@ -1,0 +1,11 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.TransactionCostMapper">
+  <resultMap type="io.legohunter.data.dto.TransactionCost" id="transactionCostResultMap">
+    <result column="transaction_cost_id" property="transactionCostId"/>
+    <result column="transaction_id" property="transactionId"/>
+    <result column="cost_type_code" property="costTypeCode"/>
+    <result column="currency_code" property="currencyCode"/>
+    <result column="amount" property="amount"/>
+    <result column="notes" property="notes"/>
+  </resultMap>
+</mapper>

@@ -1,0 +1,10 @@
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (245, '6593', 'Blaze Battler', 116, 1992, 'U', 10, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (525, '6601', 'Ice Cream Cart', 0, 1985, 'E', 10, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (1133, '130', 'Double Tipper Waggon', null, 1972, 'E', 11, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (1179, '4584', 'Hot Scorcher', null, 2002, null, null, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (201, '6392', 'Airport', 472, 1985, 'U', 10, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (1195, '10184', 'Town Plan', null, 2008, null, null, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (1235, '7897', 'Passenger Train', null, 2006, null, null, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (1240, '30229', 'Repair Lift polybag', null, 2014, null, null, 'S', null);
+INSERT INTO item (item_id, item_number, item_name, number_of_pieces, issue_year, issue_location, theme_id, item_type_code, notes) VALUES (1256, '1376', 'Spider-Man Action Studio', null, 2002, null, null, 'S', null);
+commit;
