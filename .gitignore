@@ -1,2 +1,7 @@
 client_secret.json
 /target
+/lego-data-starter/target/
+/lego-data-mybatis/target/
+/lego-data-model-v1/target/
+/lego-data-model/target/
+/.idea/
