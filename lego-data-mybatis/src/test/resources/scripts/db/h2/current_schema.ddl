@@ -1,6 +1,9 @@
 DROP TABLE IF EXISTS bricklink_item_inventory;
 DROP TABLE IF EXISTS external_item_inventory;
 DROP TABLE IF EXISTS external_service_item;
+DROP TABLE IF EXISTS external_image_album_image;
+DROP TABLE IF EXISTS external_image;
+DROP TABLE IF EXISTS external_image_album;
 DROP TABLE IF EXISTS item_inventory_photo;
 DROP TABLE IF EXISTS transaction_item_cost;
 DROP TABLE IF EXISTS transaction_cost;
@@ -187,6 +190,51 @@ CREATE TABLE item_inventory_photo (
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
     uploaded_at TIMESTAMP
+);
+
+CREATE TABLE external_image_album (
+    external_image_album_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    external_service_id INT NOT NULL,
+    item_inventory_id INT NOT NULL,
+    external_album_id VARCHAR(255),
+    title VARCHAR(500) NOT NULL,
+    album_url VARCHAR(1024),
+    short_url VARCHAR(1024),
+    sync_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    error_message CLOB,
+    last_synced_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (external_service_id, item_inventory_id),
+    UNIQUE (external_service_id, external_album_id)
+);
+
+CREATE TABLE external_image (
+    external_image_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    external_service_id INT NOT NULL,
+    item_inventory_photo_id INT NOT NULL,
+    external_service_image_id VARCHAR(255),
+    title VARCHAR(500) NOT NULL,
+    image_url VARCHAR(1024),
+    md5_at_upload CHAR(32) NOT NULL,
+    sync_status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    error_message CLOB,
+    uploaded_at TIMESTAMP,
+    last_synced_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (external_service_id, item_inventory_photo_id),
+    UNIQUE (external_service_id, external_service_image_id)
+);
+
+CREATE TABLE external_image_album_image (
+    external_image_album_id BIGINT NOT NULL,
+    external_image_id BIGINT NOT NULL,
+    sort_order INT,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (external_image_album_id, external_image_id)
 );
 
 CREATE TABLE party (

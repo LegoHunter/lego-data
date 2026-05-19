@@ -1,0 +1,18 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.ExternalImageMapper">
+  <resultMap type="io.legohunter.data.dto.ExternalImage" id="externalImageResultMap">
+    <result column="external_image_id"         property="externalImageId"/>
+    <result column="external_service_id"      property="externalServiceId"/>
+    <result column="item_inventory_photo_id"  property="itemInventoryPhotoId"/>
+    <result column="external_service_image_id" property="externalServiceImageId"/>
+    <result column="title"                    property="title"/>
+    <result column="image_url"                property="imageUrl"/>
+    <result column="md5_at_upload"            property="md5AtUpload"/>
+    <result column="sync_status"              property="syncStatus"/>
+    <result column="error_message"            property="errorMessage"/>
+    <result column="uploaded_at"              property="uploadedAt"/>
+    <result column="last_synced_at"           property="lastSyncedAt"/>
+    <result column="created_at"               property="createdAt"/>
+    <result column="updated_at"               property="updatedAt"/>
+  </resultMap>
+</mapper>
