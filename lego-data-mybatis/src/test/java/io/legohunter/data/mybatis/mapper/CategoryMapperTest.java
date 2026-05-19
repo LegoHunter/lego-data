@@ -16,13 +16,13 @@ class CategoryMapperTest extends MapperTestSupport {
         categoryMapper.insert(category);
         category.setCategoryName("LEGO Parts");
         categoryMapper.update(category);
-        categoryMapper.upsert(category(2, 101, "Updated Parts", 100));
+        categoryMapper.upsert(category(2, 101, "Updated Parts", 5));
 
         assertThat(categoryMapper.findCategoryByExternalServiceAndCategoryId(2, 101))
                 .hasValueSatisfying(found -> {
                     assertThat(found.getCategoryName()).isEqualTo("Updated Parts");
-                    assertThat(found.getParentId()).isEqualTo(100);
+                    assertThat(found.getParentId()).isEqualTo(5);
                 });
-        assertThat(categoryMapper.findAll()).extracting(Category::getExternalCategoryId).containsExactlyInAnyOrder(100, 101);
+        assertThat(categoryMapper.findAll()).extracting(Category::getExternalCategoryId).containsExactlyInAnyOrder(5, 101);
     }
 }
