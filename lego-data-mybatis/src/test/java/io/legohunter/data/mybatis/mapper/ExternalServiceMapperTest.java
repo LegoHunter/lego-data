@@ -12,9 +12,9 @@ class ExternalServiceMapperTest extends MapperTestSupport {
     @Test
     void insertUpdateFindByIdFindByNameAndFindAll() {
         externalServiceTypeMapper.insertExternalServiceType(ExternalServiceType.builder()
-                .externalServiceTypeId(1)
-                .externalServiceTypeName("Marketplace")
-                .externalServiceTypeDescription("Marketplace APIs")
+                .externalServiceTypeId(2)
+                .externalServiceTypeName("MARKETPLACE")
+                .externalServiceTypeDescription("Marketplace")
                 .build());
         ExternalService service = externalService(2, "BRICKLINK");
 

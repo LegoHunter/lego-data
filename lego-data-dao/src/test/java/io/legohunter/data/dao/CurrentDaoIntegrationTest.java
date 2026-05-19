@@ -45,7 +45,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
 @Import({MyBatisV2Configuration.class, LegoDataDaoConfiguration.class})
-@Sql(scripts = "/scripts/db/h2/current_schema.ddl")
+@Sql(scripts = {
+        "/scripts/db/h2/current_schema.ddl",
+        "/scripts/db/h2/current_lookup_data.sql"
+})
 class CurrentDaoIntegrationTest {
 
     @Autowired CarrierDao carrierDao;
@@ -73,100 +76,108 @@ class CurrentDaoIntegrationTest {
     @Test
     void referenceDataDaosDelegateCrudOperations() {
         Carrier carrier = Carrier.builder()
-                .carrierCode("UPS")
-                .carrierName("UPS")
+                .carrierCode("TEST")
+                .carrierName("Test Carrier")
                 .trackingUrlPattern("https://track.example")
                 .build();
         carrierDao.insert(carrier);
-        carrier.setCarrierName("United Parcel Service");
+        carrier.setCarrierName("Updated Test Carrier");
         carrierDao.update(carrier);
-        assertThat(carrierDao.findCarrierByCode("UPS"))
-                .hasValueSatisfying(found -> assertThat(found.getCarrierName()).isEqualTo("United Parcel Service"));
-        assertThat(carrierDao.findAll()).hasSize(1);
+        assertThat(carrierDao.findCarrierByCode("TEST"))
+                .hasValueSatisfying(found -> assertThat(found.getCarrierName()).isEqualTo("Updated Test Carrier"));
+        assertThat(carrierDao.findAll()).extracting(Carrier::getCarrierCode)
+                .contains("DHL", "FEDEX", "UPS", "USPS", "TEST");
 
         Condition condition = Condition.builder()
-                .conditionId(1)
-                .conditionCode("G")
-                .conditionDescription("Good")
-                .conditionText("Good text")
+                .conditionId(100)
+                .conditionCode("UT")
+                .conditionDescription("Unit Test")
+                .conditionText("Unit test text")
                 .build();
         conditionDao.insert(condition);
         condition.setConditionText("Updated text");
         conditionDao.update(condition);
-        assertThat(conditionDao.findConditionById(1))
+        assertThat(conditionDao.findConditionById(100))
                 .hasValueSatisfying(found -> assertThat(found.getConditionText()).isEqualTo("Updated text"));
-        assertThat(conditionDao.findByConditionCode("G")).isPresent();
-        assertThat(conditionDao.findAll()).hasSize(1);
+        assertThat(conditionDao.findByConditionCode("UT")).isPresent();
+        assertThat(conditionDao.findAll()).extracting(Condition::getConditionCode)
+                .contains("M", "E", "VG", "G", "UT");
 
         CostType costType = CostType.builder()
-                .costTypeCode("SHIP")
-                .costTypeName("Shipping")
-                .costTypeDescription("Shipping")
+                .costTypeCode("UNITTEST")
+                .costTypeName("Unit Test")
+                .costTypeDescription("Unit test cost")
                 .build();
         costTypeDao.insert(costType);
-        costType.setCostTypeDescription("Postage");
+        costType.setCostTypeDescription("Updated unit test cost");
         costTypeDao.update(costType);
-        assertThat(costTypeDao.findCostTypeByCode("SHIP"))
-                .hasValueSatisfying(found -> assertThat(found.getCostTypeDescription()).isEqualTo("Postage"));
-        assertThat(costTypeDao.findAll()).hasSize(1);
+        assertThat(costTypeDao.findCostTypeByCode("UNITTEST"))
+                .hasValueSatisfying(found -> assertThat(found.getCostTypeDescription()).isEqualTo("Updated unit test cost"));
+        assertThat(costTypeDao.findAll()).extracting(CostType::getCostTypeCode)
+                .contains("DISCOUNT", "FEE", "INSURANCE", "PRICE", "SHIPPING", "TAX", "UNITTEST");
 
         TransactionType transactionType = TransactionType.builder()
-                .transactionTypeCode("BUY")
-                .transactionTypeDescription("Buy")
+                .transactionTypeCode("UT")
+                .transactionTypeDescription("Unit Test")
                 .conversionFactor(1)
                 .build();
         transactionTypeDao.insert(transactionType);
         transactionType.setConversionFactor(2);
         transactionTypeDao.udpate(transactionType);
-        assertThat(transactionTypeDao.findTransactionTypeByCode("BUY"))
+        assertThat(transactionTypeDao.findTransactionTypeByCode("UT"))
                 .hasValueSatisfying(found -> assertThat(found.getConversionFactor()).isEqualTo(2));
-        assertThat(transactionTypeDao.findAll()).hasSize(1);
+        assertThat(transactionTypeDao.findAll()).extracting(TransactionType::getTransactionTypeCode)
+                .contains("A", "B", "F", "G", "P", "RM", "S", "TG", "TR", "YS", "UT");
 
         TransactionPlatform transactionPlatform = TransactionPlatform.builder()
-                .transactionPlatformId(1)
-                .transactionPlatformName("BrickLink")
+                .transactionPlatformId(100)
+                .transactionPlatformName("Unit Test Platform")
                 .build();
         transactionPlatformDao.insert(transactionPlatform);
-        transactionPlatform.setTransactionPlatformName("BrickLink Marketplace");
+        transactionPlatform.setTransactionPlatformName("Updated Unit Test Platform");
         transactionPlatformDao.update(transactionPlatform);
-        assertThat(transactionPlatformDao.findTransactionPlatformById(1)).isPresent();
-        assertThat(transactionPlatformDao.findTransactionPlatformByName("BrickLink Marketplace")).isPresent();
-        assertThat(transactionPlatformDao.findAll()).hasSize(1);
+        assertThat(transactionPlatformDao.findTransactionPlatformById(100)).isPresent();
+        assertThat(transactionPlatformDao.findTransactionPlatformByName("Updated Unit Test Platform")).isPresent();
+        assertThat(transactionPlatformDao.findAll()).extracting(TransactionPlatform::getTransactionPlatformName)
+                .contains("Bricklink", "eBay", "Private", "CataWiki", "Lauritz", "Updated Unit Test Platform");
 
         PaymentPlatform paymentPlatform = PaymentPlatform.builder()
-                .paymentPlatformId(1)
-                .paymentPlatformName("PayPal")
-                .paymentPlatformUrl("https://paypal.example")
+                .paymentPlatformId(100)
+                .paymentPlatformName("Unit Test Pay")
+                .paymentPlatformUrl("https://pay.example")
                 .build();
         paymentPlatformDao.insert(paymentPlatform);
-        paymentPlatform.setPaymentPlatformUrl("https://paypal.test");
+        paymentPlatform.setPaymentPlatformUrl("https://pay.test");
         paymentPlatformDao.update(paymentPlatform);
-        assertThat(paymentPlatformDao.findPaymentPlatformById(1))
-                .hasValueSatisfying(found -> assertThat(found.getPaymentPlatformUrl()).isEqualTo("https://paypal.test"));
-        assertThat(paymentPlatformDao.findPaymentPlatformByName("PayPal")).isPresent();
-        assertThat(paymentPlatformDao.findAll()).hasSize(1);
+        assertThat(paymentPlatformDao.findPaymentPlatformById(100))
+                .hasValueSatisfying(found -> assertThat(found.getPaymentPlatformUrl()).isEqualTo("https://pay.test"));
+        assertThat(paymentPlatformDao.findPaymentPlatformByName("Unit Test Pay")).isPresent();
+        assertThat(paymentPlatformDao.findAll()).extracting(PaymentPlatform::getPaymentPlatformName)
+                .contains("PayPal", "Credit Card", "Unit Test Pay");
     }
 
     @Test
     void catalogDaosDelegateCrudAndUpsertOperations() {
         seedExternalCatalog();
 
-        assertThat(externalServiceTypeDao.findExternalServiceTypeById(1)).isPresent();
-        assertThat(externalServiceTypeDao.findExternalServiceTypeByName("Marketplace")).isPresent();
-        assertThat(externalServiceTypeDao.findAll()).hasSize(1);
+        assertThat(externalServiceTypeDao.findExternalServiceTypeById(2)).isPresent();
+        assertThat(externalServiceTypeDao.findExternalServiceTypeByName("MARKETPLACE")).isPresent();
+        assertThat(externalServiceTypeDao.findAll()).extracting(ExternalServiceType::getExternalServiceTypeName)
+                .contains("LEGO", "MARKETPLACE", "AUCTION", "THIRDPARTY");
 
         ExternalServiceType type = ExternalServiceType.builder()
-                .externalServiceTypeId(1)
-                .externalServiceTypeName("Marketplace")
+                .externalServiceTypeId(2)
+                .externalServiceTypeName("MARKETPLACE")
                 .externalServiceTypeDescription("Updated")
                 .build();
         externalServiceTypeDao.update(type);
-        assertThat(externalServiceTypeDao.findExternalServiceTypeById(1))
+        assertThat(externalServiceTypeDao.findExternalServiceTypeById(2))
                 .hasValueSatisfying(found -> assertThat(found.getExternalServiceTypeDescription()).isEqualTo("Updated"));
 
         assertThat(externalServiceDao.findExternalServiceById(2)).isPresent();
         assertThat(externalServiceDao.findExternalServiceByName("BRICKLINK")).isPresent();
-        assertThat(externalServiceDao.findAll()).hasSize(1);
+        assertThat(externalServiceDao.findAll()).extracting(ExternalService::getExternalServiceName)
+                .contains("LEGO", "BRICKLINK", "EBAY", "Rebrickable");
         ExternalService service = externalService(2, "BRICKLINK");
         service.setExternalServiceUrl("https://updated.example");
         externalServiceDao.update(service);
@@ -177,12 +188,13 @@ class CurrentDaoIntegrationTest {
         categoryDao.insert(category);
         category.setCategoryName("Updated Parts");
         categoryDao.update(category);
-        categoryDao.upsert(category(2, 101, "Upserted Parts", 100));
+        categoryDao.upsert(category(2, 101, "Upserted Parts", 5));
         assertThat(categoryDao.findCategoryByExternalServiceAndCategoryId(2, 101))
-                .hasValueSatisfying(found -> assertThat(found.getParentId()).isEqualTo(100));
-        assertThat(categoryDao.findAll()).hasSize(2);
+                .hasValueSatisfying(found -> assertThat(found.getParentId()).isEqualTo(5));
+        assertThat(categoryDao.findAll()).extracting(Category::getExternalCategoryId)
+                .contains(5, 65, 789, 101);
 
-        ExternalItem externalItem = externalItem("3001-1", 123L, "Brick", 100, 2);
+        ExternalItem externalItem = externalItem("3001-1", 123L, "Brick", 5, 2);
         externalItemDao.insert(externalItem);
         externalItem.setName("Brick Updated");
         externalItemDao.update(externalItem);
@@ -191,7 +203,7 @@ class CurrentDaoIntegrationTest {
         assertThat(externalItemDao.findByExternalServiceAndUniqueId(2, 123)).isPresent();
         assertThat(externalItemDao.findByExternalServiceAndNumber(2, "3001-1")).isPresent();
         assertThat(externalItemDao.findAllByExternalService("BRICKLINK")).hasSize(1);
-        externalItemDao.upsert(externalItem("3001-1", 456L, "Brick Upserted", 100, 2));
+        externalItemDao.upsert(externalItem("3001-1", 456L, "Brick Upserted", 5, 2));
         assertThat(externalItemDao.findByExternalServiceAndNumber(2, "3001-1"))
                 .hasValueSatisfying(found -> assertThat(found.getName()).isEqualTo("Brick Upserted"));
 
@@ -293,7 +305,7 @@ class CurrentDaoIntegrationTest {
         assertThat(itemInventoryPhotoDao.findPrimaryByItemInventoryId(itemInventory.getItemInventoryId())).isPresent();
 
         seedExternalCatalog();
-        ExternalItem externalItem = externalItem("bii-1", 789L, "Bricklink item", 100, 2);
+        ExternalItem externalItem = externalItem("bii-1", 789L, "Bricklink item", 5, 2);
         externalItemDao.insert(externalItem);
         externalItemInventoryDao.insert(ExternalItemInventory.builder()
                 .externalItemId(externalItem.getExternalItemId())
@@ -340,10 +352,6 @@ class CurrentDaoIntegrationTest {
         assertThat(partyDao.findPartyById(9L)).isPresent();
         assertThat(partyDao.findAll()).hasSize(2);
 
-        transactionPlatformDao.insert(TransactionPlatform.builder()
-                .transactionPlatformId(1)
-                .transactionPlatformName("BrickLink")
-                .build());
         Transactions transaction = Transactions.builder()
                 .transactionDateTime(ZonedDateTime.parse("2026-01-01T00:00:00Z"))
                 .notes("Transaction")
@@ -439,13 +447,28 @@ class CurrentDaoIntegrationTest {
     }
 
     private void seedExternalCatalog() {
-        externalServiceTypeDao.insert(ExternalServiceType.builder()
-                .externalServiceTypeId(1)
-                .externalServiceTypeName("Marketplace")
-                .externalServiceTypeDescription("Marketplace APIs")
-                .build());
-        externalServiceDao.insert(externalService(2, "BRICKLINK"));
-        categoryDao.insert(category(2, 100, "Sets", null));
+        externalServiceTypeDao.findExternalServiceTypeById(2)
+                .orElseGet(() -> {
+                    ExternalServiceType serviceType = ExternalServiceType.builder()
+                            .externalServiceTypeId(2)
+                            .externalServiceTypeName("MARKETPLACE")
+                            .externalServiceTypeDescription("Marketplace")
+                            .build();
+                    externalServiceTypeDao.insert(serviceType);
+                    return serviceType;
+                });
+        externalServiceDao.findExternalServiceById(2)
+                .orElseGet(() -> {
+                    ExternalService service = externalService(2, "BRICKLINK");
+                    externalServiceDao.insert(service);
+                    return service;
+                });
+        categoryDao.findCategoryByExternalServiceAndCategoryId(2, 5)
+                .orElseGet(() -> {
+                    Category category = category(2, 5, "Brick", null);
+                    categoryDao.insert(category);
+                    return category;
+                });
     }
 
     private ExternalService externalService(Integer id, String name) {
@@ -453,7 +476,7 @@ class CurrentDaoIntegrationTest {
         service.setExternalServiceId(id);
         service.setExternalServiceName(name);
         service.setExternalServiceUrl("https://" + name.toLowerCase() + ".example");
-        service.setExternalServiceTypeId(1);
+        service.setExternalServiceTypeId(2);
         return service;
     }
 
@@ -480,6 +503,7 @@ class CurrentDaoIntegrationTest {
     }
 
     private ItemInventory itemInventory(String uuid) {
+        seedDefaultCondition();
         ItemInventory itemInventory = new ItemInventory();
         itemInventory.setUuid(uuid);
         itemInventory.setBoxNumber(1);
@@ -494,6 +518,20 @@ class CurrentDaoIntegrationTest {
         itemInventory.setSealed(false);
         itemInventory.setBuiltOnce(true);
         return itemInventory;
+    }
+
+    private void seedDefaultCondition() {
+        conditionDao.findConditionById(1)
+                .orElseGet(() -> {
+                    Condition condition = Condition.builder()
+                            .conditionId(1)
+                            .conditionCode("G")
+                            .conditionDescription("Good")
+                            .conditionText("Good")
+                            .build();
+                    conditionDao.insert(condition);
+                    return condition;
+                });
     }
 
     private BricklinkItemInventory bricklinkItemInventory(Integer externalItemId, Integer itemInventoryId) {

@@ -10,6 +10,7 @@ class ItemInventoryMapperTest extends MapperTestSupport {
 
     @Test
     void insertUpdateFindsAndUpsert() {
+        seedDefaultCondition();
         ItemInventory itemInventory = itemInventory("uuid-inventory");
 
         itemInventoryMapper.insert(itemInventory);

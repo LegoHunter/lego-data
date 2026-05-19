@@ -11,7 +11,7 @@ class ExternalItemMapperTest extends MapperTestSupport {
     @Test
     void insertUpdateFindsAndUpsert() {
         seedExternalCatalog();
-        ExternalItem externalItem = externalItem("3001-1", 123L, "Brick 2 x 4", 100, 2);
+        ExternalItem externalItem = externalItem("3001-1", 123L, "Brick 2 x 4", 5, 2);
 
         externalItemMapper.insert(externalItem);
         assertThat(externalItem.getExternalItemId()).isNotNull();
@@ -23,7 +23,7 @@ class ExternalItemMapperTest extends MapperTestSupport {
                 .hasValueSatisfying(found -> {
                     assertThat(found.getName()).isEqualTo("Brick 2 x 4 Updated");
                     assertThat(found.getExternalService().getExternalServiceName()).isEqualTo("BRICKLINK");
-                    assertThat(found.getCategory().getCategoryName()).isEqualTo("Sets");
+                    assertThat(found.getCategory().getCategoryName()).isEqualTo("Brick");
                 });
         assertThat(externalItemMapper.findByExternalServiceAndUniqueId(2, 123))
                 .hasValueSatisfying(found -> assertThat(found.getExternalNumber()).isEqualTo("3001-1"));
@@ -33,7 +33,7 @@ class ExternalItemMapperTest extends MapperTestSupport {
                 .extracting(ExternalItem::getExternalNumber)
                 .containsExactly("3001-1");
 
-        externalItemMapper.upsert(externalItem("3001-1", 456L, "Brick 2 x 4 Upserted", 100, 2));
+        externalItemMapper.upsert(externalItem("3001-1", 456L, "Brick 2 x 4 Upserted", 5, 2));
 
         assertThat(externalItemMapper.findByExternalServiceAndNumber(2, "3001-1"))
                 .hasValueSatisfying(found -> assertThat(found.getName()).isEqualTo("Brick 2 x 4 Upserted"));

@@ -169,7 +169,7 @@ CREATE TABLE inventory_index (
     description VARCHAR(2048),
     active BOOLEAN,
     moved_to_box_id INT,
-    PRIMARY KEY (box_id, box_index, item_number)
+    PRIMARY KEY (box_id, box_index)
 );
 
 CREATE TABLE item (
@@ -189,7 +189,8 @@ CREATE TABLE item_inventory_photo (
     status VARCHAR(32),
     created_at TIMESTAMP,
     updated_at TIMESTAMP,
-    uploaded_at TIMESTAMP
+    uploaded_at TIMESTAMP,
+    CONSTRAINT uq_item_service_key UNIQUE (s3_key)
 );
 
 CREATE TABLE external_image_album (
@@ -290,3 +291,138 @@ CREATE TABLE transaction_item_cost (
     amount DOUBLE,
     notes VARCHAR(2048)
 );
+
+ALTER TABLE external_service
+    ADD CONSTRAINT fk_external_service_external_service_type1
+    FOREIGN KEY (external_service_type_id) REFERENCES external_service_type (external_service_type_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE category
+    ADD CONSTRAINT fk_category_external_service1
+    FOREIGN KEY (external_service_id) REFERENCES external_service (external_service_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_item
+    ADD CONSTRAINT fk_external_item_category1
+    FOREIGN KEY (external_service_id, external_category_id) REFERENCES category (external_service_id, external_category_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE item_inventory
+    ADD CONSTRAINT fk_item_inventory_condition1
+    FOREIGN KEY (item_condition_id) REFERENCES `condition` (condition_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE item_inventory
+    ADD CONSTRAINT fk_item_inventory_condition2
+    FOREIGN KEY (instructions_condition_id) REFERENCES `condition` (condition_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_service_item
+    ADD CONSTRAINT fk_external_service_item_external_item1
+    FOREIGN KEY (external_item_id) REFERENCES external_item (external_item_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_service_item
+    ADD CONSTRAINT fk_external_service_item_item_inventory1
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_item_inventory
+    ADD CONSTRAINT fk_external_item_has_item_inventory_external_item1
+    FOREIGN KEY (external_item_id) REFERENCES external_item (external_item_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_item_inventory
+    ADD CONSTRAINT fk_external_item_has_item_inventory_item_inventory1
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE bricklink_item_inventory
+    ADD CONSTRAINT fk_bricklink_item_inventory_external_item_inventory1
+    FOREIGN KEY (external_item_id, item_inventory_id) REFERENCES external_item_inventory (external_item_id, item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE item_inventory_photo
+    ADD CONSTRAINT fk_item_inventory_photo_item_inventory1
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_image_album
+    ADD CONSTRAINT fk_external_image_album_external_service1
+    FOREIGN KEY (external_service_id) REFERENCES external_service (external_service_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_image_album
+    ADD CONSTRAINT fk_external_image_album_item_inventory1
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_image
+    ADD CONSTRAINT fk_external_image_external_service1
+    FOREIGN KEY (external_service_id) REFERENCES external_service (external_service_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_image
+    ADD CONSTRAINT fk_external_image_item_inventory_photo1
+    FOREIGN KEY (item_inventory_photo_id) REFERENCES item_inventory_photo (item_inventory_photo_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_image_album_image
+    ADD CONSTRAINT fk_external_image_album_image_album1
+    FOREIGN KEY (external_image_album_id) REFERENCES external_image_album (external_image_album_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE external_image_album_image
+    ADD CONSTRAINT fk_external_image_album_image_image1
+    FOREIGN KEY (external_image_id) REFERENCES external_image (external_image_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transactions
+    ADD CONSTRAINT fk_transactions_party1
+    FOREIGN KEY (from_party_id) REFERENCES party (party_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transactions
+    ADD CONSTRAINT fk_transactions_party2
+    FOREIGN KEY (to_party_id) REFERENCES party (party_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transactions
+    ADD CONSTRAINT fk_transactions_transaction_platform1
+    FOREIGN KEY (transaction_platform_id) REFERENCES transaction_platform (transaction_platform_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_item
+    ADD CONSTRAINT fk_transaction_item_transactions1
+    FOREIGN KEY (transaction_id) REFERENCES transactions (transaction_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_item
+    ADD CONSTRAINT fk_transaction_item_transaction_type1
+    FOREIGN KEY (transaction_type_code) REFERENCES transaction_type (transaction_type_code)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_item
+    ADD CONSTRAINT fk_transaction_item_item_inventory1
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_cost
+    ADD CONSTRAINT fk_transaction_cost_transactions1
+    FOREIGN KEY (transaction_id) REFERENCES transactions (transaction_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_cost
+    ADD CONSTRAINT fk_transaction_cost_cost_type10
+    FOREIGN KEY (cost_type_code) REFERENCES cost_type (cost_type_code)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_item_cost
+    ADD CONSTRAINT fk_transaction_item_cost_transaction_item1
+    FOREIGN KEY (transaction_item_id) REFERENCES transaction_item (transaction_item_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE transaction_item_cost
+    ADD CONSTRAINT fk_transaction_cost_cost_type1
+    FOREIGN KEY (cost_type_code) REFERENCES cost_type (cost_type_code)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;

@@ -2,6 +2,7 @@ package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.BricklinkItemInventory;
 import io.legohunter.data.dto.Category;
+import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.ExternalItem;
 import io.legohunter.data.dto.ExternalItemInventory;
 import io.legohunter.data.dto.ExternalImage;
@@ -51,12 +52,12 @@ abstract class MapperTestSupport {
 
     void seedExternalCatalog() {
         externalServiceTypeMapper.insertExternalServiceType(ExternalServiceType.builder()
-                .externalServiceTypeId(1)
-                .externalServiceTypeName("Marketplace")
-                .externalServiceTypeDescription("Marketplace APIs")
+                .externalServiceTypeId(2)
+                .externalServiceTypeName("MARKETPLACE")
+                .externalServiceTypeDescription("Marketplace")
                 .build());
         externalServiceMapper.insertExternalService(externalService(2, "BRICKLINK"));
-        categoryMapper.insert(category(2, 100, "Sets", null));
+        categoryMapper.insert(category(2, 5, "Brick", null));
     }
 
     ExternalService externalService(Integer id, String name) {
@@ -64,7 +65,7 @@ abstract class MapperTestSupport {
         service.setExternalServiceId(id);
         service.setExternalServiceName(name);
         service.setExternalServiceUrl("https://" + name.toLowerCase() + ".example");
-        service.setExternalServiceTypeId(1);
+        service.setExternalServiceTypeId(2);
         return service;
     }
 
@@ -108,14 +109,29 @@ abstract class MapperTestSupport {
     }
 
     ItemInventory insertItemInventory(String uuid) {
+        seedDefaultCondition();
         ItemInventory itemInventory = itemInventory(uuid);
         itemInventoryMapper.insert(itemInventory);
         return itemInventory;
     }
 
+    void seedDefaultCondition() {
+        conditionMapper.findConditionById(1)
+                .orElseGet(() -> {
+                    Condition condition = Condition.builder()
+                            .conditionId(1)
+                            .conditionCode("G")
+                            .conditionDescription("Good")
+                            .conditionText("Good")
+                            .build();
+                    conditionMapper.insert(condition);
+                    return condition;
+                });
+    }
+
     ExternalItem insertExternalItem(String number) {
         seedExternalCatalog();
-        ExternalItem externalItem = externalItem(number, 789L, "Bricklink item", 100, 2);
+        ExternalItem externalItem = externalItem(number, 789L, "Bricklink item", 5, 2);
         externalItemMapper.insert(externalItem);
         return externalItem;
     }
