@@ -4,13 +4,19 @@ import io.legohunter.data.dto.BricklinkItemInventory;
 import io.legohunter.data.dto.Category;
 import io.legohunter.data.dto.ExternalItem;
 import io.legohunter.data.dto.ExternalItemInventory;
+import io.legohunter.data.dto.ExternalImage;
+import io.legohunter.data.dto.ExternalImageAlbum;
+import io.legohunter.data.dto.ExternalImageAlbumImage;
 import io.legohunter.data.dto.ExternalService;
 import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.ItemInventory;
+import io.legohunter.data.dto.ItemInventoryPhoto;
 import io.legohunter.data.dto.Party;
 import io.legohunter.data.dto.TransactionPlatform;
 import io.legohunter.data.dto.TransactionType;
 import io.legohunter.data.dto.Transactions;
+import io.legohunter.data.enums.ExternalSyncStatus;
+import io.legohunter.data.enums.PhotoStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDateTime;
@@ -24,6 +30,9 @@ abstract class MapperTestSupport {
     @Autowired CostTypeMapper costTypeMapper;
     @Autowired ExternalItemMapper externalItemMapper;
     @Autowired ExternalItemInventoryMapper externalItemInventoryMapper;
+    @Autowired ExternalImageAlbumMapper externalImageAlbumMapper;
+    @Autowired ExternalImageMapper externalImageMapper;
+    @Autowired ExternalImageAlbumImageMapper externalImageAlbumImageMapper;
     @Autowired ExternalServiceItemMapper externalServiceItemMapper;
     @Autowired ExternalServiceMapper externalServiceMapper;
     @Autowired ExternalServiceTypeMapper externalServiceTypeMapper;
@@ -119,6 +128,54 @@ abstract class MapperTestSupport {
                 .build();
         externalItemInventoryMapper.insert(externalItemInventory);
         return externalItemInventory;
+    }
+
+    ExternalImageAlbum externalImageAlbum(Integer externalServiceId, Integer itemInventoryId, String externalAlbumId) {
+        return ExternalImageAlbum.builder()
+                .externalServiceId(externalServiceId)
+                .itemInventoryId(itemInventoryId)
+                .externalAlbumId(externalAlbumId)
+                .title("3001-1 [uuid]")
+                .albumUrl("https://photos.example/albums/" + externalAlbumId)
+                .shortUrl("https://short.example/" + externalAlbumId)
+                .syncStatus(ExternalSyncStatus.PENDING)
+                .build();
+    }
+
+    ExternalImage externalImage(Integer externalServiceId, Integer itemInventoryPhotoId, String externalServiceImageId, String md5) {
+        return ExternalImage.builder()
+                .externalServiceId(externalServiceId)
+                .itemInventoryPhotoId(itemInventoryPhotoId)
+                .externalServiceImageId(externalServiceImageId)
+                .title("3001-1 [uuid]")
+                .imageUrl("https://photos.example/images/" + externalServiceImageId)
+                .md5AtUpload(md5)
+                .syncStatus(ExternalSyncStatus.PENDING)
+                .build();
+    }
+
+    ExternalImageAlbumImage externalImageAlbumImage(Long externalImageAlbumId, Long externalImageId, int sortOrder, boolean primary) {
+        return ExternalImageAlbumImage.builder()
+                .externalImageAlbumId(externalImageAlbumId)
+                .externalImageId(externalImageId)
+                .sortOrder(sortOrder)
+                .primary(primary)
+                .build();
+    }
+
+    ItemInventoryPhoto insertItemInventoryPhoto(Integer itemInventoryId, String md5) {
+        ItemInventoryPhoto photo = ItemInventoryPhoto.builder()
+                .itemInventoryId(itemInventoryId)
+                .s3Bucket("lego-photos-sandbox")
+                .s3Key("3001/uuid/" + md5 + ".jpg")
+                .md5(md5)
+                .fileName(md5 + ".jpg")
+                .fileSize(1000L)
+                .primary(false)
+                .status(PhotoStatus.PROCESSED)
+                .build();
+        itemInventoryPhotoMapper.insert(photo);
+        return photo;
     }
 
     BricklinkItemInventory bricklinkItemInventory(Integer externalItemId, Integer itemInventoryId) {
