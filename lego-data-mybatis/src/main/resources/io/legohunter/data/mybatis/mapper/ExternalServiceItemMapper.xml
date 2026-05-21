@@ -1,7 +1,0 @@
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="io.legohunter.data.mybatis.mapper.ExternalServiceItemMapper">
-  <resultMap type="io.legohunter.data.dto.ExternalServiceItem" id="externalServiceItemResultMap">
-    <result column="external_item_id" property="externalItemId"/>
-    <result column="item_inventory_id" property="itemInventoryId"/>
-  </resultMap>
-</mapper>

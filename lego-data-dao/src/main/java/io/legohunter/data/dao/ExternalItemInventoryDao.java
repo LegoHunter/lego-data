@@ -32,4 +32,8 @@ public class ExternalItemInventoryDao {
     public void update(ExternalItemInventory externalItemInventory) {
         externalItemInventoryMapper.update(externalItemInventory);
     }
+
+    public void delete(ExternalItemInventory externalItemInventory) {
+        externalItemInventoryMapper.delete(externalItemInventory);
+    }
 }

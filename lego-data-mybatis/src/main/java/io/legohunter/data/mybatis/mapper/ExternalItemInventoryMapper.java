@@ -85,4 +85,11 @@ public interface ExternalItemInventoryMapper {
             WHERE external_item_id = #{externalItemId}
             """)
     void update(ExternalItemInventory externalItemInventory);
+
+    @Delete("""
+            DELETE FROM external_item_inventory
+            WHERE external_item_id = #{externalItemId}
+            AND item_inventory_id = #{itemInventoryId}
+            """)
+    void delete(ExternalItemInventory externalItemInventory);
 }
