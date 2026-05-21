@@ -10,7 +10,6 @@ import io.legohunter.data.dto.CostType;
 import io.legohunter.data.dto.ExternalItem;
 import io.legohunter.data.dto.ExternalItemInventory;
 import io.legohunter.data.dto.ExternalService;
-import io.legohunter.data.dto.ExternalServiceItem;
 import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.InventoryIndex;
 import io.legohunter.data.dto.ItemInventory;
@@ -58,7 +57,6 @@ class CurrentDaoIntegrationTest {
     @Autowired ExternalItemDao externalItemDao;
     @Autowired ExternalItemInventoryDao externalItemInventoryDao;
     @Autowired ExternalServiceDao externalServiceDao;
-    @Autowired ExternalServiceItemDao externalServiceItemDao;
     @Autowired ExternalServiceTypeDao externalServiceTypeDao;
     @Autowired InventoryIndexDao inventoryIndexDao;
     @Autowired ItemInventoryDao itemInventoryDao;
@@ -209,19 +207,6 @@ class CurrentDaoIntegrationTest {
 
         ItemInventory itemInventory = itemInventory("uuid-catalog");
         itemInventoryDao.insert(itemInventory);
-        ExternalServiceItem serviceItem = ExternalServiceItem.builder()
-                .externalItemId(externalItem.getExternalItemId())
-                .itemInventoryId(itemInventory.getItemInventoryId())
-                .build();
-        externalServiceItemDao.insert(serviceItem);
-        assertThat(externalServiceItemDao.findByExternalItemIdAndItemInventoryId(externalItem.getExternalItemId(), itemInventory.getItemInventoryId()))
-                .hasValue(serviceItem);
-        assertThat(externalServiceItemDao.findByExternalItemId(externalItem.getExternalItemId())).hasValue(serviceItem);
-        assertThat(externalServiceItemDao.findByItemId(itemInventory.getItemInventoryId())).hasValue(serviceItem);
-        externalServiceItemDao.delete(serviceItem);
-        assertThat(externalServiceItemDao.findByExternalItemIdAndItemInventoryId(externalItem.getExternalItemId(), itemInventory.getItemInventoryId()))
-                .isEmpty();
-
         ExternalItemInventory externalItemInventory = ExternalItemInventory.builder()
                 .externalItemId(externalItem.getExternalItemId())
                 .itemInventoryId(itemInventory.getItemInventoryId())
@@ -240,6 +225,9 @@ class CurrentDaoIntegrationTest {
                 .hasValueSatisfying(found -> assertThat(found.getInternalComments()).isEqualTo("Updated internal"));
         assertThat(externalItemInventoryDao.findByExternalItemId(externalItem.getExternalItemId())).hasSize(1);
         assertThat(externalItemInventoryDao.findByItemInventoryId(itemInventory.getItemInventoryId())).hasSize(1);
+        externalItemInventoryDao.delete(externalItemInventory);
+        assertThat(externalItemInventoryDao.findByExternalItemIdAndItemInventoryId(externalItem.getExternalItemId(), itemInventory.getItemInventoryId()))
+                .isEmpty();
     }
 
     @Test

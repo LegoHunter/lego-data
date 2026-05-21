@@ -34,7 +34,6 @@ abstract class MapperTestSupport {
     @Autowired ExternalImageAlbumMapper externalImageAlbumMapper;
     @Autowired ExternalImageMapper externalImageMapper;
     @Autowired ExternalImageAlbumImageMapper externalImageAlbumImageMapper;
-    @Autowired ExternalServiceItemMapper externalServiceItemMapper;
     @Autowired ExternalServiceMapper externalServiceMapper;
     @Autowired ExternalServiceTypeMapper externalServiceTypeMapper;
     @Autowired InventoryIndexMapper inventoryIndexMapper;

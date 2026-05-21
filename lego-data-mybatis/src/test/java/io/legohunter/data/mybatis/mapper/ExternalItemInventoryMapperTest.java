@@ -36,5 +36,10 @@ class ExternalItemInventoryMapperTest extends MapperTestSupport {
                 .hasValueSatisfying(found -> assertThat(found.getExtraDescription()).isEqualTo("Extra updated"));
         assertThat(externalItemInventoryMapper.findByExternalItemId(externalItem.getExternalItemId())).hasSize(1);
         assertThat(externalItemInventoryMapper.findByItemInventoryId(itemInventory.getItemInventoryId())).hasSize(1);
+
+        externalItemInventoryMapper.delete(externalItemInventory);
+
+        assertThat(externalItemInventoryMapper.findByExternalItemIdAndItemInventoryId(externalItem.getExternalItemId(), itemInventory.getItemInventoryId()))
+                .isEmpty();
     }
 }
