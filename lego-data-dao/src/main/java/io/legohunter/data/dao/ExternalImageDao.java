@@ -6,6 +6,7 @@ import io.legohunter.data.mybatis.mapper.ExternalImageMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -36,6 +37,10 @@ public class ExternalImageDao {
 
     public Set<ExternalImage> findBySyncStatus(ExternalSyncStatus syncStatus) {
         return externalImageMapper.findBySyncStatus(syncStatus);
+    }
+
+    public List<Integer> findItemInventoryIdsNeedingSync(Integer externalServiceId, boolean includeFailed, int limit) {
+        return externalImageMapper.findItemInventoryIdsNeedingSync(externalServiceId, includeFailed, limit);
     }
 
     public ExternalImage insert(ExternalImage externalImage) {

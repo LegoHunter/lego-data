@@ -96,6 +96,8 @@ class ExternalImageDaoTest {
         assertThat(externalImageDao.hasUploadedMd5(10, photo.getItemInventoryPhotoId(), "ffffffffffffffffffffffffffffffff")).isFalse();
         assertThat(externalImageDao.hasSyncedMetadataHash(10, photo.getItemInventoryPhotoId(), "metadata-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")).isTrue();
         assertThat(externalImageDao.hasSyncedMetadataHash(10, photo.getItemInventoryPhotoId(), "different-metadata")).isFalse();
+        assertThat(externalImageDao.findItemInventoryIdsNeedingSync(10, false, 10))
+                .containsExactly(itemInventory.getItemInventoryId());
 
         image.setMd5AtUpload("ffffffffffffffffffffffffffffffff");
         image.setMetadataHashAtSync("metadata-updated");
