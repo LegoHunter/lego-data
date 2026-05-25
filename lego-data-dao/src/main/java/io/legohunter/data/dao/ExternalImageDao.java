@@ -66,4 +66,11 @@ public class ExternalImageDao {
                 .filter(md5::equals)
                 .isPresent();
     }
+
+    public boolean hasSyncedMetadataHash(Integer externalServiceId, Integer itemInventoryPhotoId, String metadataHash) {
+        return findByExternalServiceIdAndItemInventoryPhotoId(externalServiceId, itemInventoryPhotoId)
+                .map(ExternalImage::getMetadataHashAtSync)
+                .filter(metadataHash::equals)
+                .isPresent();
+    }
 }

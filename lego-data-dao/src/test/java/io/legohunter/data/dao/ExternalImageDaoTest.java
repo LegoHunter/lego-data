@@ -94,12 +94,18 @@ class ExternalImageDaoTest {
         assertThat(externalImageDao.findBySyncStatus(ExternalSyncStatus.PENDING)).hasSize(1);
         assertThat(externalImageDao.hasUploadedMd5(10, photo.getItemInventoryPhotoId(), "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")).isTrue();
         assertThat(externalImageDao.hasUploadedMd5(10, photo.getItemInventoryPhotoId(), "ffffffffffffffffffffffffffffffff")).isFalse();
+        assertThat(externalImageDao.hasSyncedMetadataHash(10, photo.getItemInventoryPhotoId(), "metadata-eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")).isTrue();
+        assertThat(externalImageDao.hasSyncedMetadataHash(10, photo.getItemInventoryPhotoId(), "different-metadata")).isFalse();
 
         image.setMd5AtUpload("ffffffffffffffffffffffffffffffff");
+        image.setMetadataHashAtSync("metadata-updated");
         image.setSyncStatus(ExternalSyncStatus.SYNCED);
         assertThat(externalImageDao.update(image)).isOne();
         assertThat(externalImageDao.findByExternalImageId(image.getExternalImageId()))
-                .hasValueSatisfying(found -> assertThat(found.getMd5AtUpload()).isEqualTo("ffffffffffffffffffffffffffffffff"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getMd5AtUpload()).isEqualTo("ffffffffffffffffffffffffffffffff");
+                    assertThat(found.getMetadataHashAtSync()).isEqualTo("metadata-updated");
+                });
 
         externalImageDao.upsert(ExternalImage.builder()
                 .externalServiceId(10)
@@ -108,10 +114,14 @@ class ExternalImageDaoTest {
                 .title("Upserted")
                 .imageUrl("https://photos.example/images/upsert")
                 .md5AtUpload("11111111111111111111111111111111")
+                .metadataHashAtSync("metadata-upsert")
                 .syncStatus(ExternalSyncStatus.FAILED)
                 .build());
         assertThat(externalImageDao.findByExternalServiceIdAndItemInventoryPhotoId(10, photo.getItemInventoryPhotoId()))
-                .hasValueSatisfying(found -> assertThat(found.getExternalServiceImageId()).isEqualTo("image-dao-upsert"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getExternalServiceImageId()).isEqualTo("image-dao-upsert");
+                    assertThat(found.getMetadataHashAtSync()).isEqualTo("metadata-upsert");
+                });
 
         assertThat(externalImageDao.deleteByExternalServiceIdAndItemInventoryPhotoId(10, photo.getItemInventoryPhotoId())).isOne();
         externalImageDao.insert(image);
@@ -210,6 +220,7 @@ class ExternalImageDaoTest {
                 .title("3001-1 [uuid]")
                 .imageUrl("https://photos.example/images/" + externalServiceImageId)
                 .md5AtUpload(md5)
+                .metadataHashAtSync("metadata-" + md5)
                 .syncStatus(ExternalSyncStatus.PENDING)
                 .build();
     }

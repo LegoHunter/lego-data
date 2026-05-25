@@ -8,6 +8,7 @@
     <result column="title"                    property="title"/>
     <result column="image_url"                property="imageUrl"/>
     <result column="md5_at_upload"            property="md5AtUpload"/>
+    <result column="metadata_hash_at_sync"    property="metadataHashAtSync"/>
     <result column="sync_status"              property="syncStatus"/>
     <result column="error_message"            property="errorMessage"/>
     <result column="uploaded_at"              property="uploadedAt"/>

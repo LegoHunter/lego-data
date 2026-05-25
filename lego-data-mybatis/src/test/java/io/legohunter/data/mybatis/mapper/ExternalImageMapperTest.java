@@ -19,13 +19,17 @@ class ExternalImageMapperTest extends MapperTestSupport {
         ItemInventory itemInventory = insertItemInventory("uuid-external-image");
         ItemInventoryPhoto photo = insertItemInventoryPhoto(itemInventory.getItemInventoryId(), "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
         ExternalImage image = externalImage(10, photo.getItemInventoryPhotoId(), "image-1", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        image.setMetadataHashAtSync("metadata-hash-a");
 
         externalImageMapper.insert(image);
         assertThat(image.getExternalImageId()).isNotNull();
 
         assertThat(externalImageMapper.findAll()).hasSize(1);
         assertThat(externalImageMapper.findByExternalImageId(image.getExternalImageId()))
-                .hasValueSatisfying(found -> assertThat(found.getMd5AtUpload()).isEqualTo("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getMd5AtUpload()).isEqualTo("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+                    assertThat(found.getMetadataHashAtSync()).isEqualTo("metadata-hash-a");
+                });
         assertThat(externalImageMapper.findByExternalServiceIdAndItemInventoryPhotoId(10, photo.getItemInventoryPhotoId()))
                 .hasValueSatisfying(found -> assertThat(found.getExternalServiceImageId()).isEqualTo("image-1"));
         assertThat(externalImageMapper.findByExternalServiceIdAndExternalServiceImageId(10, "image-1"))
@@ -34,10 +38,14 @@ class ExternalImageMapperTest extends MapperTestSupport {
         assertThat(externalImageMapper.findBySyncStatus(ExternalSyncStatus.PENDING)).hasSize(1);
 
         image.setTitle("Updated image title");
+        image.setMetadataHashAtSync("metadata-hash-updated");
         image.setSyncStatus(ExternalSyncStatus.SYNCED);
         assertThat(externalImageMapper.update(image)).isOne();
         assertThat(externalImageMapper.findByExternalImageId(image.getExternalImageId()))
-                .hasValueSatisfying(found -> assertThat(found.getSyncStatus()).isEqualTo(ExternalSyncStatus.SYNCED));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getSyncStatus()).isEqualTo(ExternalSyncStatus.SYNCED);
+                    assertThat(found.getMetadataHashAtSync()).isEqualTo("metadata-hash-updated");
+                });
 
         externalImageMapper.upsert(ExternalImage.builder()
                 .externalServiceId(10)
@@ -46,6 +54,7 @@ class ExternalImageMapperTest extends MapperTestSupport {
                 .title("Upserted image")
                 .imageUrl("https://photos.example/images/upserted")
                 .md5AtUpload("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+                .metadataHashAtSync("metadata-hash-upserted")
                 .syncStatus(ExternalSyncStatus.FAILED)
                 .errorMessage("failed")
                 .build());
@@ -54,6 +63,7 @@ class ExternalImageMapperTest extends MapperTestSupport {
                 .hasValueSatisfying(found -> {
                     assertThat(found.getExternalServiceImageId()).isEqualTo("image-1-upserted");
                     assertThat(found.getMd5AtUpload()).isEqualTo("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+                    assertThat(found.getMetadataHashAtSync()).isEqualTo("metadata-hash-upserted");
                 });
 
         assertThat(externalImageMapper.deleteByExternalServiceIdAndItemInventoryPhotoId(10, photo.getItemInventoryPhotoId())).isOne();

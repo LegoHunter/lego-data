@@ -5,6 +5,7 @@ create table if not exists item_inventory_photo
     s3_bucket               varchar(255)                                                       null,
     s3_key                  varchar(255)                                                       null,
     md5                     char(32)                                                           null,
+    metadata_hash           char(64)                                                           null,
     file_name               varchar(255)                                                       not null,
     file_size               bigint                                                             null,
     is_primary              tinyint                                  default 0                 null,
@@ -21,4 +22,6 @@ create table if not exists item_inventory_photo
 
 create index if not exists fk_item_inventory_photo_item_inventory
     on item_inventory_photo (item_inventory_id);
+
+alter table item_inventory_photo add column if not exists metadata_hash char(64);
 

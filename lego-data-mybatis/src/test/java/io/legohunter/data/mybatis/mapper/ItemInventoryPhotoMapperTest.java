@@ -18,6 +18,7 @@ class ItemInventoryPhotoMapperTest extends MapperTestSupport {
                 .s3Bucket("bucket")
                 .s3Key("old-key")
                 .md5("md5-a")
+                .metadataHash("metadata-hash-a")
                 .fileName("photo.jpg")
                 .fileSize(1000L)
                 .primary(false)
@@ -30,7 +31,10 @@ class ItemInventoryPhotoMapperTest extends MapperTestSupport {
 
         assertThat(itemInventoryPhotoMapper.findAll()).hasSize(1);
         assertThat(itemInventoryPhotoMapper.findByItemInventoryPhotoId(photo.getItemInventoryPhotoId()))
-                .hasValueSatisfying(found -> assertThat(found.getMd5()).isEqualTo("md5-a"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getMd5()).isEqualTo("md5-a");
+                    assertThat(found.getMetadataHash()).isEqualTo("metadata-hash-a");
+                });
         assertThat(itemInventoryPhotoMapper.findByMD5("md5-a"))
                 .hasValueSatisfying(found -> assertThat(found.getFileName()).isEqualTo("photo.jpg"));
         assertThat(itemInventoryPhotoMapper.findByItemInventoryIdAndFileName(itemInventory.getItemInventoryId(), "photo.jpg"))
@@ -46,10 +50,12 @@ class ItemInventoryPhotoMapperTest extends MapperTestSupport {
         assertThat(itemInventoryPhotoMapper.clearPrimaryForItem(itemInventory.getItemInventoryId())).isOne();
         assertThat(itemInventoryPhotoMapper.markUploaded("md5-a", "bucket-new", "key-new", 2000L)).isZero();
         assertThat(itemInventoryPhotoMapper.replaceStoredObject(
-                photo.getItemInventoryPhotoId(), "renamed.jpg", "md5-b", "bucket-new", "key-new", 2000L,
+                photo.getItemInventoryPhotoId(), "renamed.jpg", "md5-b", "metadata-hash-b", "bucket-new", "key-new", 2000L,
                 true, "New caption", PhotoStatus.PROCESSED)).isOne();
         assertThat(itemInventoryPhotoMapper.updateMetadata(
-                photo.getItemInventoryPhotoId(), "renamed.jpg", false, "Metadata caption", PhotoStatus.FAILED)).isOne();
+                photo.getItemInventoryPhotoId(), "renamed.jpg", "metadata-hash-c", false, "Metadata caption", PhotoStatus.FAILED)).isOne();
+        assertThat(itemInventoryPhotoMapper.findByMD5("md5-b"))
+                .hasValueSatisfying(found -> assertThat(found.getMetadataHash()).isEqualTo("metadata-hash-c"));
         assertThat(itemInventoryPhotoMapper.deleteByMd5AndStorage("md5-b", "bucket-new", "wrong-key")).isZero();
         assertThat(itemInventoryPhotoMapper.deleteByMd5AndStorage("md5-b", "bucket-new", "key-new")).isOne();
     }

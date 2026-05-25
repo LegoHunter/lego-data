@@ -15,6 +15,7 @@ public interface ItemInventoryPhotoMapper {
             s3_bucket,
             s3_key,
             md5,
+            metadata_hash,
             file_name,
             file_size,
             is_primary,
@@ -46,8 +47,8 @@ public interface ItemInventoryPhotoMapper {
     Optional<ItemInventoryPhoto> findByItemInventoryIdAndFileName(Integer itemInventoryId, String fileName);
 
     @Insert("""
-            INSERT INTO item_inventory_photo (item_inventory_id, s3_bucket,s3_key,md5,file_name,file_size,is_primary,caption,status,created_at) \
-            VALUES (#{itemInventoryId}, #{s3Bucket}, #{s3Key}, #{md5}, #{fileName}, #{fileSize}, #{primary}, #{caption}, #{status}, CURRENT_TIMESTAMP) \
+            INSERT INTO item_inventory_photo (item_inventory_id, s3_bucket,s3_key,md5,metadata_hash,file_name,file_size,is_primary,caption,status,created_at) \
+            VALUES (#{itemInventoryId}, #{s3Bucket}, #{s3Key}, #{md5}, #{metadataHash}, #{fileName}, #{fileSize}, #{primary}, #{caption}, #{status}, CURRENT_TIMESTAMP) \
             """)
     @Options(useGeneratedKeys = true, keyProperty = "itemInventoryPhotoId")
     void insert(ItemInventoryPhoto itemInventoryPhoto);
@@ -103,6 +104,7 @@ public interface ItemInventoryPhotoMapper {
                 s3_bucket = #{bucket},
                 s3_key = #{s3Key},
                 md5 = #{md5},
+                metadata_hash = #{metadataHash},
                 file_size = #{fileSize},
                 is_primary = #{primary},
                 caption = #{caption},
@@ -115,6 +117,7 @@ public interface ItemInventoryPhotoMapper {
             Integer itemInventoryPhotoId,
             String fileName,
             String md5,
+            String metadataHash,
             String bucket,
             String s3Key,
             long fileSize,
@@ -126,6 +129,7 @@ public interface ItemInventoryPhotoMapper {
             UPDATE item_inventory_photo
             SET
                 file_name = #{fileName},
+                metadata_hash = #{metadataHash},
                 is_primary = #{primary},
                 caption = #{caption},
                 status = #{status},
@@ -135,6 +139,7 @@ public interface ItemInventoryPhotoMapper {
     int updateMetadata(
             Integer itemInventoryPhotoId,
             String fileName,
+            String metadataHash,
             boolean primary,
             String caption,
             PhotoStatus status);
