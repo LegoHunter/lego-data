@@ -6,8 +6,11 @@ import io.legohunter.data.mybatis.mapper.ExternalImageMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +39,36 @@ public class ExternalImageDao {
 
     public Set<ExternalImage> findBySyncStatus(ExternalSyncStatus syncStatus) {
         return externalImageMapper.findBySyncStatus(syncStatus);
+    }
+
+    public List<Integer> findItemInventoryIdsNeedingSync(Integer externalServiceId, boolean includeFailed, int limit) {
+        int effectiveLimit = Math.max(1, limit);
+        LinkedHashSet<Integer> itemInventoryIds = new LinkedHashSet<>();
+        addUntilLimit(
+                itemInventoryIds,
+                effectiveLimit,
+                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsMissingExternalImages(serviceId, queryLimit),
+                externalServiceId
+        );
+        addUntilLimit(
+                itemInventoryIds,
+                effectiveLimit,
+                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsMissingOrUnsyncedAlbums(serviceId, queryLimit),
+                externalServiceId
+        );
+        addUntilLimit(
+                itemInventoryIds,
+                effectiveLimit,
+                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsWithUnsyncedImages(serviceId, includeFailed, queryLimit),
+                externalServiceId
+        );
+        addUntilLimit(
+                itemInventoryIds,
+                effectiveLimit,
+                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsWithMetadataDrift(serviceId, queryLimit),
+                externalServiceId
+        );
+        return List.copyOf(itemInventoryIds);
     }
 
     public ExternalImage insert(ExternalImage externalImage) {
@@ -72,5 +105,24 @@ public class ExternalImageDao {
                 .map(ExternalImage::getMetadataHashAtSync)
                 .filter(metadataHash::equals)
                 .isPresent();
+    }
+
+    private void addUntilLimit(
+            LinkedHashSet<Integer> itemInventoryIds,
+            int limit,
+            BiFunction<Integer, Integer, List<Integer>> query,
+            Integer externalServiceId
+    ) {
+        if (itemInventoryIds.size() >= limit) {
+            return;
+        }
+        itemInventoryIds.addAll(query.apply(externalServiceId, limit));
+        if (itemInventoryIds.size() > limit) {
+            List<Integer> limited = itemInventoryIds.stream()
+                    .limit(limit)
+                    .toList();
+            itemInventoryIds.clear();
+            itemInventoryIds.addAll(limited);
+        }
     }
 }

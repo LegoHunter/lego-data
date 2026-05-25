@@ -5,10 +5,12 @@ import io.legohunter.data.enums.ExternalSyncStatus;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -61,6 +63,83 @@ public interface ExternalImageMapper {
     @Select("SELECT " + ALL_COLUMNS + " FROM external_image WHERE sync_status = #{syncStatus.name}")
     @ResultMap("externalImageResultMap")
     Set<ExternalImage> findBySyncStatus(ExternalSyncStatus syncStatus);
+
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            LEFT JOIN external_image image
+              ON image.item_inventory_photo_id = photo.item_inventory_photo_id
+             AND image.external_service_id = #{externalServiceId}
+            WHERE photo.status = 'PROCESSED'
+              AND image.external_image_id IS NULL
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsMissingExternalImages(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("limit") int limit
+    );
+
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            LEFT JOIN external_image_album album
+              ON album.item_inventory_id = photo.item_inventory_id
+             AND album.external_service_id = #{externalServiceId}
+            WHERE photo.status = 'PROCESSED'
+              AND (
+                    album.external_image_album_id IS NULL
+                 OR album.sync_status <> 'SYNCED'
+              )
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsMissingOrUnsyncedAlbums(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("limit") int limit
+    );
+
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            INNER JOIN external_image image
+              ON image.item_inventory_photo_id = photo.item_inventory_photo_id
+             AND image.external_service_id = #{externalServiceId}
+            WHERE photo.status = 'PROCESSED'
+              AND image.sync_status <> 'SYNCED'
+              AND (
+                    image.sync_status <> 'FAILED'
+                 OR #{includeFailed} = TRUE
+              )
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsWithUnsyncedImages(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("includeFailed") boolean includeFailed,
+            @Param("limit") int limit
+    );
+
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            INNER JOIN external_image image
+              ON image.item_inventory_photo_id = photo.item_inventory_photo_id
+             AND image.external_service_id = #{externalServiceId}
+            WHERE photo.status = 'PROCESSED'
+              AND image.external_service_image_id IS NOT NULL
+              AND (
+                    (photo.metadata_hash IS NULL AND image.metadata_hash_at_sync IS NOT NULL)
+                 OR (photo.metadata_hash IS NOT NULL AND image.metadata_hash_at_sync IS NULL)
+                 OR photo.metadata_hash <> image.metadata_hash_at_sync
+              )
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsWithMetadataDrift(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("limit") int limit
+    );
 
     @Insert("""
             INSERT INTO external_image (

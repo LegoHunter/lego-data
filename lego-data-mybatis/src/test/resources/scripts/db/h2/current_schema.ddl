@@ -240,6 +240,13 @@ CREATE TABLE external_image_album_image (
     PRIMARY KEY (external_image_album_id, external_image_id)
 );
 
+CREATE INDEX idx_item_inventory_photo_status_inventory
+    ON item_inventory_photo (status, item_inventory_id);
+CREATE INDEX idx_external_image_service_photo_status_metadata
+    ON external_image (external_service_id, item_inventory_photo_id, sync_status, metadata_hash_at_sync);
+CREATE INDEX idx_external_image_album_service_inventory_status
+    ON external_image_album (external_service_id, item_inventory_id, sync_status);
+
 CREATE TABLE party (
     party_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     party_first_name VARCHAR(255),

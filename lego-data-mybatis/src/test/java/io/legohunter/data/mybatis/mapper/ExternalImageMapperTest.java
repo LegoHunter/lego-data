@@ -1,6 +1,7 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.ExternalImage;
+import io.legohunter.data.dto.ExternalImageAlbum;
 import io.legohunter.data.dto.ExternalService;
 import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.ItemInventory;
@@ -71,6 +72,74 @@ class ExternalImageMapperTest extends MapperTestSupport {
 
         externalImageMapper.insert(image);
         assertThat(externalImageMapper.deleteByExternalImageId(image.getExternalImageId())).isOne();
+    }
+
+    @Test
+    void findItemInventoryIdsNeedingSyncWorkFindsEachFocusedWorkType() {
+        insertImageHostingService();
+        ItemInventory missingImageInventory = insertItemInventory("uuid-missing-image");
+        insertItemInventoryPhoto(missingImageInventory.getItemInventoryId(), "11111111111111111111111111111111");
+
+        ItemInventory metadataMismatchInventory = insertItemInventory("uuid-metadata-mismatch");
+        ItemInventoryPhoto metadataMismatchPhoto = insertItemInventoryPhoto(metadataMismatchInventory.getItemInventoryId(), "22222222222222222222222222222222");
+        ExternalImage metadataMismatchImage = externalImage(10, metadataMismatchPhoto.getItemInventoryPhotoId(), "image-metadata-mismatch", "22222222222222222222222222222222");
+        metadataMismatchImage.setMetadataHashAtSync("old-metadata");
+        metadataMismatchImage.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageMapper.insert(metadataMismatchImage);
+        ExternalImageAlbum metadataMismatchAlbum = externalImageAlbum(10, metadataMismatchInventory.getItemInventoryId(), "album-metadata-mismatch");
+        metadataMismatchAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(metadataMismatchAlbum);
+
+        ItemInventory missingAlbumInventory = insertItemInventory("uuid-missing-album");
+        ItemInventoryPhoto missingAlbumPhoto = insertItemInventoryPhoto(missingAlbumInventory.getItemInventoryId(), "33333333333333333333333333333333");
+        ExternalImage missingAlbumImage = externalImage(10, missingAlbumPhoto.getItemInventoryPhotoId(), "image-missing-album", "33333333333333333333333333333333");
+        missingAlbumImage.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageMapper.insert(missingAlbumImage);
+
+        ItemInventory failedImageInventory = insertItemInventory("uuid-failed-image");
+        ItemInventoryPhoto failedImagePhoto = insertItemInventoryPhoto(failedImageInventory.getItemInventoryId(), "44444444444444444444444444444444");
+        ExternalImage failedImage = externalImage(10, failedImagePhoto.getItemInventoryPhotoId(), "image-failed", "44444444444444444444444444444444");
+        failedImage.setSyncStatus(ExternalSyncStatus.FAILED);
+        externalImageMapper.insert(failedImage);
+        ExternalImageAlbum failedImageAlbum = externalImageAlbum(10, failedImageInventory.getItemInventoryId(), "album-failed");
+        failedImageAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(failedImageAlbum);
+
+        ItemInventory pendingImageInventory = insertItemInventory("uuid-pending-image");
+        ItemInventoryPhoto pendingImagePhoto = insertItemInventoryPhoto(pendingImageInventory.getItemInventoryId(), "66666666666666666666666666666666");
+        ExternalImage pendingImage = externalImage(10, pendingImagePhoto.getItemInventoryPhotoId(), "image-pending", "66666666666666666666666666666666");
+        externalImageMapper.insert(pendingImage);
+        ExternalImageAlbum pendingImageAlbum = externalImageAlbum(10, pendingImageInventory.getItemInventoryId(), "album-pending");
+        pendingImageAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(pendingImageAlbum);
+
+        ItemInventory syncedInventory = insertItemInventory("uuid-synced");
+        ItemInventoryPhoto syncedPhoto = insertItemInventoryPhoto(syncedInventory.getItemInventoryId(), "55555555555555555555555555555555");
+        ExternalImage syncedImage = externalImage(10, syncedPhoto.getItemInventoryPhotoId(), "image-synced", "55555555555555555555555555555555");
+        syncedImage.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageMapper.insert(syncedImage);
+        ExternalImageAlbum syncedAlbum = externalImageAlbum(10, syncedInventory.getItemInventoryId(), "album-synced");
+        syncedAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(syncedAlbum);
+
+        assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 10))
+                .containsExactly(missingImageInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsMissingOrUnsyncedAlbums(10, 10))
+                .containsExactly(
+                        missingImageInventory.getItemInventoryId(),
+                        missingAlbumInventory.getItemInventoryId()
+                );
+        assertThat(externalImageMapper.findItemInventoryIdsWithUnsyncedImages(10, false, 10))
+                .containsExactly(pendingImageInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsWithUnsyncedImages(10, true, 10))
+                .containsExactly(
+                        failedImageInventory.getItemInventoryId(),
+                        pendingImageInventory.getItemInventoryId()
+                );
+        assertThat(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+                .containsExactly(metadataMismatchInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 1))
+                .containsExactly(missingImageInventory.getItemInventoryId());
     }
 
     private void insertImageHostingService() {
