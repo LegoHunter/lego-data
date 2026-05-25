@@ -16,6 +16,7 @@ public class ExternalImage {
     private String title;
     private String imageUrl;
     private String md5AtUpload;
+    private String metadataHashAtSync;
     private ExternalSyncStatus syncStatus;
     private String errorMessage;
     private ZonedDateTime uploadedAt;

@@ -63,9 +63,59 @@ public class ItemInventoryPhotoDao {
             boolean primary,
             String caption,
             PhotoStatus status) {
+        return insertPhoto(
+                itemInventoryId,
+                md5,
+                null,
+                filename,
+                s3Bucket,
+                s3Key,
+                fileSize,
+                primary,
+                caption,
+                status
+        );
+    }
+
+    public ItemInventoryPhoto insertPhoto(
+            Integer itemInventoryId,
+            String md5,
+            String metadataHash,
+            String filename,
+            String s3Bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
+            PhotoStatus status) {
+        return insertPhoto(
+                itemInventoryId,
+                md5,
+                metadataHash,
+                filename,
+                s3Bucket,
+                s3Key,
+                fileSize,
+                primary,
+                null,
+                status
+        );
+    }
+
+    public ItemInventoryPhoto insertPhoto(
+            Integer itemInventoryId,
+            String md5,
+            String metadataHash,
+            String filename,
+            String s3Bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
+            String caption,
+            PhotoStatus status) {
         ItemInventoryPhoto itemInventoryPhoto = ItemInventoryPhoto.builder()
                 .itemInventoryId(itemInventoryId)
                 .md5(md5)
+                .metadataHash(metadataHash)
                 .fileName(filename)
                 .s3Bucket(s3Bucket)
                 .s3Key(s3Key)
@@ -128,10 +178,36 @@ public class ItemInventoryPhotoDao {
             boolean primary,
             String caption,
             PhotoStatus status) {
+        return replaceStoredObject(
+                itemInventoryPhotoId,
+                fileName,
+                md5,
+                null,
+                bucket,
+                s3Key,
+                fileSize,
+                primary,
+                caption,
+                status
+        );
+    }
+
+    public int replaceStoredObject(
+            Integer itemInventoryPhotoId,
+            String fileName,
+            String md5,
+            String metadataHash,
+            String bucket,
+            String s3Key,
+            long fileSize,
+            boolean primary,
+            String caption,
+            PhotoStatus status) {
         return itemInventoryPhotoMapper.replaceStoredObject(
                 itemInventoryPhotoId,
                 fileName,
                 md5,
+                metadataHash,
                 bucket,
                 s3Key,
                 fileSize,
@@ -147,9 +223,27 @@ public class ItemInventoryPhotoDao {
             boolean primary,
             String caption,
             PhotoStatus status) {
+        return updateMetadata(
+                itemInventoryPhotoId,
+                fileName,
+                null,
+                primary,
+                caption,
+                status
+        );
+    }
+
+    public int updateMetadata(
+            Integer itemInventoryPhotoId,
+            String fileName,
+            String metadataHash,
+            boolean primary,
+            String caption,
+            PhotoStatus status) {
         return itemInventoryPhotoMapper.updateMetadata(
                 itemInventoryPhotoId,
                 fileName,
+                metadataHash,
                 primary,
                 caption,
                 status

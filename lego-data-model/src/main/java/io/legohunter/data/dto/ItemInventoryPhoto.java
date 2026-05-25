@@ -14,6 +14,7 @@ public class ItemInventoryPhoto {
     private String s3Bucket;
     private String s3Key;
     private String md5;
+    private String metadataHash;
     private String fileName;
     private Long fileSize;
     private Boolean primary;

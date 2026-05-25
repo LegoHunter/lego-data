@@ -43,6 +43,7 @@ class ItemInventoryPhotoDaoTest {
         dao.insertPhoto(
                 1,
                 "md5-1",
+                "metadata-hash-1",
                 "photo.jpg",
                 "lego-photos-sandbox",
                 "3001/uuid/md5-1.jpg",
@@ -61,6 +62,7 @@ class ItemInventoryPhotoDaoTest {
                 .extracting(
                         ItemInventoryPhoto::getItemInventoryId,
                         ItemInventoryPhoto::getMd5,
+                        ItemInventoryPhoto::getMetadataHash,
                         ItemInventoryPhoto::getFileName,
                         ItemInventoryPhoto::getS3Bucket,
                         ItemInventoryPhoto::getS3Key,
@@ -71,6 +73,7 @@ class ItemInventoryPhotoDaoTest {
                 .containsExactly(
                         1,
                         "md5-1",
+                        "metadata-hash-1",
                         "photo.jpg",
                         "lego-photos-sandbox",
                         "3001/uuid/md5-1.jpg",
@@ -402,6 +405,7 @@ class ItemInventoryPhotoDaoTest {
                         inserted.getItemInventoryPhotoId(),
                         "replace.jpg",
                         "md5-new",
+                        "metadata-hash-new",
                         "lego-photos-sandbox",
                         "3001/uuid/md5-new.jpg",
                         2000L,
@@ -419,6 +423,7 @@ class ItemInventoryPhotoDaoTest {
         assertThat(result)
                 .extracting(
                         ItemInventoryPhoto::getMd5,
+                        ItemInventoryPhoto::getMetadataHash,
                         ItemInventoryPhoto::getFileName,
                         ItemInventoryPhoto::getS3Bucket,
                         ItemInventoryPhoto::getS3Key,
@@ -429,6 +434,7 @@ class ItemInventoryPhotoDaoTest {
                 )
                 .containsExactly(
                         "md5-new",
+                        "metadata-hash-new",
                         "replace.jpg",
                         "lego-photos-sandbox",
                         "3001/uuid/md5-new.jpg",
@@ -463,6 +469,7 @@ class ItemInventoryPhotoDaoTest {
                 dao.updateMetadata(
                         inserted.getItemInventoryPhotoId(),
                         "metadata.jpg",
+                        "metadata-hash-updated",
                         false,
                         "New caption",
                         PhotoStatus.PROCESSED
@@ -477,6 +484,7 @@ class ItemInventoryPhotoDaoTest {
         assertThat(result)
                 .extracting(
                         ItemInventoryPhoto::getMd5,
+                        ItemInventoryPhoto::getMetadataHash,
                         ItemInventoryPhoto::getFileName,
                         ItemInventoryPhoto::getS3Bucket,
                         ItemInventoryPhoto::getS3Key,
@@ -486,6 +494,7 @@ class ItemInventoryPhotoDaoTest {
                 )
                 .containsExactly(
                         "md5-metadata",
+                        "metadata-hash-updated",
                         "metadata.jpg",
                         "bucket",
                         "metadata-key",

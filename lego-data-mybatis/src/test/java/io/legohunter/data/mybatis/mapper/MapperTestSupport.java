@@ -165,6 +165,7 @@ abstract class MapperTestSupport {
                 .title("3001-1 [uuid]")
                 .imageUrl("https://photos.example/images/" + externalServiceImageId)
                 .md5AtUpload(md5)
+                .metadataHashAtSync("metadata-" + md5)
                 .syncStatus(ExternalSyncStatus.PENDING)
                 .build();
     }
@@ -184,6 +185,7 @@ abstract class MapperTestSupport {
                 .s3Bucket("lego-photos-sandbox")
                 .s3Key("3001/uuid/" + md5 + ".jpg")
                 .md5(md5)
+                .metadataHash("metadata-" + md5)
                 .fileName(md5 + ".jpg")
                 .fileSize(1000L)
                 .primary(false)

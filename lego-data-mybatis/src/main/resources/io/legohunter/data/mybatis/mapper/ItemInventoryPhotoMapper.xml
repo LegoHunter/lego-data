@@ -6,6 +6,7 @@
         <result column="s3_bucket"                 property="s3Bucket"/>
         <result column="s3_key"                    property="s3Key"/>
         <result column="md5"                       property="md5"/>
+        <result column="metadata_hash"             property="metadataHash"/>
         <result column="file_name"                 property="fileName"/>
         <result column="file_size"                 property="fileSize"/>
         <result column="is_primary"                property="primary"/>
