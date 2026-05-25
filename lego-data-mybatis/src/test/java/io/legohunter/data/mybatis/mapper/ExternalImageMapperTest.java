@@ -75,7 +75,7 @@ class ExternalImageMapperTest extends MapperTestSupport {
     }
 
     @Test
-    void findItemInventoryIdsNeedingSyncFindsDistinctPendingFlickrWork() {
+    void findItemInventoryIdsNeedingSyncWorkFindsEachFocusedWorkType() {
         insertImageHostingService();
         ItemInventory missingImageInventory = insertItemInventory("uuid-missing-image");
         insertItemInventoryPhoto(missingImageInventory.getItemInventoryId(), "11111111111111111111111111111111");
@@ -105,6 +105,14 @@ class ExternalImageMapperTest extends MapperTestSupport {
         failedImageAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
         externalImageAlbumMapper.insert(failedImageAlbum);
 
+        ItemInventory pendingImageInventory = insertItemInventory("uuid-pending-image");
+        ItemInventoryPhoto pendingImagePhoto = insertItemInventoryPhoto(pendingImageInventory.getItemInventoryId(), "66666666666666666666666666666666");
+        ExternalImage pendingImage = externalImage(10, pendingImagePhoto.getItemInventoryPhotoId(), "image-pending", "66666666666666666666666666666666");
+        externalImageMapper.insert(pendingImage);
+        ExternalImageAlbum pendingImageAlbum = externalImageAlbum(10, pendingImageInventory.getItemInventoryId(), "album-pending");
+        pendingImageAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(pendingImageAlbum);
+
         ItemInventory syncedInventory = insertItemInventory("uuid-synced");
         ItemInventoryPhoto syncedPhoto = insertItemInventoryPhoto(syncedInventory.getItemInventoryId(), "55555555555555555555555555555555");
         ExternalImage syncedImage = externalImage(10, syncedPhoto.getItemInventoryPhotoId(), "image-synced", "55555555555555555555555555555555");
@@ -114,24 +122,24 @@ class ExternalImageMapperTest extends MapperTestSupport {
         syncedAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
         externalImageAlbumMapper.insert(syncedAlbum);
 
-        assertThat(externalImageMapper.findItemInventoryIdsNeedingSync(10, false, 10))
+        assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 10))
+                .containsExactly(missingImageInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsMissingOrUnsyncedAlbums(10, 10))
                 .containsExactly(
                         missingImageInventory.getItemInventoryId(),
-                        metadataMismatchInventory.getItemInventoryId(),
                         missingAlbumInventory.getItemInventoryId()
                 );
-        assertThat(externalImageMapper.findItemInventoryIdsNeedingSync(10, true, 10))
+        assertThat(externalImageMapper.findItemInventoryIdsWithUnsyncedImages(10, false, 10))
+                .containsExactly(pendingImageInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsWithUnsyncedImages(10, true, 10))
                 .containsExactly(
-                        missingImageInventory.getItemInventoryId(),
-                        metadataMismatchInventory.getItemInventoryId(),
-                        missingAlbumInventory.getItemInventoryId(),
-                        failedImageInventory.getItemInventoryId()
+                        failedImageInventory.getItemInventoryId(),
+                        pendingImageInventory.getItemInventoryId()
                 );
-        assertThat(externalImageMapper.findItemInventoryIdsNeedingSync(10, true, 2))
-                .containsExactly(
-                        missingImageInventory.getItemInventoryId(),
-                        metadataMismatchInventory.getItemInventoryId()
-                );
+        assertThat(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+                .containsExactly(metadataMismatchInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 1))
+                .containsExactly(missingImageInventory.getItemInventoryId());
     }
 
     private void insertImageHostingService() {
