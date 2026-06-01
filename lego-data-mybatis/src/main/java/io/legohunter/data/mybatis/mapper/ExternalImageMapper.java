@@ -71,11 +71,15 @@ public interface ExternalImageMapper {
               ON image.item_inventory_photo_id = photo.item_inventory_photo_id
              AND image.external_service_id = #{externalServiceId}
             WHERE photo.status = 'PROCESSED'
-              AND image.external_image_id IS NULL
+              AND (
+                    image.external_image_id IS NULL
+                 OR image.external_service_image_id IS NULL
+                 OR image.external_service_image_id = ''
+              )
             ORDER BY photo.item_inventory_id
             LIMIT #{limit}
             """)
-    List<Integer> findItemInventoryIdsMissingExternalImages(
+    List<Integer> findItemInventoryIdsMissingExternalImageLinks(
             @Param("externalServiceId") Integer externalServiceId,
             @Param("limit") int limit
     );
@@ -89,12 +93,13 @@ public interface ExternalImageMapper {
             WHERE photo.status = 'PROCESSED'
               AND (
                     album.external_image_album_id IS NULL
-                 OR album.sync_status <> 'SYNCED'
+                 OR album.external_album_id IS NULL
+                 OR album.external_album_id = ''
               )
             ORDER BY photo.item_inventory_id
             LIMIT #{limit}
             """)
-    List<Integer> findItemInventoryIdsMissingOrUnsyncedAlbums(
+    List<Integer> findItemInventoryIdsMissingAlbumLinks(
             @Param("externalServiceId") Integer externalServiceId,
             @Param("limit") int limit
     );
@@ -106,17 +111,43 @@ public interface ExternalImageMapper {
               ON image.item_inventory_photo_id = photo.item_inventory_photo_id
              AND image.external_service_id = #{externalServiceId}
             WHERE photo.status = 'PROCESSED'
-              AND image.sync_status <> 'SYNCED'
               AND (
-                    image.sync_status <> 'FAILED'
-                 OR #{includeFailed} = TRUE
+                    image.sync_status = 'PENDING'
+                 OR EXISTS (
+                        SELECT 1
+                        FROM external_image_album album
+                        WHERE album.item_inventory_id = photo.item_inventory_id
+                          AND album.external_service_id = #{externalServiceId}
+                          AND album.sync_status = 'PENDING'
+                    )
               )
             ORDER BY photo.item_inventory_id
             LIMIT #{limit}
             """)
-    List<Integer> findItemInventoryIdsWithUnsyncedImages(
+    List<Integer> findItemInventoryIdsWithPendingSyncRows(
             @Param("externalServiceId") Integer externalServiceId,
-            @Param("includeFailed") boolean includeFailed,
+            @Param("limit") int limit
+    );
+
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            LEFT JOIN external_image image
+              ON image.item_inventory_photo_id = photo.item_inventory_photo_id
+             AND image.external_service_id = #{externalServiceId}
+            LEFT JOIN external_image_album album
+              ON album.item_inventory_id = photo.item_inventory_id
+             AND album.external_service_id = #{externalServiceId}
+            WHERE photo.status = 'PROCESSED'
+              AND (
+                    image.sync_status = 'FAILED'
+                 OR album.sync_status = 'FAILED'
+              )
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsWithFailedSyncRows(
+            @Param("externalServiceId") Integer externalServiceId,
             @Param("limit") int limit
     );
 

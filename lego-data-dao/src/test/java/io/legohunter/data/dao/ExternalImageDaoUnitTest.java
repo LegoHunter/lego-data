@@ -7,7 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -27,41 +29,105 @@ class ExternalImageDaoUnitTest {
     }
 
     @Test
-    void findItemInventoryIdsNeedingSyncMergesFocusedQueriesInPriorityOrder() {
-        when(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 10))
+    void findItemInventorySyncCandidatesMergesFocusedQueriesInPriorityOrderAndTracksReasons() {
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumLinks(10, 10))
                 .thenReturn(List.of(100, 101));
-        when(externalImageMapper.findItemInventoryIdsMissingOrUnsyncedAlbums(10, 10))
+        when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 10))
                 .thenReturn(List.of(101, 102));
-        when(externalImageMapper.findItemInventoryIdsWithUnsyncedImages(10, true, 10))
+        when(externalImageMapper.findItemInventoryIdsWithFailedSyncRows(10, 10))
                 .thenReturn(List.of(102, 103));
-        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 10))
                 .thenReturn(List.of(103, 104));
+        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+                .thenReturn(List.of(104, 105));
 
-        assertThat(externalImageDao.findItemInventoryIdsNeedingSync(10, true, 10))
-                .containsExactly(100, 101, 102, 103, 104);
+        List<ImageHostingSyncCandidate> candidates = externalImageDao.findItemInventorySyncCandidates(10, true, 10);
 
-        verify(externalImageMapper).findItemInventoryIdsWithUnsyncedImages(10, true, 10);
+        assertThat(candidates)
+                .extracting(ImageHostingSyncCandidate::itemInventoryId)
+                .containsExactly(100, 101, 102, 103, 104, 105);
+        assertThat(candidates.get(1).reasons()).containsExactlyInAnyOrder(
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
+                ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK
+        );
+        assertThat(candidates.get(2).reasons()).containsExactlyInAnyOrder(
+                ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK,
+                ImageHostingSyncCandidateReason.FAILED_SYNC
+        );
+        assertThat(candidates.get(4).reasons()).containsExactlyInAnyOrder(
+                ImageHostingSyncCandidateReason.PENDING_SYNC,
+                ImageHostingSyncCandidateReason.METADATA_CHANGED
+        );
+        verify(externalImageMapper).findItemInventoryIdsWithFailedSyncRows(10, 10);
     }
 
     @Test
-    void findItemInventoryIdsNeedingSyncAppliesLimitAndStopsWhenFull() {
-        when(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 2))
+    void findItemInventorySyncCandidatesAppliesLimitButStillAddsLaterReasonsForSelectedIds() {
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumLinks(10, 2))
                 .thenReturn(List.of(100, 101));
+        when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 2))
+                .thenReturn(List.of(101, 102));
+        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 2))
+                .thenReturn(List.of(100, 103));
+        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 2))
+                .thenReturn(List.of(104));
 
-        assertThat(externalImageDao.findItemInventoryIdsNeedingSync(10, false, 2))
+        List<ImageHostingSyncCandidate> candidates = externalImageDao.findItemInventorySyncCandidates(10, false, 2);
+
+        assertThat(candidates)
+                .extracting(ImageHostingSyncCandidate::itemInventoryId)
                 .containsExactly(100, 101);
-
-        verify(externalImageMapper, never()).findItemInventoryIdsMissingOrUnsyncedAlbums(10, 2);
-        verify(externalImageMapper, never()).findItemInventoryIdsWithUnsyncedImages(10, false, 2);
-        verify(externalImageMapper, never()).findItemInventoryIdsWithMetadataDrift(10, 2);
+        assertThat(candidates.get(0).reasons()).containsExactlyInAnyOrder(
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
+                ImageHostingSyncCandidateReason.PENDING_SYNC
+        );
+        assertThat(candidates.get(1).reasons()).containsExactlyInAnyOrder(
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
+                ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK
+        );
     }
 
     @Test
     void findItemInventoryIdsNeedingSyncNormalizesInvalidLimitToOne() {
-        when(externalImageMapper.findItemInventoryIdsMissingExternalImages(10, 1))
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumLinks(10, 1))
                 .thenReturn(List.of(100, 101));
+        when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 1))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 1))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 1))
+                .thenReturn(List.of());
 
         assertThat(externalImageDao.findItemInventoryIdsNeedingSync(10, false, 0))
                 .containsExactly(100);
+    }
+
+    @Test
+    void findItemInventorySyncCandidatesSkipsFailedRowsWhenRetryFailedIsDisabled() {
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumLinks(10, 10))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 10))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 10))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+                .thenReturn(List.of());
+
+        List<ImageHostingSyncCandidate> candidates = externalImageDao.findItemInventorySyncCandidates(10, false, 10);
+
+        assertThat(candidates).isEmpty();
+        verify(externalImageMapper, never()).findItemInventoryIdsWithFailedSyncRows(10, 10);
+    }
+
+    @Test
+    void imageHostingSyncCandidateDefensivelyCopiesReasons() {
+        EnumSet<ImageHostingSyncCandidateReason> reasons =
+                EnumSet.of(ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK);
+
+        ImageHostingSyncCandidate candidate = ImageHostingSyncCandidate.of(100, reasons);
+        reasons.add(ImageHostingSyncCandidateReason.METADATA_CHANGED);
+
+        assertThat(candidate.reasons()).containsExactly(ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK);
+        assertThat(new ImageHostingSyncCandidate(101, null).reasons()).isEqualTo(Set.of());
     }
 }

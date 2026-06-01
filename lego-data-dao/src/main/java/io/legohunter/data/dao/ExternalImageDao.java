@@ -6,7 +6,8 @@ import io.legohunter.data.mybatis.mapper.ExternalImageMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.LinkedHashSet;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,33 +43,54 @@ public class ExternalImageDao {
     }
 
     public List<Integer> findItemInventoryIdsNeedingSync(Integer externalServiceId, boolean includeFailed, int limit) {
+        return findItemInventorySyncCandidates(externalServiceId, includeFailed, limit).stream()
+                .map(ImageHostingSyncCandidate::itemInventoryId)
+                .toList();
+    }
+
+    public List<ImageHostingSyncCandidate> findItemInventorySyncCandidates(Integer externalServiceId, boolean includeFailed, int limit) {
         int effectiveLimit = Math.max(1, limit);
-        LinkedHashSet<Integer> itemInventoryIds = new LinkedHashSet<>();
-        addUntilLimit(
-                itemInventoryIds,
+        LinkedHashMap<Integer, EnumSet<ImageHostingSyncCandidateReason>> candidates = new LinkedHashMap<>();
+        addCandidates(
+                candidates,
                 effectiveLimit,
-                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsMissingExternalImages(serviceId, queryLimit),
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
+                externalImageMapper::findItemInventoryIdsMissingAlbumLinks,
                 externalServiceId
         );
-        addUntilLimit(
-                itemInventoryIds,
+        addCandidates(
+                candidates,
                 effectiveLimit,
-                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsMissingOrUnsyncedAlbums(serviceId, queryLimit),
+                ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK,
+                externalImageMapper::findItemInventoryIdsMissingExternalImageLinks,
                 externalServiceId
         );
-        addUntilLimit(
-                itemInventoryIds,
+        if (includeFailed) {
+            addCandidates(
+                    candidates,
+                    effectiveLimit,
+                    ImageHostingSyncCandidateReason.FAILED_SYNC,
+                    externalImageMapper::findItemInventoryIdsWithFailedSyncRows,
+                    externalServiceId
+            );
+        }
+        addCandidates(
+                candidates,
                 effectiveLimit,
-                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsWithUnsyncedImages(serviceId, includeFailed, queryLimit),
+                ImageHostingSyncCandidateReason.PENDING_SYNC,
+                externalImageMapper::findItemInventoryIdsWithPendingSyncRows,
                 externalServiceId
         );
-        addUntilLimit(
-                itemInventoryIds,
+        addCandidates(
+                candidates,
                 effectiveLimit,
-                (serviceId, queryLimit) -> externalImageMapper.findItemInventoryIdsWithMetadataDrift(serviceId, queryLimit),
+                ImageHostingSyncCandidateReason.METADATA_CHANGED,
+                externalImageMapper::findItemInventoryIdsWithMetadataDrift,
                 externalServiceId
         );
-        return List.copyOf(itemInventoryIds);
+        return candidates.entrySet().stream()
+                .map(entry -> ImageHostingSyncCandidate.of(entry.getKey(), entry.getValue()))
+                .toList();
     }
 
     public ExternalImage insert(ExternalImage externalImage) {
@@ -107,22 +129,25 @@ public class ExternalImageDao {
                 .isPresent();
     }
 
-    private void addUntilLimit(
-            LinkedHashSet<Integer> itemInventoryIds,
+    private void addCandidates(
+            LinkedHashMap<Integer, EnumSet<ImageHostingSyncCandidateReason>> candidates,
             int limit,
+            ImageHostingSyncCandidateReason reason,
             BiFunction<Integer, Integer, List<Integer>> query,
             Integer externalServiceId
     ) {
-        if (itemInventoryIds.size() >= limit) {
-            return;
-        }
-        itemInventoryIds.addAll(query.apply(externalServiceId, limit));
-        if (itemInventoryIds.size() > limit) {
-            List<Integer> limited = itemInventoryIds.stream()
-                    .limit(limit)
-                    .toList();
-            itemInventoryIds.clear();
-            itemInventoryIds.addAll(limited);
+        List<Integer> itemInventoryIds = query.apply(externalServiceId, limit);
+        for (Integer itemInventoryId : itemInventoryIds) {
+            if (itemInventoryId == null) {
+                continue;
+            }
+            if (candidates.containsKey(itemInventoryId)) {
+                candidates.get(itemInventoryId).add(reason);
+                continue;
+            }
+            if (candidates.size() < limit) {
+                candidates.put(itemInventoryId, EnumSet.of(reason));
+            }
         }
     }
 }
