@@ -20,7 +20,10 @@ class ItemInventoryMapperTest extends MapperTestSupport {
         assertThat(itemInventoryMapper.update(itemInventory)).isEqualTo(1);
 
         assertThat(itemInventoryMapper.findByItemInventoryId(itemInventory.getItemInventoryId()))
-                .hasValueSatisfying(found -> assertThat(found.getDescription()).isEqualTo("Updated inventory"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getDescription()).isEqualTo("Updated inventory");
+                    assertThat(found.getPurchasePrice()).isEqualByComparingTo("12.34");
+                });
         assertThat(itemInventoryMapper.findByUuid("uuid-inventory"))
                 .hasValueSatisfying(found -> assertThat(found.getItemInventoryId()).isEqualTo(itemInventory.getItemInventoryId()));
         assertThat(itemInventoryMapper.findAll()).hasSize(1);
@@ -30,5 +33,8 @@ class ItemInventoryMapperTest extends MapperTestSupport {
 
         assertThat(itemInventoryMapper.findByUuid("uuid-inventory"))
                 .hasValueSatisfying(found -> assertThat(found.getDescription()).isEqualTo("Upserted inventory"));
+
+        assertThat(itemInventoryMapper.delete(itemInventory.getItemInventoryId())).isOne();
+        assertThat(itemInventoryMapper.findByUuid("uuid-inventory")).isEmpty();
     }
 }

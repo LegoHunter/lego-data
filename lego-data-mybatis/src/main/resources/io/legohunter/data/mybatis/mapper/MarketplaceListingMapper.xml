@@ -1,0 +1,23 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketplaceListingMapper">
+  <resultMap type="io.legohunter.data.dto.MarketplaceListing" id="marketplaceListingResultMap">
+    <result column="marketplace_listing_id"      property="marketplaceListingId"/>
+    <result column="item_inventory_id"           property="itemInventoryId"/>
+    <result column="listing_external_service_id" property="listingExternalServiceId"/>
+    <result column="external_catalog_item_id"    property="externalCatalogItemId"/>
+    <result column="external_listing_id"         property="externalListingId"/>
+    <result column="external_listing_url"        property="externalListingUrl"/>
+    <result column="listing_status_code"         property="listingStatusCode"/>
+    <result column="title"                       property="title"/>
+    <result column="description"                 property="description"/>
+    <result column="private_notes"               property="privateNotes"/>
+    <result column="unit_price"                  property="unitPrice"/>
+    <result column="currency_code"               property="currencyCode"/>
+    <result column="fixed_price"                 property="fixedPrice"/>
+    <result column="created_at"                  property="createdAt"/>
+    <result column="updated_at"                  property="updatedAt"/>
+    <result column="published_at"                property="publishedAt"/>
+    <result column="ended_at"                    property="endedAt"/>
+    <result column="last_synchronized_at"        property="lastSynchronizedAt"/>
+  </resultMap>
+</mapper>

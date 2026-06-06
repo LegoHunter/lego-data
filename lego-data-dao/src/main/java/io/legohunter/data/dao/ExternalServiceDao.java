@@ -1,35 +1,54 @@
 package io.legohunter.data.dao;
 
-import lombok.RequiredArgsConstructor;
 import io.legohunter.data.dto.ExternalService;
 import io.legohunter.data.mybatis.mapper.ExternalServiceMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 public class ExternalServiceDao {
     private final ExternalServiceMapper externalServiceMapper;
 
-    public List<ExternalService> findAll() {
+    public Set<ExternalService> findAll() {
         return externalServiceMapper.findAll();
     }
 
+    public Optional<ExternalService> findByExternalServiceId(final Integer externalServiceId) {
+        return externalServiceMapper.findByExternalServiceId(externalServiceId);
+    }
+
+    public Optional<ExternalService> findByServiceCode(final String serviceCode) {
+        return externalServiceMapper.findByServiceCode(serviceCode);
+    }
+
+    public ExternalService insert(ExternalService externalService) {
+        externalServiceMapper.insert(externalService);
+        return externalService;
+    }
+
+    public ExternalService update(ExternalService externalService) {
+        externalServiceMapper.update(externalService);
+        return findByExternalServiceId(externalService.getExternalServiceId()).orElseThrow();
+    }
+
+    public void delete(Integer externalServiceId) {
+        externalServiceMapper.delete(externalServiceId);
+    }
+
+    public ExternalService upsert(ExternalService externalService) {
+        externalServiceMapper.upsert(externalService);
+        return findByExternalServiceId(externalService.getExternalServiceId()).orElseThrow();
+    }
+
     public Optional<ExternalService> findExternalServiceById(final Integer externalServiceId) {
-        return externalServiceMapper.findExternalServiceById(externalServiceId);
+        return findByExternalServiceId(externalServiceId);
     }
 
-    public Optional<ExternalService> findExternalServiceByName(final String externalServiceName) {
-        return externalServiceMapper.findExternalServiceByName(externalServiceName);
-    }
-
-    public void insert(ExternalService externalService) {
-        externalServiceMapper.insertExternalService(externalService);
-    }
-
-    public void update(ExternalService externalService) {
-        externalServiceMapper.updateExternalService(externalService);
+    public Optional<ExternalService> findExternalServiceByName(final String serviceCode) {
+        return findByServiceCode(serviceCode);
     }
 }

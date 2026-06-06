@@ -2,8 +2,9 @@
 <mapper namespace="io.legohunter.data.mybatis.mapper.ExternalServiceMapper">
   <resultMap type="io.legohunter.data.dto.ExternalService" id="externalServiceResultMap">
     <result column="external_service_id"      property="externalServiceId"/>
-    <result column="external_service_name"    property="externalServiceName"/>
-    <result column="external_service_url"     property="externalServiceUrl"/>
+    <result column="service_code"             property="serviceCode"/>
+    <result column="display_name"             property="displayName"/>
+    <result column="service_url"              property="serviceUrl"/>
     <result column="external_service_type_id" property="externalServiceTypeId"/>
   </resultMap>
 </mapper>

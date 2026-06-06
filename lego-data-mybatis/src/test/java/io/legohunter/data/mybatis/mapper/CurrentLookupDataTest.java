@@ -1,10 +1,11 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.Carrier;
-import io.legohunter.data.dto.Category;
 import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.CostType;
+import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ExternalService;
+import io.legohunter.data.dto.ExternalServiceCapability;
 import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.PaymentPlatform;
 import io.legohunter.data.dto.TransactionPlatform;
@@ -40,10 +41,12 @@ class CurrentLookupDataTest extends MapperTestSupport {
         assertThat(paymentPlatformMapper.findAll()).extracting(PaymentPlatform::getPaymentPlatformName)
                 .containsExactlyInAnyOrder("PayPal", "Credit Card");
         assertThat(externalServiceTypeMapper.findAll()).extracting(ExternalServiceType::getExternalServiceTypeName)
-                .containsExactlyInAnyOrder("LEGO", "MARKETPLACE", "AUCTION", "THIRDPARTY");
-        assertThat(externalServiceMapper.findAll()).extracting(ExternalService::getExternalServiceName)
-                .containsExactlyInAnyOrder("LEGO", "BRICKLINK", "EBAY", "CATAWIKI", "LAURITZ", "QXL", "PNW Steam Shop", "Brick Model Railroader", "Rebrickable");
-        assertThat(categoryMapper.findAll()).extracting(Category::getCategoryName)
+                .containsExactlyInAnyOrder("LEGO", "MARKETPLACE", "AUCTION", "THIRDPARTY", "IMAGE_HOSTING");
+        assertThat(externalServiceMapper.findAll()).extracting(ExternalService::getServiceCode)
+                .containsExactlyInAnyOrder("LEGO", "BRICKLINK", "EBAY", "CATAWIKI", "LAURITZ", "QXL", "PNW_STEAM_SHOP", "BRICK_MODEL_RAILROADER", "REBRICKABLE", "FLICKR");
+        assertThat(externalServiceCapabilityMapper.findAll()).extracting(ExternalServiceCapability::getCapabilityCode)
+                .contains("CATALOG", "MARKETPLACE_LISTING", "ORDER_SYNC", "PRICE_GUIDE", "IMAGE_HOSTING");
+        assertThat(externalCategoryMapper.findAll()).extracting(ExternalCategory::getCategoryName)
                 .containsExactlyInAnyOrder("Brick", "Star Wars", "The Hobbit and The Lord of the Rings", "Technic", "Star Wars");
     }
 }

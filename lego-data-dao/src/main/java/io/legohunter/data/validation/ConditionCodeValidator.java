@@ -32,7 +32,7 @@ public class ConditionCodeValidator implements ConstraintValidator<ConditionCode
         }
 
         return conditionDao.findByConditionCode(value.toString())
-                .map(_ -> true)
+                .map(condition -> true)
                 .orElseGet(() -> {
                     context.disableDefaultConstraintViolation();
                     context.buildConstraintViolationWithTemplate(String.format("Must be one of %s", acceptedValues))

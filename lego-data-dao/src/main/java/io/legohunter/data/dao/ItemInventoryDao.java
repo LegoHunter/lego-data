@@ -1,21 +1,19 @@
 package io.legohunter.data.dao;
 
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.mybatis.mapper.ItemInventoryMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ItemInventoryDao {
     private final ItemInventoryMapper itemInventoryMapper;
 
-    public List<ItemInventory> findAll() {
+    public Set<ItemInventory> findAll() {
         return itemInventoryMapper.findAll();
     }
 
@@ -27,29 +25,22 @@ public class ItemInventoryDao {
         return itemInventoryMapper.findByUuid(uuid);
     }
 
-    public void insert(ItemInventory itemInventory) {
+    public ItemInventory insert(ItemInventory itemInventory) {
         itemInventoryMapper.insert(itemInventory);
+        return findByItemInventoryId(itemInventory.getItemInventoryId()).orElseThrow();
     }
 
-    public void update(ItemInventory itemInventory) {
+    public ItemInventory update(ItemInventory itemInventory) {
         itemInventoryMapper.update(itemInventory);
+        return findByItemInventoryId(itemInventory.getItemInventoryId()).orElseThrow();
     }
 
-    public void upsert(ItemInventory itemInventory) {
-        Integer itemInventoryId = itemInventory.getItemInventoryId();
-        if (Optional.ofNullable(itemInventoryId).isPresent()) {
-            update(itemInventory);
-            log.info("Updated ItemInventory [{}]", itemInventory);
-        } else {
-            String uuid = itemInventory.getUuid();
-            itemInventoryMapper.findByUuid(uuid).ifPresentOrElse(existingItemInventory -> {
-                itemInventory.setItemInventoryId(existingItemInventory.getItemInventoryId());
-                update(itemInventory);
-                log.info("Updated ItemInventory [{}]", itemInventory);
-            }, () -> {
-                itemInventoryMapper.insert(itemInventory);
-                log.info("Inserted ItemInventory [{}]", itemInventory);
-            });
-        }
+    public void delete(Integer itemInventoryId) {
+        itemInventoryMapper.delete(itemInventoryId);
+    }
+
+    public ItemInventory upsert(ItemInventory itemInventory) {
+        itemInventoryMapper.upsert(itemInventory);
+        return findByItemInventoryId(itemInventory.getItemInventoryId()).orElseThrow();
     }
 }
