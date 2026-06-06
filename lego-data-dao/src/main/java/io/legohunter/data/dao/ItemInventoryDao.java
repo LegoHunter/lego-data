@@ -41,6 +41,9 @@ public class ItemInventoryDao {
 
     public ItemInventory upsert(ItemInventory itemInventory) {
         itemInventoryMapper.upsert(itemInventory);
-        return findByItemInventoryId(itemInventory.getItemInventoryId()).orElseThrow();
+        if (itemInventory.getItemInventoryId() != null) {
+            return findByItemInventoryId(itemInventory.getItemInventoryId()).orElseThrow();
+        }
+        return findByUuid(itemInventory.getUuid()).orElseThrow();
     }
 }

@@ -69,9 +69,18 @@ public interface ExternalCatalogItemCategoryMapper {
             """)
     int delete(@Param("externalCatalogItemId") Integer externalCatalogItemId, @Param("externalCategoryId") Integer externalCategoryId);
 
-    default int upsert(ExternalCatalogItemCategory externalCatalogItemCategory) {
-        return findByExternalCatalogItemIdAndExternalCategoryId(externalCatalogItemCategory.getExternalCatalogItemId(), externalCatalogItemCategory.getExternalCategoryId())
-                .map(existing -> update(externalCatalogItemCategory))
-                .orElseGet(() -> insert(externalCatalogItemCategory));
-    }
+    @Insert("""
+            INSERT INTO external_catalog_item_category (external_catalog_item_id,
+                                                        external_category_id,
+                                                        is_primary,
+                                                        created_at)
+            VALUES (#{externalCatalogItemId},
+                    #{externalCategoryId},
+                    #{primary},
+                    COALESCE(#{createdAt}, CURRENT_TIMESTAMP))
+            ON DUPLICATE KEY UPDATE
+                is_primary = VALUES(is_primary),
+                created_at = COALESCE(#{createdAt}, created_at)
+            """)
+    int upsert(ExternalCatalogItemCategory externalCatalogItemCategory);
 }

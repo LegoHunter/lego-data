@@ -73,10 +73,16 @@ public interface EbayListingItemSpecificMapper {
             """)
     int delete(@Param("marketplaceListingId") Integer marketplaceListingId, @Param("name") String name, @Param("value") String value);
 
-    default int upsert(EbayListingItemSpecific ebayListingItemSpecific) {
-        return findByMarketplaceListingIdAndNameAndValue(ebayListingItemSpecific.getMarketplaceListingId(), ebayListingItemSpecific.getName(), ebayListingItemSpecific.getValue())
-                .map(existing -> update(ebayListingItemSpecific))
-                .orElseGet(() -> insert(ebayListingItemSpecific));
-    }
+    @Insert("""
+            INSERT INTO ebay_listing_item_specific (marketplace_listing_id,
+                                                   name,
+                                                   `value`)
+            VALUES (#{marketplaceListingId},
+                    #{name},
+                    #{value})
+            ON DUPLICATE KEY UPDATE
+                `value` = VALUES(`value`)
+            """)
+    int upsert(EbayListingItemSpecific ebayListingItemSpecific);
 }
 

@@ -65,15 +65,23 @@ public interface ExternalCategoryMapper {
     @Delete("DELETE FROM external_category WHERE external_category_id = #{externalCategoryId}")
     int delete(Integer externalCategoryId);
 
-    default int upsert(ExternalCategory externalCategory) {
-        if (externalCategory.getExternalCategoryId() != null && findByExternalCategoryId(externalCategory.getExternalCategoryId()).isPresent()) {
-            return update(externalCategory);
-        }
-        return findByExternalServiceIdAndExternalCategoryKey(externalCategory.getExternalServiceId(), externalCategory.getExternalCategoryKey())
-                .map(existing -> {
-                    externalCategory.setExternalCategoryId(existing.getExternalCategoryId());
-                    return update(externalCategory);
-                })
-                .orElseGet(() -> insert(externalCategory));
-    }
+    @Insert("""
+            INSERT INTO external_category (external_category_id,
+                                           external_service_id,
+                                           external_category_key,
+                                           category_name,
+                                           parent_external_category_id)
+            VALUES (#{externalCategoryId},
+                    #{externalServiceId},
+                    #{externalCategoryKey},
+                    #{categoryName},
+                    #{parentExternalCategoryId})
+            ON DUPLICATE KEY UPDATE
+                external_service_id = VALUES(external_service_id),
+                external_category_key = VALUES(external_category_key),
+                category_name = VALUES(category_name),
+                parent_external_category_id = VALUES(parent_external_category_id)
+            """)
+    @Options(useGeneratedKeys = true, keyColumn = "external_category_id", keyProperty = "externalCategoryId")
+    int upsert(ExternalCategory externalCategory);
 }

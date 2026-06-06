@@ -58,11 +58,24 @@ public interface ExternalServiceMapper {
     @Delete("DELETE FROM external_service WHERE external_service_id = #{externalServiceId}")
     int delete(Integer externalServiceId);
 
-    default int upsert(ExternalService externalService) {
-        return findByExternalServiceId(externalService.getExternalServiceId())
-                .map(existing -> update(externalService))
-                .orElseGet(() -> insert(externalService));
-    }
+    @Insert("""
+            INSERT INTO external_service (external_service_id,
+                                          service_code,
+                                          display_name,
+                                          service_url,
+                                          external_service_type_id)
+            VALUES (#{externalServiceId},
+                    #{serviceCode},
+                    #{displayName},
+                    #{serviceUrl},
+                    #{externalServiceTypeId})
+            ON DUPLICATE KEY UPDATE
+                service_code = VALUES(service_code),
+                display_name = VALUES(display_name),
+                service_url = VALUES(service_url),
+                external_service_type_id = VALUES(external_service_type_id)
+            """)
+    int upsert(ExternalService externalService);
 
     default void insertExternalService(ExternalService externalService) {
         insert(externalService);

@@ -64,11 +64,18 @@ public interface ExternalServiceTypeMapper {
             """)
     int delete(Integer externalServiceTypeId);
 
-    default int upsert(ExternalServiceType externalServiceType) {
-        return findByExternalServiceTypeId(externalServiceType.getExternalServiceTypeId())
-                .map(existing -> update(externalServiceType))
-                .orElseGet(() -> insert(externalServiceType));
-    }
+    @Insert("""
+            INSERT INTO external_service_type (external_service_type_id,
+                                               external_service_type_name,
+                                               external_service_type_description)
+            VALUES (#{externalServiceTypeId},
+                    #{externalServiceTypeName},
+                    #{externalServiceTypeDescription})
+            ON DUPLICATE KEY UPDATE
+                external_service_type_name = VALUES(external_service_type_name),
+                external_service_type_description = VALUES(external_service_type_description)
+            """)
+    int upsert(ExternalServiceType externalServiceType);
 
     default void insertExternalServiceType(ExternalServiceType externalServiceType) {
         insert(externalServiceType);

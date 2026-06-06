@@ -45,6 +45,12 @@ public class MarketplaceListingDao {
 
     public MarketplaceListing upsert(MarketplaceListing marketplaceListing) {
         marketplaceListingMapper.upsert(marketplaceListing);
-        return findByMarketplaceListingId(marketplaceListing.getMarketplaceListingId()).orElseThrow();
+        if (marketplaceListing.getMarketplaceListingId() != null) {
+            return findByMarketplaceListingId(marketplaceListing.getMarketplaceListingId()).orElseThrow();
+        }
+        return findByListingExternalServiceIdAndExternalListingId(
+                marketplaceListing.getListingExternalServiceId(),
+                marketplaceListing.getExternalListingId()
+        ).orElseThrow();
     }
 }

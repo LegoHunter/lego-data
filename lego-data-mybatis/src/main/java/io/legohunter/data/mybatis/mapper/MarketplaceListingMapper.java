@@ -143,17 +143,65 @@ public interface MarketplaceListingMapper {
     @Delete("DELETE FROM marketplace_listing WHERE marketplace_listing_id = #{marketplaceListingId}")
     int delete(Integer marketplaceListingId);
 
-    default int upsert(MarketplaceListing marketplaceListing) {
-        if (marketplaceListing.getMarketplaceListingId() != null) {
-            return findByMarketplaceListingId(marketplaceListing.getMarketplaceListingId())
-                    .map(existing -> update(marketplaceListing))
-                    .orElseGet(() -> insert(marketplaceListing));
-        }
-        return findByListingExternalServiceIdAndExternalListingId(marketplaceListing.getListingExternalServiceId(), marketplaceListing.getExternalListingId())
-                .map(existing -> {
-                    marketplaceListing.setMarketplaceListingId(existing.getMarketplaceListingId());
-                    return update(marketplaceListing);
-                })
-                .orElseGet(() -> insert(marketplaceListing));
-    }
+    @Insert("""
+            INSERT INTO marketplace_listing (
+                marketplace_listing_id,
+                item_inventory_id,
+                listing_external_service_id,
+                external_catalog_item_id,
+                external_listing_id,
+                external_listing_url,
+                listing_status_code,
+                title,
+                description,
+                private_notes,
+                unit_price,
+                currency_code,
+                fixed_price,
+                created_at,
+                updated_at,
+                published_at,
+                ended_at,
+                last_synchronized_at
+            )
+            VALUES (
+                #{marketplaceListingId},
+                #{itemInventoryId},
+                #{listingExternalServiceId},
+                #{externalCatalogItemId},
+                #{externalListingId},
+                #{externalListingUrl},
+                #{listingStatusCode},
+                #{title},
+                #{description},
+                #{privateNotes},
+                #{unitPrice},
+                #{currencyCode},
+                #{fixedPrice},
+                COALESCE(#{createdAt}, CURRENT_TIMESTAMP),
+                COALESCE(#{updatedAt}, CURRENT_TIMESTAMP),
+                #{publishedAt},
+                #{endedAt},
+                #{lastSynchronizedAt}
+            )
+            ON DUPLICATE KEY UPDATE
+                item_inventory_id = VALUES(item_inventory_id),
+                listing_external_service_id = VALUES(listing_external_service_id),
+                external_catalog_item_id = VALUES(external_catalog_item_id),
+                external_listing_id = VALUES(external_listing_id),
+                external_listing_url = VALUES(external_listing_url),
+                listing_status_code = VALUES(listing_status_code),
+                title = VALUES(title),
+                description = VALUES(description),
+                private_notes = VALUES(private_notes),
+                unit_price = VALUES(unit_price),
+                currency_code = VALUES(currency_code),
+                fixed_price = VALUES(fixed_price),
+                updated_at = CURRENT_TIMESTAMP,
+                published_at = VALUES(published_at),
+                ended_at = VALUES(ended_at),
+                last_synchronized_at = VALUES(last_synchronized_at)
+            """)
+    @Options(useGeneratedKeys = true, keyColumn = "marketplace_listing_id", keyProperty = "marketplaceListingId")
+    int upsert(MarketplaceListing marketplaceListing);
 }

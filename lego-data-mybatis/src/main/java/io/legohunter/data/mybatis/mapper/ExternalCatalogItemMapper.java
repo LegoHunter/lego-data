@@ -110,15 +110,32 @@ public interface ExternalCatalogItemMapper {
     @Delete("DELETE FROM external_catalog_item WHERE external_catalog_item_id = #{externalCatalogItemId}")
     int delete(Integer externalCatalogItemId);
 
-    default int upsert(ExternalCatalogItem externalCatalogItem) {
-        if (externalCatalogItem.getExternalCatalogItemId() != null && findByExternalCatalogItemId(externalCatalogItem.getExternalCatalogItemId()).isPresent()) {
-            return update(externalCatalogItem);
-        }
-        return findByExternalServiceIdAndExternalItemKey(externalCatalogItem.getExternalServiceId(), externalCatalogItem.getExternalItemKey())
-                .map(existing -> {
-                    externalCatalogItem.setExternalCatalogItemId(existing.getExternalCatalogItemId());
-                    return update(externalCatalogItem);
-                })
-                .orElseGet(() -> insert(externalCatalogItem));
-    }
+    @Insert("""
+            INSERT INTO external_catalog_item (external_catalog_item_id,
+                                               external_service_id,
+                                               external_item_key,
+                                               external_unique_key,
+                                               item_name,
+                                               item_type_code,
+                                               item_url,
+                                               year_released)
+            VALUES (#{externalCatalogItemId},
+                    #{externalServiceId},
+                    #{externalItemKey},
+                    #{externalUniqueKey},
+                    #{itemName},
+                    #{itemTypeCode},
+                    #{itemUrl},
+                    #{yearReleased})
+            ON DUPLICATE KEY UPDATE
+                external_service_id = VALUES(external_service_id),
+                external_item_key = VALUES(external_item_key),
+                external_unique_key = VALUES(external_unique_key),
+                item_name = VALUES(item_name),
+                item_type_code = VALUES(item_type_code),
+                item_url = VALUES(item_url),
+                year_released = VALUES(year_released)
+            """)
+    @Options(useGeneratedKeys = true, keyColumn = "external_catalog_item_id", keyProperty = "externalCatalogItemId")
+    int upsert(ExternalCatalogItem externalCatalogItem);
 }

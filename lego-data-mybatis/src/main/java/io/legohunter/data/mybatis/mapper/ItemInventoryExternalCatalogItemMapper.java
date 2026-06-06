@@ -69,9 +69,18 @@ public interface ItemInventoryExternalCatalogItemMapper {
             """)
     int delete(@Param("itemInventoryId") Integer itemInventoryId, @Param("externalCatalogItemId") Integer externalCatalogItemId);
 
-    default int upsert(ItemInventoryExternalCatalogItem itemInventoryExternalCatalogItem) {
-        return findByItemInventoryIdAndExternalCatalogItemId(itemInventoryExternalCatalogItem.getItemInventoryId(), itemInventoryExternalCatalogItem.getExternalCatalogItemId())
-                .map(existing -> update(itemInventoryExternalCatalogItem))
-                .orElseGet(() -> insert(itemInventoryExternalCatalogItem));
-    }
+    @Insert("""
+            INSERT INTO item_inventory_external_catalog_item (item_inventory_id,
+                                                              external_catalog_item_id,
+                                                              is_primary,
+                                                              created_at)
+            VALUES (#{itemInventoryId},
+                    #{externalCatalogItemId},
+                    #{primary},
+                    COALESCE(#{createdAt}, CURRENT_TIMESTAMP))
+            ON DUPLICATE KEY UPDATE
+                is_primary = VALUES(is_primary),
+                created_at = COALESCE(#{createdAt}, created_at)
+            """)
+    int upsert(ItemInventoryExternalCatalogItem itemInventoryExternalCatalogItem);
 }

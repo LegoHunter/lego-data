@@ -45,6 +45,15 @@ public class ExternalCatalogItemDao {
 
     public ExternalCatalogItem upsert(ExternalCatalogItem externalCatalogItem) {
         externalCatalogItemMapper.upsert(externalCatalogItem);
-        return findByExternalCatalogItemId(externalCatalogItem.getExternalCatalogItemId()).orElseThrow();
+        if (externalCatalogItem.getExternalCatalogItemId() != null) {
+            return findByExternalCatalogItemId(externalCatalogItem.getExternalCatalogItemId()).orElseThrow();
+        }
+        return findByExternalServiceIdAndExternalItemKey(
+                externalCatalogItem.getExternalServiceId(),
+                externalCatalogItem.getExternalItemKey()
+        ).or(() -> findByExternalServiceIdAndExternalUniqueKey(
+                externalCatalogItem.getExternalServiceId(),
+                externalCatalogItem.getExternalUniqueKey()
+        )).orElseThrow();
     }
 }

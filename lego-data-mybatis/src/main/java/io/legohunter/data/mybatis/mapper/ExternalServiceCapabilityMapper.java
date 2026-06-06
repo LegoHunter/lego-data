@@ -60,9 +60,13 @@ public interface ExternalServiceCapabilityMapper {
             """)
     int delete(@Param("externalServiceId") Integer externalServiceId, @Param("capabilityCode") String capabilityCode);
 
-    default int upsert(ExternalServiceCapability externalServiceCapability) {
-        return findByExternalServiceIdAndCapabilityCode(externalServiceCapability.getExternalServiceId(), externalServiceCapability.getCapabilityCode())
-                .map(existing -> update(externalServiceCapability))
-                .orElseGet(() -> insert(externalServiceCapability));
-    }
+    @Insert("""
+            INSERT INTO external_service_capability (external_service_id,
+                                                     capability_code)
+            VALUES (#{externalServiceId},
+                    #{capabilityCode})
+            ON DUPLICATE KEY UPDATE
+                capability_code = VALUES(capability_code)
+            """)
+    int upsert(ExternalServiceCapability externalServiceCapability);
 }

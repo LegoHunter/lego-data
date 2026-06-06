@@ -116,6 +116,14 @@ class CurrentDaoIntegrationTest {
         assertThat(externalCategoryDao.update(category).getCategoryName()).isEqualTo("Updated Parts");
         category.setCategoryName("Upserted Parts");
         assertThat(externalCategoryDao.upsert(category).getCategoryName()).isEqualTo("Upserted Parts");
+        ExternalCategory naturalKeyCategory = ExternalCategory.builder()
+                .externalServiceId(2)
+                .externalCategoryKey("101")
+                .categoryName("Natural Key Upserted Parts")
+                .build();
+        assertThat(externalCategoryDao.upsert(naturalKeyCategory))
+                .extracting(ExternalCategory::getExternalCategoryId, ExternalCategory::getCategoryName)
+                .containsExactly(category.getExternalCategoryId(), "Natural Key Upserted Parts");
         assertThat(externalCategoryDao.findByExternalCategoryId(category.getExternalCategoryId())).isPresent();
         assertThat(externalCategoryDao.findByExternalServiceIdAndExternalCategoryKey(2, "101")).isPresent();
         assertThat(externalCategoryDao.findAll()).extracting(ExternalCategory::getExternalCategoryKey).contains("101");
@@ -126,6 +134,11 @@ class CurrentDaoIntegrationTest {
         assertThat(externalCatalogItemDao.update(catalogItem).getItemName()).isEqualTo("Updated Catalog Item");
         catalogItem.setItemName("Upserted Catalog Item");
         assertThat(externalCatalogItemDao.upsert(catalogItem).getItemName()).isEqualTo("Upserted Catalog Item");
+        ExternalCatalogItem naturalKeyCatalogItem = externalCatalogItem("dao-item-1", "dao-unique-1");
+        naturalKeyCatalogItem.setItemName("Natural Key Upserted Catalog Item");
+        assertThat(externalCatalogItemDao.upsert(naturalKeyCatalogItem))
+                .extracting(ExternalCatalogItem::getExternalCatalogItemId, ExternalCatalogItem::getItemName)
+                .containsExactly(catalogItem.getExternalCatalogItemId(), "Natural Key Upserted Catalog Item");
         assertThat(externalCatalogItemDao.findByExternalCatalogItemId(catalogItem.getExternalCatalogItemId())).isPresent();
         assertThat(externalCatalogItemDao.findByExternalServiceIdAndExternalItemKey(2, "dao-item-1")).isPresent();
         assertThat(externalCatalogItemDao.findByExternalServiceIdAndExternalUniqueKey(2, "dao-unique-1")).isPresent();
@@ -152,6 +165,11 @@ class CurrentDaoIntegrationTest {
         assertThat(itemInventoryDao.update(inventory).getDescription()).isEqualTo("Updated inventory");
         inventory.setDescription("Upserted inventory");
         assertThat(itemInventoryDao.upsert(inventory).getDescription()).isEqualTo("Upserted inventory");
+        ItemInventory naturalKeyInventory = itemInventory("dao-inventory-1");
+        naturalKeyInventory.setDescription("Natural Key Upserted inventory");
+        assertThat(itemInventoryDao.upsert(naturalKeyInventory))
+                .extracting(ItemInventory::getItemInventoryId, ItemInventory::getDescription)
+                .containsExactly(inventory.getItemInventoryId(), "Natural Key Upserted inventory");
         assertThat(itemInventoryDao.findByItemInventoryId(inventory.getItemInventoryId())).isPresent();
         assertThat(itemInventoryDao.findByUuid("dao-inventory-1")).isPresent();
         assertThat(itemInventoryDao.findAll()).extracting(ItemInventory::getUuid).contains("dao-inventory-1");
@@ -189,6 +207,11 @@ class CurrentDaoIntegrationTest {
         assertThat(marketplaceListingDao.update(listing).getTitle()).isEqualTo("Updated listing");
         listing.setTitle("Upserted listing");
         assertThat(marketplaceListingDao.upsert(listing).getTitle()).isEqualTo("Upserted listing");
+        MarketplaceListing naturalKeyListing = marketplaceListing(inventory.getItemInventoryId(), catalogItem.getExternalCatalogItemId(), 2, "DAO-BL-1");
+        naturalKeyListing.setTitle("Natural Key Upserted listing");
+        assertThat(marketplaceListingDao.upsert(naturalKeyListing))
+                .extracting(MarketplaceListing::getMarketplaceListingId, MarketplaceListing::getTitle)
+                .containsExactly(listing.getMarketplaceListingId(), "Natural Key Upserted listing");
         assertThat(marketplaceListingDao.findByMarketplaceListingId(listing.getMarketplaceListingId())).isPresent();
         assertThat(marketplaceListingDao.findByListingExternalServiceIdAndExternalListingId(2, "DAO-BL-1")).isPresent();
         assertThat(marketplaceListingDao.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);

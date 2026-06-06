@@ -82,9 +82,41 @@ public interface EbayMarketplaceListingMapper {
     @Delete("DELETE FROM ebay_marketplace_listing WHERE marketplace_listing_id = #{marketplaceListingId}")
     int delete(Integer marketplaceListingId);
 
-    default int upsert(EbayMarketplaceListing ebayMarketplaceListing) {
-        return findByMarketplaceListingId(ebayMarketplaceListing.getMarketplaceListingId())
-                .map(existing -> update(ebayMarketplaceListing))
-                .orElseGet(() -> insert(ebayMarketplaceListing));
-    }
+    @Insert("""
+            INSERT INTO ebay_marketplace_listing (
+                marketplace_listing_id,
+                ebay_item_id,
+                ebay_category_id,
+                condition_id,
+                condition_descriptor_fields,
+                listing_format,
+                duration,
+                shipping_policy_id,
+                payment_policy_id,
+                return_policy_id
+            )
+            VALUES (
+                #{marketplaceListingId},
+                #{ebayItemId},
+                #{ebayCategoryId},
+                #{conditionId},
+                #{conditionDescriptorFields},
+                #{listingFormat},
+                #{duration},
+                #{shippingPolicyId},
+                #{paymentPolicyId},
+                #{returnPolicyId}
+            )
+            ON DUPLICATE KEY UPDATE
+                ebay_item_id = VALUES(ebay_item_id),
+                ebay_category_id = VALUES(ebay_category_id),
+                condition_id = VALUES(condition_id),
+                condition_descriptor_fields = VALUES(condition_descriptor_fields),
+                listing_format = VALUES(listing_format),
+                duration = VALUES(duration),
+                shipping_policy_id = VALUES(shipping_policy_id),
+                payment_policy_id = VALUES(payment_policy_id),
+                return_policy_id = VALUES(return_policy_id)
+            """)
+    int upsert(EbayMarketplaceListing ebayMarketplaceListing);
 }

@@ -41,6 +41,12 @@ public class ExternalCategoryDao {
 
     public ExternalCategory upsert(ExternalCategory externalCategory) {
         externalCategoryMapper.upsert(externalCategory);
-        return findByExternalCategoryId(externalCategory.getExternalCategoryId()).orElseThrow();
+        if (externalCategory.getExternalCategoryId() != null) {
+            return findByExternalCategoryId(externalCategory.getExternalCategoryId()).orElseThrow();
+        }
+        return findByExternalServiceIdAndExternalCategoryKey(
+                externalCategory.getExternalServiceId(),
+                externalCategory.getExternalCategoryKey()
+        ).orElseThrow();
     }
 }

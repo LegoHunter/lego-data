@@ -98,17 +98,54 @@ public interface ItemInventoryMapper {
     @Delete("DELETE FROM item_inventory WHERE item_inventory_id = #{itemInventoryId}")
     int delete(Integer itemInventoryId);
 
-    default int upsert(ItemInventory itemInventory) {
-        if (itemInventory.getItemInventoryId() != null) {
-            return findByItemInventoryId(itemInventory.getItemInventoryId())
-                    .map(existing -> update(itemInventory))
-                    .orElseGet(() -> insert(itemInventory));
-        }
-        return findByUuid(itemInventory.getUuid())
-                .map(existing -> {
-                    itemInventory.setItemInventoryId(existing.getItemInventoryId());
-                    return update(itemInventory);
-                })
-                .orElseGet(() -> insert(itemInventory));
-    }
+    @Insert("""
+            INSERT INTO item_inventory (
+                item_inventory_id,
+                uuid,
+                box_number,
+                purchase_price,
+                description,
+                active,
+                for_sale,
+                new_or_used,
+                completeness,
+                item_condition_id,
+                box_condition_id,
+                instructions_condition_id,
+                sealed,
+                built_once
+            )
+            VALUES (
+                #{itemInventoryId},
+                #{uuid},
+                #{boxNumber},
+                #{purchasePrice},
+                #{description},
+                #{active},
+                #{forSale},
+                #{newOrUsed},
+                #{completeness},
+                #{itemConditionId},
+                #{boxConditionId},
+                #{instructionsConditionId},
+                #{sealed},
+                #{builtOnce}
+            )
+            ON DUPLICATE KEY UPDATE
+                uuid = VALUES(uuid),
+                box_number = VALUES(box_number),
+                purchase_price = VALUES(purchase_price),
+                description = VALUES(description),
+                active = VALUES(active),
+                for_sale = VALUES(for_sale),
+                new_or_used = VALUES(new_or_used),
+                completeness = VALUES(completeness),
+                item_condition_id = VALUES(item_condition_id),
+                box_condition_id = VALUES(box_condition_id),
+                instructions_condition_id = VALUES(instructions_condition_id),
+                sealed = VALUES(sealed),
+                built_once = VALUES(built_once)
+            """)
+    @Options(useGeneratedKeys = true, keyColumn = "item_inventory_id", keyProperty = "itemInventoryId")
+    int upsert(ItemInventory itemInventory);
 }
