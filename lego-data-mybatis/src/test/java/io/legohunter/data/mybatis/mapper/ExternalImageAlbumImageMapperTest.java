@@ -3,11 +3,8 @@ package io.legohunter.data.mybatis.mapper;
 import io.legohunter.data.dto.ExternalImage;
 import io.legohunter.data.dto.ExternalImageAlbum;
 import io.legohunter.data.dto.ExternalImageAlbumImage;
-import io.legohunter.data.dto.ExternalService;
-import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryPhoto;
-import io.legohunter.data.enums.ExternalSyncStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,19 +70,5 @@ class ExternalImageAlbumImageMapperTest extends MapperTestSupport {
 
         externalImageAlbumImageMapper.insert(secondMembership);
         assertThat(externalImageAlbumImageMapper.deleteByExternalImageAlbumId(album.getExternalImageAlbumId())).isOne();
-    }
-
-    private void insertImageHostingService() {
-        externalServiceTypeMapper.insertExternalServiceType(ExternalServiceType.builder()
-                .externalServiceTypeId(5)
-                .externalServiceTypeName("IMAGE_HOSTING")
-                .externalServiceTypeDescription("Image Hosting Service")
-                .build());
-        ExternalService service = new ExternalService();
-        service.setExternalServiceId(10);
-        service.setExternalServiceName("Flickr");
-        service.setExternalServiceUrl("https://www.flickr.com");
-        service.setExternalServiceTypeId(5);
-        externalServiceMapper.insertExternalService(service);
     }
 }

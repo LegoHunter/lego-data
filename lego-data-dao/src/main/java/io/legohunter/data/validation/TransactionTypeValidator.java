@@ -31,7 +31,7 @@ public class TransactionTypeValidator implements ConstraintValidator<Transaction
         }
 
         return transactionTypeDao.findTransactionTypeByCode(value.toString())
-                .map(_ -> true)
+                .map(transactionType -> true)
                 .orElseGet(() -> {
                     context.disableDefaultConstraintViolation();
                     context.buildConstraintViolationWithTemplate(String.format("Transaction Type [%s] is invalid. Must be one of %s", value, acceptedValues))

@@ -1,56 +1,95 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.ExternalServiceType;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
-import java.util.List;
 import java.util.Optional;
-import org.apache.ibatis.annotations.*;
+import java.util.Set;
 
 public interface ExternalServiceTypeMapper {
-    @Insert("""
-            INSERT INTO external_service_type (external_service_type_id, external_service_type_name, external_service_type_description) \
-            VALUES (#{externalServiceTypeId}, #{externalServiceTypeName}, #{externalServiceTypeDescription})\
+    @Select("""
+            SELECT external_service_type_id,
+                   external_service_type_name,
+                   external_service_type_description
+            FROM external_service_type
             """)
-    void insertExternalServiceType(ExternalServiceType externalServiceType);
+    @ResultMap("externalServiceTypeResultMap")
+    Set<ExternalServiceType> findAll();
+
+    @Select("""
+            SELECT external_service_type_id,
+                   external_service_type_name,
+                   external_service_type_description
+            FROM external_service_type
+            WHERE external_service_type_id = #{externalServiceTypeId}
+            """)
+    @ResultMap("externalServiceTypeResultMap")
+    Optional<ExternalServiceType> findByExternalServiceTypeId(Integer externalServiceTypeId);
+
+    @Select("""
+            SELECT external_service_type_id,
+                   external_service_type_name,
+                   external_service_type_description
+            FROM external_service_type
+            WHERE external_service_type_name = #{externalServiceTypeName}
+            """)
+    @ResultMap("externalServiceTypeResultMap")
+    Optional<ExternalServiceType> findByExternalServiceTypeName(String externalServiceTypeName);
+
+    @Insert("""
+            INSERT INTO external_service_type (external_service_type_id,
+                                               external_service_type_name,
+                                               external_service_type_description)
+            VALUES (#{externalServiceTypeId},
+                    #{externalServiceTypeName},
+                    #{externalServiceTypeDescription})
+            """)
+    int insert(ExternalServiceType externalServiceType);
 
     @Update("""
-            UPDATE external_service_type SET \
-            external_service_type_name = #{externalServiceTypeName}, \
-            external_service_type_description  = #{externalServiceTypeDescription} \
-            WHERE external_service_type_id = #{externalServiceTypeId} \
+            UPDATE external_service_type
+            SET external_service_type_name = #{externalServiceTypeName},
+                external_service_type_description = #{externalServiceTypeDescription}
+            WHERE external_service_type_id = #{externalServiceTypeId}
             """)
-    void updateExternalServiceType(ExternalServiceType externalServiceType);
+    int update(ExternalServiceType externalServiceType);
 
-    @Select("""
-            SELECT external_service_type_id, \
-                   external_service_type_name, \
-                   external_service_type_description \
-            FROM external_service_type \
+    @Delete("""
+            DELETE FROM external_service_type
+            WHERE external_service_type_id = #{externalServiceTypeId}
             """)
-    @ResultMap("externalServiceTypeResultMap")
-    List<ExternalServiceType> findAll();
+    int delete(Integer externalServiceTypeId);
 
-    @Select("""
-            SELECT external_service_type_id, \
-                   external_service_type_name, \
-                   external_service_type_description \
-            FROM external_service_type \
-            WHERE external_service_type_id = #{externalServiceTypeId}\
+    @Insert("""
+            INSERT INTO external_service_type (external_service_type_id,
+                                               external_service_type_name,
+                                               external_service_type_description)
+            VALUES (#{externalServiceTypeId},
+                    #{externalServiceTypeName},
+                    #{externalServiceTypeDescription})
+            ON DUPLICATE KEY UPDATE
+                external_service_type_name = VALUES(external_service_type_name),
+                external_service_type_description = VALUES(external_service_type_description)
             """)
-    @ResultMap("externalServiceTypeResultMap")
-    Optional<ExternalServiceType> findExternalServiceTypeById(Integer externalServiceTypeId);
+    int upsert(ExternalServiceType externalServiceType);
 
-    @Select("""
-            SELECT external_service_type_id, \
-                   external_service_type_name, \
-                   external_service_type_description \
-            FROM external_service_type \
-            WHERE external_service_type_name = #{externalServiceTypeName}\
-            """)
-    @ResultMap("externalServiceTypeResultMap")
-    Optional<ExternalServiceType> findExternalServiceTypeByName(String externalServiceTypeName);
+    default void insertExternalServiceType(ExternalServiceType externalServiceType) {
+        insert(externalServiceType);
+    }
+
+    default void updateExternalServiceType(ExternalServiceType externalServiceType) {
+        update(externalServiceType);
+    }
+
+    default Optional<ExternalServiceType> findExternalServiceTypeById(Integer externalServiceTypeId) {
+        return findByExternalServiceTypeId(externalServiceTypeId);
+    }
+
+    default Optional<ExternalServiceType> findExternalServiceTypeByName(String externalServiceTypeName) {
+        return findByExternalServiceTypeName(externalServiceTypeName);
+    }
 }

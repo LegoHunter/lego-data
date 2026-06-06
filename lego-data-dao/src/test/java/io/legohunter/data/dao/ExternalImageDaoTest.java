@@ -173,8 +173,9 @@ class ExternalImageDaoTest {
                 .build());
         ExternalService service = new ExternalService();
         service.setExternalServiceId(10);
-        service.setExternalServiceName("Flickr");
-        service.setExternalServiceUrl("https://www.flickr.com");
+        service.setServiceCode("FLICKR");
+        service.setDisplayName("Flickr");
+        service.setServiceUrl("https://www.flickr.com");
         service.setExternalServiceTypeId(5);
         externalServiceDao.insert(service);
     }

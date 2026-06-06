@@ -32,7 +32,7 @@ public class TransactionPlatformValidator implements ConstraintValidator<Transac
         }
 
         return transactionPlatformDao.findTransactionPlatformByName(value.toString())
-                .map(_ -> true)
+                .map(transactionPlatform -> true)
                 .orElseGet(() -> {
                     context.disableDefaultConstraintViolation();
                     context.buildConstraintViolationWithTemplate(String.format("Transaction Platform [%s] is invalid. Must be one of %s", value, acceptedValues))

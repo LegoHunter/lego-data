@@ -1,0 +1,9 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.ExternalCatalogItemCategoryMapper">
+  <resultMap type="io.legohunter.data.dto.ExternalCatalogItemCategory" id="externalCatalogItemCategoryResultMap">
+    <result column="external_catalog_item_id" property="externalCatalogItemId"/>
+    <result column="external_category_id"     property="externalCategoryId"/>
+    <result column="is_primary"               property="primary"/>
+    <result column="created_at"               property="createdAt"/>
+  </resultMap>
+</mapper>

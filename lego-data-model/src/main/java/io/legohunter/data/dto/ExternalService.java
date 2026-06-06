@@ -6,19 +6,24 @@ import lombok.Getter;
 @Data
 public class ExternalService {
     private Integer externalServiceId;
-    private String externalServiceName;
-    private String externalServiceUrl;
+    private String serviceCode;
+    private String displayName;
+    private String serviceUrl;
     private Integer externalServiceTypeId;
 
     @Getter
-    public enum ExternalServiceType {
-        BRICKLINK(2),
-        REBRICKABLE(9);
+    public enum Service {
+        BRICKLINK(2, "BRICKLINK"),
+        EBAY(3, "EBAY"),
+        REBRICKABLE(9, "REBRICKABLE"),
+        FLICKR(10, "FLICKR");
 
         private final Integer externalServiceId;
+        private final String serviceCode;
 
-        ExternalServiceType(Integer externalServiceId) {
+        Service(Integer externalServiceId, String serviceCode) {
             this.externalServiceId = externalServiceId;
+            this.serviceCode = serviceCode;
         }
     }
 }

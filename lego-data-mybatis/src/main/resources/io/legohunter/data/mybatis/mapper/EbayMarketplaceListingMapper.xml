@@ -1,0 +1,15 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.EbayMarketplaceListingMapper">
+  <resultMap type="io.legohunter.data.dto.EbayMarketplaceListing" id="ebayMarketplaceListingResultMap">
+    <result column="marketplace_listing_id"      property="marketplaceListingId"/>
+    <result column="ebay_item_id"                property="ebayItemId"/>
+    <result column="ebay_category_id"            property="ebayCategoryId"/>
+    <result column="condition_id"                property="conditionId"/>
+    <result column="condition_descriptor_fields" property="conditionDescriptorFields"/>
+    <result column="listing_format"             property="listingFormat"/>
+    <result column="duration"                   property="duration"/>
+    <result column="shipping_policy_id"         property="shippingPolicyId"/>
+    <result column="payment_policy_id"          property="paymentPolicyId"/>
+    <result column="return_policy_id"           property="returnPolicyId"/>
+  </resultMap>
+</mapper>

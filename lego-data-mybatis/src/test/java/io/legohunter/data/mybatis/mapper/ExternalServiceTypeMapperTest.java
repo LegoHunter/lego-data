@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ExternalServiceTypeMapperTest extends MapperTestSupport {
 
     @Test
-    void insertUpdateFindByIdFindByNameAndFindAll() {
+    void insertUpdateFindByIdFindByNameFindAllUpsertAndDelete() {
         ExternalServiceType serviceType = ExternalServiceType.builder()
                 .externalServiceTypeId(1)
                 .externalServiceTypeName("Marketplace")
@@ -25,5 +25,11 @@ class ExternalServiceTypeMapperTest extends MapperTestSupport {
         assertThat(externalServiceTypeMapper.findExternalServiceTypeByName("Marketplace"))
                 .hasValueSatisfying(found -> assertThat(found.getExternalServiceTypeDescription()).isEqualTo("Marketplace integrations"));
         assertThat(externalServiceTypeMapper.findAll()).extracting(ExternalServiceType::getExternalServiceTypeId).containsExactly(1);
+
+        serviceType.setExternalServiceTypeDescription("Upserted");
+        externalServiceTypeMapper.upsert(serviceType);
+        assertThat(externalServiceTypeMapper.findByExternalServiceTypeId(1))
+                .hasValueSatisfying(found -> assertThat(found.getExternalServiceTypeDescription()).isEqualTo("Upserted"));
+        assertThat(externalServiceTypeMapper.delete(1)).isOne();
     }
 }

@@ -28,7 +28,7 @@ public class CostTypeValidator implements ConstraintValidator<CostTypeExists, Ch
 
     @Override
     public boolean isValid(CharSequence value, ConstraintValidatorContext context) {
-        return costTypeDao.findCostTypeByCode(value.toString()).map(_ -> true).orElseGet(() -> {
+        return costTypeDao.findCostTypeByCode(value.toString()).map(costType -> true).orElseGet(() -> {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate(String.format("Cost Type Code [%s] is invalid. Must be one of %s", value, acceptedValues))
                     .addConstraintViolation();

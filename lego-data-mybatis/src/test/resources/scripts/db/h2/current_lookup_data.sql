@@ -52,22 +52,34 @@ INSERT INTO external_service_type (external_service_type_id, external_service_ty
     (1, 'LEGO', 'LEGO'),
     (2, 'MARKETPLACE', 'Marketplace'),
     (3, 'AUCTION', 'Auction'),
-    (4, 'THIRDPARTY', 'Third Party Producer');
+    (4, 'THIRDPARTY', 'Third Party Producer'),
+    (5, 'IMAGE_HOSTING', 'Image Hosting Service');
 
-INSERT INTO external_service (external_service_id, external_service_name, external_service_url, external_service_type_id) VALUES
-    (1, 'LEGO', 'https://www.lego.com', 1),
-    (2, 'BRICKLINK', 'https://www.bricklink.com', 2),
-    (3, 'EBAY', 'https://www.ebay.com', 3),
-    (4, 'CATAWIKI', 'https://www.catawiki.com', 3),
-    (5, 'LAURITZ', 'https://www.lauritz.com', 3),
-    (6, 'QXL', 'https://www.qxl.dk', 3),
-    (7, 'PNW Steam Shop', 'https://www.pnwsteamshop.com', 4),
-    (8, 'Brick Model Railroader', 'https://brickmodelrailroader.com', 4),
-    (9, 'Rebrickable', 'https://rebrickable.com', 2);
+INSERT INTO external_service (external_service_id, service_code, display_name, service_url, external_service_type_id) VALUES
+    (1, 'LEGO', 'LEGO', 'https://www.lego.com', 1),
+    (2, 'BRICKLINK', 'BrickLink', 'https://www.bricklink.com', 2),
+    (3, 'EBAY', 'eBay', 'https://www.ebay.com', 3),
+    (4, 'CATAWIKI', 'CataWiki', 'https://www.catawiki.com', 3),
+    (5, 'LAURITZ', 'Lauritz', 'https://www.lauritz.com', 3),
+    (6, 'QXL', 'QXL', 'https://www.qxl.dk', 3),
+    (7, 'PNW_STEAM_SHOP', 'PNW Steam Shop', 'https://www.pnwsteamshop.com', 4),
+    (8, 'BRICK_MODEL_RAILROADER', 'Brick Model Railroader', 'https://brickmodelrailroader.com', 4),
+    (9, 'REBRICKABLE', 'Rebrickable', 'https://rebrickable.com', 2),
+    (10, 'FLICKR', 'Flickr', 'https://www.flickr.com', 5);
 
-INSERT INTO category (external_service_id, external_category_id, category_name, parent_id) VALUES
-    (2, 5, 'Brick', NULL),
-    (2, 65, 'Star Wars', NULL),
-    (2, 789, 'The Hobbit and The Lord of the Rings', NULL),
-    (9, 1, 'Technic', NULL),
-    (9, 18, 'Star Wars', 1);
+INSERT INTO external_service_capability (external_service_id, capability_code) VALUES
+    (2, 'CATALOG'),
+    (2, 'MARKETPLACE_LISTING'),
+    (2, 'ORDER_SYNC'),
+    (2, 'PRICE_GUIDE'),
+    (3, 'MARKETPLACE_LISTING'),
+    (3, 'MARKET_RESEARCH'),
+    (9, 'CATALOG'),
+    (10, 'IMAGE_HOSTING');
+
+INSERT INTO external_category (external_category_id, external_service_id, external_category_key, category_name, parent_external_category_id) VALUES
+    (1, 2, '5', 'Brick', NULL),
+    (2, 2, '65', 'Star Wars', NULL),
+    (3, 2, '789', 'The Hobbit and The Lord of the Rings', NULL),
+    (4, 9, '1', 'Technic', NULL),
+    (5, 9, '18', 'Star Wars', 4);
