@@ -20,11 +20,18 @@ class ExternalServiceMapperTest extends MapperTestSupport {
         ExternalService service = externalService(2, "BRICKLINK", "BrickLink", 2);
 
         externalServiceMapper.insertExternalService(service);
+        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "CATALOG"));
         service.setServiceUrl("https://bricklink.test");
         externalServiceMapper.updateExternalService(service);
 
         assertThat(externalServiceMapper.findExternalServiceById(2))
-                .hasValueSatisfying(found -> assertThat(found.getServiceUrl()).isEqualTo("https://bricklink.test"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getServiceUrl()).isEqualTo("https://bricklink.test");
+                    assertThat(found.getExternalServiceType().getExternalServiceTypeName()).isEqualTo("MARKETPLACE");
+                    assertThat(found.getCapabilities())
+                            .extracting(ExternalServiceCapability::getCapabilityCode)
+                            .containsExactly("CATALOG");
+                });
         assertThat(externalServiceMapper.findExternalServiceByName("BRICKLINK"))
                 .hasValueSatisfying(found -> assertThat(found.getExternalServiceId()).isEqualTo(2));
         assertThat(externalServiceMapper.findAll()).extracting(ExternalService::getServiceCode).containsExactly("BRICKLINK");
@@ -34,6 +41,7 @@ class ExternalServiceMapperTest extends MapperTestSupport {
         assertThat(externalServiceMapper.findByServiceCode("BRICKLINK"))
                 .hasValueSatisfying(found -> assertThat(found.getDisplayName()).isEqualTo("BrickLink Updated"));
 
+        assertThat(externalServiceCapabilityMapper.delete(2, "CATALOG")).isOne();
         assertThat(externalServiceMapper.delete(2)).isOne();
     }
 

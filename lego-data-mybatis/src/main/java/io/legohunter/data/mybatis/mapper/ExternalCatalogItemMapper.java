@@ -16,63 +16,89 @@ public interface ExternalCatalogItemMapper {
             eci.item_type_code,
             eci.item_url,
             eci.year_released,
-            es.service_code,
-            es.display_name,
-            es.service_url,
-            es.external_service_type_id
+            es.external_service_id AS es_external_service_id,
+            es.service_code AS es_service_code,
+            es.display_name AS es_display_name,
+            es.service_url AS es_service_url,
+            es.external_service_type_id AS es_external_service_type_id,
+            est.external_service_type_id AS es_est_external_service_type_id,
+            est.external_service_type_name AS es_est_external_service_type_name,
+            est.external_service_type_description AS es_est_external_service_type_description,
+            esc.external_service_id AS es_esc_external_service_id,
+            esc.capability_code AS es_esc_capability_code
+            """;
+
+    String FROM_CLAUSE = """
+            FROM external_catalog_item eci
+            JOIN external_service es
+                ON es.external_service_id = eci.external_service_id
+            JOIN external_service_type est
+                ON est.external_service_type_id = es.external_service_type_id
+            LEFT JOIN external_service_capability esc
+                ON esc.external_service_id = es.external_service_id
             """;
 
     @Select("""
             SELECT ${columns}
-            FROM external_catalog_item eci
-            JOIN external_service es ON es.external_service_id = eci.external_service_id
+            ${fromClause}
             """)
     @ResultMap("externalCatalogItemResultMap")
-    Set<ExternalCatalogItem> findAll(@Param("columns") String columns);
+    Set<ExternalCatalogItem> findAll(@Param("columns") String columns, @Param("fromClause") String fromClause);
 
     default Set<ExternalCatalogItem> findAll() {
-        return findAll(ALL_COLUMNS);
+        return findAll(ALL_COLUMNS, FROM_CLAUSE);
     }
 
     @Select("""
             SELECT ${columns}
-            FROM external_catalog_item eci
-            JOIN external_service es ON es.external_service_id = eci.external_service_id
+            ${fromClause}
             WHERE eci.external_catalog_item_id = #{externalCatalogItemId}
             """)
     @ResultMap("externalCatalogItemResultMap")
-    Optional<ExternalCatalogItem> findByExternalCatalogItemId(@Param("externalCatalogItemId") Integer externalCatalogItemId, @Param("columns") String columns);
+    Optional<ExternalCatalogItem> findByExternalCatalogItemId(
+            @Param("externalCatalogItemId") Integer externalCatalogItemId,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
 
     default Optional<ExternalCatalogItem> findByExternalCatalogItemId(Integer externalCatalogItemId) {
-        return findByExternalCatalogItemId(externalCatalogItemId, ALL_COLUMNS);
+        return findByExternalCatalogItemId(externalCatalogItemId, ALL_COLUMNS, FROM_CLAUSE);
     }
 
     @Select("""
             SELECT ${columns}
-            FROM external_catalog_item eci
-            JOIN external_service es ON es.external_service_id = eci.external_service_id
+            ${fromClause}
             WHERE eci.external_service_id = #{externalServiceId}
               AND eci.external_item_key = #{externalItemKey}
             """)
     @ResultMap("externalCatalogItemResultMap")
-    Optional<ExternalCatalogItem> findByExternalServiceIdAndExternalItemKey(@Param("externalServiceId") Integer externalServiceId, @Param("externalItemKey") String externalItemKey, @Param("columns") String columns);
+    Optional<ExternalCatalogItem> findByExternalServiceIdAndExternalItemKey(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("externalItemKey") String externalItemKey,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
 
     default Optional<ExternalCatalogItem> findByExternalServiceIdAndExternalItemKey(Integer externalServiceId, String externalItemKey) {
-        return findByExternalServiceIdAndExternalItemKey(externalServiceId, externalItemKey, ALL_COLUMNS);
+        return findByExternalServiceIdAndExternalItemKey(externalServiceId, externalItemKey, ALL_COLUMNS, FROM_CLAUSE);
     }
 
     @Select("""
             SELECT ${columns}
-            FROM external_catalog_item eci
-            JOIN external_service es ON es.external_service_id = eci.external_service_id
+            ${fromClause}
             WHERE eci.external_service_id = #{externalServiceId}
               AND eci.external_unique_key = #{externalUniqueKey}
             """)
     @ResultMap("externalCatalogItemResultMap")
-    Optional<ExternalCatalogItem> findByExternalServiceIdAndExternalUniqueKey(@Param("externalServiceId") Integer externalServiceId, @Param("externalUniqueKey") String externalUniqueKey, @Param("columns") String columns);
+    Optional<ExternalCatalogItem> findByExternalServiceIdAndExternalUniqueKey(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("externalUniqueKey") String externalUniqueKey,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
 
     default Optional<ExternalCatalogItem> findByExternalServiceIdAndExternalUniqueKey(Integer externalServiceId, String externalUniqueKey) {
-        return findByExternalServiceIdAndExternalUniqueKey(externalServiceId, externalUniqueKey, ALL_COLUMNS);
+        return findByExternalServiceIdAndExternalUniqueKey(externalServiceId, externalUniqueKey, ALL_COLUMNS, FROM_CLAUSE);
     }
 
     @Insert("""

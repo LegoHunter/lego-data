@@ -4,6 +4,7 @@ import io.legohunter.data.dto.ItemInventory;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -13,33 +14,93 @@ import java.util.Set;
 
 public interface ItemInventoryMapper {
     String ALL_COLUMNS = """
-            item_inventory_id,
-            uuid,
-            box_number,
-            purchase_price,
-            description,
-            active,
-            for_sale,
-            new_or_used,
-            completeness,
-            item_condition_id,
-            box_condition_id,
-            instructions_condition_id,
-            sealed,
-            built_once
+            ii.item_inventory_id,
+            ii.uuid,
+            ii.box_number,
+            ii.purchase_price,
+            ii.description,
+            ii.active,
+            ii.for_sale,
+            ii.new_or_used,
+            ii.completeness,
+            ii.item_condition_id,
+            ii.box_condition_id,
+            ii.instructions_condition_id,
+            ii.sealed,
+            ii.built_once,
+            iieci.item_inventory_id AS iieci_item_inventory_id,
+            iieci.external_catalog_item_id AS iieci_external_catalog_item_id,
+            iieci.is_primary AS iieci_is_primary,
+            iieci.created_at AS iieci_created_at,
+            eci.external_catalog_item_id AS iieci_eci_external_catalog_item_id,
+            eci.external_service_id AS iieci_eci_external_service_id,
+            eci.external_item_key AS iieci_eci_external_item_key,
+            eci.external_unique_key AS iieci_eci_external_unique_key,
+            eci.item_name AS iieci_eci_item_name,
+            eci.item_type_code AS iieci_eci_item_type_code,
+            eci.item_url AS iieci_eci_item_url,
+            eci.year_released AS iieci_eci_year_released,
+            es.external_service_id AS iieci_eci_es_external_service_id,
+            es.service_code AS iieci_eci_es_service_code,
+            es.display_name AS iieci_eci_es_display_name,
+            es.service_url AS iieci_eci_es_service_url,
+            es.external_service_type_id AS iieci_eci_es_external_service_type_id,
+            est.external_service_type_id AS iieci_eci_es_est_external_service_type_id,
+            est.external_service_type_name AS iieci_eci_es_est_external_service_type_name,
+            est.external_service_type_description AS iieci_eci_es_est_external_service_type_description,
+            esc.external_service_id AS iieci_eci_es_esc_external_service_id,
+            esc.capability_code AS iieci_eci_es_esc_capability_code
             """;
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory")
+    String FROM_CLAUSE = """
+            FROM item_inventory ii
+            LEFT JOIN item_inventory_external_catalog_item iieci
+                ON iieci.item_inventory_id = ii.item_inventory_id
+            LEFT JOIN external_catalog_item eci
+                ON eci.external_catalog_item_id = iieci.external_catalog_item_id
+            LEFT JOIN external_service es
+                ON es.external_service_id = eci.external_service_id
+            LEFT JOIN external_service_type est
+                ON est.external_service_type_id = es.external_service_type_id
+            LEFT JOIN external_service_capability esc
+                ON esc.external_service_id = es.external_service_id
+            """;
+
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)
     @ResultMap("itemInventoryResultMap")
     Set<ItemInventory> findAll();
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory WHERE item_inventory_id = #{itemInventoryId}")
+    @Select("""
+            SELECT ${columns}
+            ${fromClause}
+            WHERE ii.item_inventory_id = #{itemInventoryId}
+            """)
     @ResultMap("itemInventoryResultMap")
-    Optional<ItemInventory> findByItemInventoryId(Integer itemInventoryId);
+    Optional<ItemInventory> findByItemInventoryId(
+            @Param("itemInventoryId") Integer itemInventoryId,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory WHERE uuid = #{uuid}")
+    default Optional<ItemInventory> findByItemInventoryId(Integer itemInventoryId) {
+        return findByItemInventoryId(itemInventoryId, ALL_COLUMNS, FROM_CLAUSE);
+    }
+
+    @Select("""
+            SELECT ${columns}
+            ${fromClause}
+            WHERE ii.uuid = #{uuid}
+            """)
     @ResultMap("itemInventoryResultMap")
-    Optional<ItemInventory> findByUuid(String uuid);
+    Optional<ItemInventory> findByUuid(
+            @Param("uuid") String uuid,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
+
+    default Optional<ItemInventory> findByUuid(String uuid) {
+        return findByUuid(uuid, ALL_COLUMNS, FROM_CLAUSE);
+    }
 
     @Insert("""
             INSERT INTO item_inventory (

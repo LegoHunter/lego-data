@@ -14,66 +14,93 @@ import java.util.Set;
 
 public interface MarketplaceListingMapper {
     String ALL_COLUMNS = """
-            marketplace_listing_id,
-            item_inventory_id,
-            listing_external_service_id,
-            external_catalog_item_id,
-            external_listing_id,
-            external_listing_url,
-            listing_status_code,
-            title,
-            description,
-            private_notes,
-            unit_price,
-            currency_code,
-            fixed_price,
-            created_at,
-            updated_at,
-            published_at,
-            ended_at,
-            last_synchronized_at
+            ml.marketplace_listing_id,
+            ml.item_inventory_id,
+            ml.listing_external_service_id,
+            ml.external_catalog_item_id,
+            ml.external_listing_id,
+            ml.external_listing_url,
+            ml.listing_status_code,
+            ml.title,
+            ml.description,
+            ml.private_notes,
+            ml.unit_price,
+            ml.currency_code,
+            ml.fixed_price,
+            ml.created_at,
+            ml.updated_at,
+            ml.published_at,
+            ml.ended_at,
+            ml.last_synchronized_at,
+            eci.external_catalog_item_id AS eci_external_catalog_item_id,
+            eci.external_service_id AS eci_external_service_id,
+            eci.external_item_key AS eci_external_item_key,
+            eci.external_unique_key AS eci_external_unique_key,
+            eci.item_name AS eci_item_name,
+            eci.item_type_code AS eci_item_type_code,
+            eci.item_url AS eci_item_url,
+            eci.year_released AS eci_year_released,
+            es.external_service_id AS eci_es_external_service_id,
+            es.service_code AS eci_es_service_code,
+            es.display_name AS eci_es_display_name,
+            es.service_url AS eci_es_service_url,
+            es.external_service_type_id AS eci_es_external_service_type_id,
+            est.external_service_type_id AS eci_es_est_external_service_type_id,
+            est.external_service_type_name AS eci_es_est_external_service_type_name,
+            est.external_service_type_description AS eci_es_est_external_service_type_description,
+            esc.external_service_id AS eci_es_esc_external_service_id,
+            esc.capability_code AS eci_es_esc_capability_code
             """;
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_listing")
+    String FROM_CLAUSE = """
+            FROM marketplace_listing ml
+            LEFT JOIN external_catalog_item eci
+                ON eci.external_catalog_item_id = ml.external_catalog_item_id
+            LEFT JOIN external_service es
+                ON es.external_service_id = eci.external_service_id
+            LEFT JOIN external_service_type est
+                ON est.external_service_type_id = es.external_service_type_id
+            LEFT JOIN external_service_capability esc
+                ON esc.external_service_id = es.external_service_id
+            """;
+
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)
     @ResultMap("marketplaceListingResultMap")
     Set<MarketplaceListing> findAll();
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_listing WHERE marketplace_listing_id = #{marketplaceListingId}")
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE + " WHERE ml.marketplace_listing_id = #{marketplaceListingId}")
     @ResultMap("marketplaceListingResultMap")
     Optional<MarketplaceListing> findByMarketplaceListingId(Integer marketplaceListingId);
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_listing WHERE item_inventory_id = #{itemInventoryId}")
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE + " WHERE ml.item_inventory_id = #{itemInventoryId}")
     @ResultMap("marketplaceListingResultMap")
     Set<MarketplaceListing> findByItemInventoryId(Integer itemInventoryId);
 
     @Select("""
-            SELECT marketplace_listing_id,
-                   item_inventory_id,
-                   listing_external_service_id,
-                   external_catalog_item_id,
-                   external_listing_id,
-                   external_listing_url,
-                   listing_status_code,
-                   title,
-                   description,
-                   private_notes,
-                   unit_price,
-                   currency_code,
-                   fixed_price,
-                   created_at,
-                   updated_at,
-                   published_at,
-                   ended_at,
-                   last_synchronized_at
-            FROM marketplace_listing
-            WHERE listing_external_service_id = #{listingExternalServiceId}
-              AND external_listing_id = #{externalListingId}
+            SELECT ${columns}
+            ${fromClause}
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.external_listing_id = #{externalListingId}
             """)
     @ResultMap("marketplaceListingResultMap")
     Optional<MarketplaceListing> findByListingExternalServiceIdAndExternalListingId(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
-            @Param("externalListingId") String externalListingId
+            @Param("externalListingId") String externalListingId,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
     );
+
+    default Optional<MarketplaceListing> findByListingExternalServiceIdAndExternalListingId(
+            Integer listingExternalServiceId,
+            String externalListingId
+    ) {
+        return findByListingExternalServiceIdAndExternalListingId(
+                listingExternalServiceId,
+                externalListingId,
+                ALL_COLUMNS,
+                FROM_CLAUSE
+        );
+    }
 
     @Insert("""
             INSERT INTO marketplace_listing (

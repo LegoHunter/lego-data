@@ -1,10 +1,20 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.legohunter.data.mybatis.mapper.ExternalServiceMapper">
   <resultMap type="io.legohunter.data.dto.ExternalService" id="externalServiceResultMap">
-    <result column="external_service_id"      property="externalServiceId"/>
+    <id     column="external_service_id"      property="externalServiceId"/>
     <result column="service_code"             property="serviceCode"/>
     <result column="display_name"             property="displayName"/>
     <result column="service_url"              property="serviceUrl"/>
     <result column="external_service_type_id" property="externalServiceTypeId"/>
+    <association property="externalServiceType"
+                 resultMap="io.legohunter.data.mybatis.mapper.ExternalServiceTypeMapper.externalServiceTypeResultMap"
+                 columnPrefix="est_"
+                 notNullColumn="external_service_type_id"
+                 javaType="io.legohunter.data.dto.ExternalServiceType"/>
+    <collection property="capabilities"
+                resultMap="io.legohunter.data.mybatis.mapper.ExternalServiceCapabilityMapper.externalServiceCapabilityResultMap"
+                columnPrefix="esc_"
+                notNullColumn="capability_code"
+                javaType="java.util.LinkedHashSet"/>
   </resultMap>
 </mapper>

@@ -1,9 +1,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.legohunter.data.mybatis.mapper.ItemInventoryExternalCatalogItemMapper">
   <resultMap type="io.legohunter.data.dto.ItemInventoryExternalCatalogItem" id="itemInventoryExternalCatalogItemResultMap">
-    <result column="item_inventory_id"        property="itemInventoryId"/>
-    <result column="external_catalog_item_id" property="externalCatalogItemId"/>
+    <id     column="item_inventory_id"        property="itemInventoryId"/>
+    <id     column="external_catalog_item_id" property="externalCatalogItemId"/>
     <result column="is_primary"               property="primary"/>
     <result column="created_at"               property="createdAt"/>
+    <association property="externalCatalogItem"
+                 resultMap="io.legohunter.data.mybatis.mapper.ExternalCatalogItemMapper.externalCatalogItemResultMap"
+                 columnPrefix="eci_"
+                 javaType="io.legohunter.data.dto.ExternalCatalogItem"/>
   </resultMap>
 </mapper>

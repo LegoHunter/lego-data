@@ -173,6 +173,7 @@ class CurrentDaoIntegrationTest {
         assertThat(itemInventoryDao.findByItemInventoryId(inventory.getItemInventoryId())).isPresent();
         assertThat(itemInventoryDao.findByUuid("dao-inventory-1")).isPresent();
         assertThat(itemInventoryDao.findAll()).extracting(ItemInventory::getUuid).contains("dao-inventory-1");
+        assertThat(itemInventoryDao.getPrimaryExternalCatalogItem(inventory)).isEmpty();
 
         ItemInventoryExternalCatalogItem inventoryCatalogItem = ItemInventoryExternalCatalogItem.builder()
                 .itemInventoryId(inventory.getItemInventoryId())
@@ -182,8 +183,15 @@ class CurrentDaoIntegrationTest {
         inventoryCatalogItem = itemInventoryExternalCatalogItemDao.insert(inventoryCatalogItem);
         inventoryCatalogItem.setPrimary(false);
         assertThat(itemInventoryExternalCatalogItemDao.update(inventoryCatalogItem).getPrimary()).isFalse();
+        assertThat(itemInventoryDao.findByItemInventoryId(inventory.getItemInventoryId()))
+                .hasValueSatisfying(found -> assertThat(itemInventoryDao.getPrimaryExternalCatalogItem(found)).isEmpty());
         inventoryCatalogItem.setPrimary(true);
         assertThat(itemInventoryExternalCatalogItemDao.upsert(inventoryCatalogItem).getPrimary()).isTrue();
+        Integer externalCatalogItemId = catalogItem.getExternalCatalogItemId();
+        assertThat(itemInventoryDao.findByItemInventoryId(inventory.getItemInventoryId()))
+                .hasValueSatisfying(found -> assertThat(itemInventoryDao.getPrimaryExternalCatalogItem(found))
+                        .map(ExternalCatalogItem::getExternalCatalogItemId)
+                        .contains(externalCatalogItemId));
         assertThat(itemInventoryExternalCatalogItemDao.findByItemInventoryIdAndExternalCatalogItemId(inventory.getItemInventoryId(), catalogItem.getExternalCatalogItemId())).isPresent();
         assertThat(itemInventoryExternalCatalogItemDao.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);
         assertThat(itemInventoryExternalCatalogItemDao.findByExternalCatalogItemId(catalogItem.getExternalCatalogItemId())).hasSize(1);
@@ -215,6 +223,10 @@ class CurrentDaoIntegrationTest {
         assertThat(marketplaceListingDao.findByMarketplaceListingId(listing.getMarketplaceListingId())).isPresent();
         assertThat(marketplaceListingDao.findByListingExternalServiceIdAndExternalListingId(2, "DAO-BL-1")).isPresent();
         assertThat(marketplaceListingDao.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);
+        assertThat(itemInventoryDao.findMarketplaceListings(inventory))
+                .hasSize(1)
+                .first()
+                .satisfies(this::assertHydratedMarketplaceCatalogItem);
         assertThat(marketplaceListingDao.findAll()).hasSize(1);
 
         BricklinkMarketplaceListing bricklink = bricklinkMarketplaceListing(listing.getMarketplaceListingId(), 3001);
@@ -313,6 +325,18 @@ class CurrentDaoIntegrationTest {
                 .currencyCode("USD")
                 .fixedPrice(true)
                 .build();
+    }
+
+    private void assertHydratedMarketplaceCatalogItem(MarketplaceListing listing) {
+        assertThat(listing.getExternalCatalogItem()).isNotNull();
+        assertThat(listing.getExternalCatalogItem().getExternalItemKey()).isEqualTo("dao-listing-item");
+        assertThat(listing.getExternalCatalogItem().getExternalService()).isNotNull();
+        assertThat(listing.getExternalCatalogItem().getExternalService().getServiceCode()).isEqualTo("BRICKLINK");
+        assertThat(listing.getExternalCatalogItem().getExternalService().getExternalServiceType()).isNotNull();
+        assertThat(listing.getExternalCatalogItem().getExternalService().getExternalServiceType().getExternalServiceTypeName()).isEqualTo("MARKETPLACE");
+        assertThat(listing.getExternalCatalogItem().getExternalService().getCapabilities())
+                .extracting(ExternalServiceCapability::getCapabilityCode)
+                .contains("CATALOG", "MARKETPLACE_LISTING", "PRICE_GUIDE");
     }
 
     private BricklinkMarketplaceListing bricklinkMarketplaceListing(Integer marketplaceListingId, Integer bricklinkInventoryId) {
