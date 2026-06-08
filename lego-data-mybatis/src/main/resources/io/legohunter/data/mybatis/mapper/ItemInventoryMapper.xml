@@ -1,7 +1,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.legohunter.data.mybatis.mapper.ItemInventoryMapper">
     <resultMap type="io.legohunter.data.dto.ItemInventory" id="itemInventoryResultMap">
-        <result column="item_inventory_id"         property="itemInventoryId"/>
+        <id     column="item_inventory_id"         property="itemInventoryId"/>
         <result column="uuid"                      property="uuid"/>
         <result column="box_number"                property="boxNumber"/>
         <result column="purchase_price"            property="purchasePrice"/>
@@ -15,5 +15,10 @@
         <result column="instructions_condition_id" property="instructionsConditionId"/>
         <result column="sealed"                    property="sealed"/>
         <result column="built_once"                property="builtOnce"/>
+        <collection property="externalCatalogItems"
+                    resultMap="io.legohunter.data.mybatis.mapper.ItemInventoryExternalCatalogItemMapper.itemInventoryExternalCatalogItemResultMap"
+                    columnPrefix="iieci_"
+                    notNullColumn="item_inventory_id"
+                    javaType="java.util.LinkedHashSet"/>
     </resultMap>
 </mapper>

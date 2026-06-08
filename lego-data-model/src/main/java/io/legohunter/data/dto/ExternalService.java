@@ -3,6 +3,8 @@ package io.legohunter.data.dto;
 import lombok.Data;
 import lombok.Getter;
 
+import java.util.Set;
+
 @Data
 public class ExternalService {
     private Integer externalServiceId;
@@ -10,6 +12,8 @@ public class ExternalService {
     private String displayName;
     private String serviceUrl;
     private Integer externalServiceTypeId;
+    private ExternalServiceType externalServiceType;
+    private Set<ExternalServiceCapability> capabilities;
 
     @Getter
     public enum Service {

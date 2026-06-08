@@ -1,33 +1,42 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.ExternalService;
-import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.ResultMap;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.*;
 
 import java.util.Optional;
 import java.util.Set;
 
 public interface ExternalServiceMapper {
     String ALL_COLUMNS = """
-            external_service_id,
-            service_code,
-            display_name,
-            service_url,
-            external_service_type_id
+            es.external_service_id,
+            es.service_code,
+            es.display_name,
+            es.service_url,
+            es.external_service_type_id,
+            est.external_service_type_id AS est_external_service_type_id,
+            est.external_service_type_name AS est_external_service_type_name,
+            est.external_service_type_description AS est_external_service_type_description,
+            esc.external_service_id AS esc_external_service_id,
+            esc.capability_code AS esc_capability_code
             """;
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM external_service")
+    String FROM_CLAUSE = """
+            FROM external_service es
+            JOIN external_service_type est
+                ON est.external_service_type_id = es.external_service_type_id
+            LEFT JOIN external_service_capability esc
+                ON esc.external_service_id = es.external_service_id
+            """;
+
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)
     @ResultMap("externalServiceResultMap")
     Set<ExternalService> findAll();
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM external_service WHERE external_service_id = #{externalServiceId}")
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE + " WHERE es.external_service_id = #{externalServiceId}")
     @ResultMap("externalServiceResultMap")
     Optional<ExternalService> findByExternalServiceId(Integer externalServiceId);
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM external_service WHERE service_code = #{serviceCode}")
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE + " WHERE es.service_code = #{serviceCode}")
     @ResultMap("externalServiceResultMap")
     Optional<ExternalService> findByServiceCode(String serviceCode);
 

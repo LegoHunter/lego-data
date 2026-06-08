@@ -16,6 +16,7 @@ public class ItemInventoryExternalCatalogItem {
     private Integer externalCatalogItemId;
     private Boolean primary;
     private ZonedDateTime createdAt;
+    private ExternalCatalogItem externalCatalogItem;
 }
 
 

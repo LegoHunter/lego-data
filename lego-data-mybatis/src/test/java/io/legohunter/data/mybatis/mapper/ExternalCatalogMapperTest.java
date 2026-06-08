@@ -40,6 +40,8 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
     @Test
     void externalCatalogItemSupportsBaselineCrudAndServiceKeyLookups() {
         seedExternalCatalog();
+        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "CATALOG"));
+        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "PRICE_GUIDE"));
         ExternalCatalogItem item = externalCatalogItem("3001-1", "123", "Brick 2 x 4", 2);
 
         externalCatalogItemMapper.insert(item);
@@ -50,6 +52,10 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
                 .hasValueSatisfying(found -> {
                     assertThat(found.getItemName()).isEqualTo("Brick 2 x 4 Updated");
                     assertThat(found.getExternalService().getServiceCode()).isEqualTo("BRICKLINK");
+                    assertThat(found.getExternalService().getExternalServiceType().getExternalServiceTypeName()).isEqualTo("MARKETPLACE");
+                    assertThat(found.getExternalService().getCapabilities())
+                            .extracting("capabilityCode")
+                            .containsExactlyInAnyOrder("CATALOG", "PRICE_GUIDE");
                 });
         assertThat(externalCatalogItemMapper.findByExternalServiceIdAndExternalItemKey(2, "3001-1")).isPresent();
         assertThat(externalCatalogItemMapper.findByExternalServiceIdAndExternalUniqueKey(2, "123")).isPresent();
@@ -91,6 +97,7 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
     @Test
     void itemInventoryExternalCatalogItemSupportsJoinCrud() {
         ExternalCatalogItem item = insertExternalCatalogItem("iieci-1");
+        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "CATALOG"));
         ItemInventory inventory = insertItemInventory("uuid-iieci");
         ItemInventoryExternalCatalogItem join = itemInventoryExternalCatalogItem(inventory.getItemInventoryId(), item.getExternalCatalogItemId());
 
@@ -99,7 +106,17 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
         itemInventoryExternalCatalogItemMapper.update(join);
 
         assertThat(itemInventoryExternalCatalogItemMapper.findByItemInventoryIdAndExternalCatalogItemId(inventory.getItemInventoryId(), item.getExternalCatalogItemId()))
-                .hasValueSatisfying(found -> assertThat(found.getPrimary()).isFalse());
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getPrimary()).isFalse();
+                    assertThat(found.getExternalCatalogItem()).isNotNull();
+                    assertThat(found.getExternalCatalogItem().getExternalItemKey()).isEqualTo("iieci-1");
+                    assertThat(found.getExternalCatalogItem().getExternalService()).isNotNull();
+                    assertThat(found.getExternalCatalogItem().getExternalService().getServiceCode()).isEqualTo("BRICKLINK");
+                    assertThat(found.getExternalCatalogItem().getExternalService().getExternalServiceType().getExternalServiceTypeName()).isEqualTo("MARKETPLACE");
+                    assertThat(found.getExternalCatalogItem().getExternalService().getCapabilities())
+                            .extracting("capabilityCode")
+                            .containsExactly("CATALOG");
+                });
         assertThat(itemInventoryExternalCatalogItemMapper.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);
         assertThat(itemInventoryExternalCatalogItemMapper.findByExternalCatalogItemId(item.getExternalCatalogItemId())).hasSize(1);
         assertThat(itemInventoryExternalCatalogItemMapper.findAll()).hasSize(1);

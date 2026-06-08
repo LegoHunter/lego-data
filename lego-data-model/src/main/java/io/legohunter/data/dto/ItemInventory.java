@@ -3,6 +3,7 @@ package io.legohunter.data.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Set;
 
 @Data
 public class ItemInventory {
@@ -20,4 +21,5 @@ public class ItemInventory {
     private Integer instructionsConditionId;
     private Boolean sealed;
     private Boolean builtOnce;
+    private Set<ItemInventoryExternalCatalogItem> externalCatalogItems;
 }

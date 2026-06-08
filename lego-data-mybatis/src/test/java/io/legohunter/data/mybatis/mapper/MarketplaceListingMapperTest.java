@@ -18,6 +18,8 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
     @Test
     void marketplaceListingSupportsCrudAndExternalListingLookup() {
         ListingFixture fixture = listingFixture("listing-1");
+        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "MARKETPLACE_LISTING"));
+        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "PRICE_GUIDE"));
         MarketplaceListing listing = marketplaceListing(fixture.inventory().getItemInventoryId(), fixture.item().getExternalCatalogItemId(), 2, "BL-1");
 
         marketplaceListingMapper.insert(listing);
@@ -29,9 +31,13 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 .hasValueSatisfying(found -> {
                     assertThat(found.getTitle()).isEqualTo("Updated listing");
                     assertThat(found.getUnitPrice()).isEqualByComparingTo("24.99");
+                    assertHydratedCatalogItem(found);
                 });
         assertThat(marketplaceListingMapper.findByListingExternalServiceIdAndExternalListingId(2, "BL-1")).isPresent();
-        assertThat(marketplaceListingMapper.findByItemInventoryId(fixture.inventory().getItemInventoryId())).hasSize(1);
+        assertThat(marketplaceListingMapper.findByItemInventoryId(fixture.inventory().getItemInventoryId()))
+                .hasSize(1)
+                .first()
+                .satisfies(this::assertHydratedCatalogItem);
         assertThat(marketplaceListingMapper.findAll()).hasSize(1);
 
         listing.setListingStatusCode("ENDED");
@@ -108,6 +114,18 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         ExternalCatalogItem item = insertExternalCatalogItem(itemKey);
         ItemInventory inventory = insertItemInventory("uuid-" + itemKey);
         return new ListingFixture(item, inventory);
+    }
+
+    private void assertHydratedCatalogItem(MarketplaceListing listing) {
+        assertThat(listing.getExternalCatalogItem()).isNotNull();
+        assertThat(listing.getExternalCatalogItem().getExternalItemKey()).isEqualTo("listing-1");
+        assertThat(listing.getExternalCatalogItem().getExternalService()).isNotNull();
+        assertThat(listing.getExternalCatalogItem().getExternalService().getServiceCode()).isEqualTo("BRICKLINK");
+        assertThat(listing.getExternalCatalogItem().getExternalService().getExternalServiceType()).isNotNull();
+        assertThat(listing.getExternalCatalogItem().getExternalService().getExternalServiceType().getExternalServiceTypeName()).isEqualTo("MARKETPLACE");
+        assertThat(listing.getExternalCatalogItem().getExternalService().getCapabilities())
+                .extracting("capabilityCode")
+                .containsExactlyInAnyOrder("MARKETPLACE_LISTING", "PRICE_GUIDE");
     }
 
     private record ListingFixture(ExternalCatalogItem item, ItemInventory inventory) {

@@ -31,6 +31,7 @@ public class MarketplaceListing {
     private ZonedDateTime publishedAt;
     private ZonedDateTime endedAt;
     private ZonedDateTime lastSynchronizedAt;
+    private ExternalCatalogItem externalCatalogItem;
 }
 
 
