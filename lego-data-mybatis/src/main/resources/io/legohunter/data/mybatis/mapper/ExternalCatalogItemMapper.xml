@@ -14,5 +14,10 @@
                  columnPrefix="es_"
                  notNullColumn="external_service_id"
                  javaType="io.legohunter.data.dto.ExternalService"/>
+    <collection property="categories"
+                select="io.legohunter.data.mybatis.mapper.ExternalCategoryMapper.findByExternalCatalogItemId"
+                column="external_catalog_item_id"
+                fetchType="eager"
+                javaType="java.util.LinkedHashSet"/>
   </resultMap>
 </mapper>

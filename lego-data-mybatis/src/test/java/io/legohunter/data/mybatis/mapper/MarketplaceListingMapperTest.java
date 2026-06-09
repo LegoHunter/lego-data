@@ -4,6 +4,7 @@ import io.legohunter.data.dto.BricklinkMarketplaceListing;
 import io.legohunter.data.dto.EbayListingItemSpecific;
 import io.legohunter.data.dto.EbayMarketplaceListing;
 import io.legohunter.data.dto.ExternalCatalogItem;
+import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import org.junit.jupiter.api.Test;
@@ -112,6 +113,8 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
     private ListingFixture listingFixture(String itemKey) {
         seedExternalCatalog();
         ExternalCatalogItem item = insertExternalCatalogItem(itemKey);
+        ExternalCategory category = externalCategoryMapper.findByExternalServiceIdAndExternalCategoryKey(2, "5").orElseThrow();
+        externalCatalogItemCategoryMapper.insert(externalCatalogItemCategory(item.getExternalCatalogItemId(), category.getExternalCategoryId()));
         ItemInventory inventory = insertItemInventory("uuid-" + itemKey);
         return new ListingFixture(item, inventory);
     }
@@ -126,6 +129,9 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         assertThat(listing.getExternalCatalogItem().getExternalService().getCapabilities())
                 .extracting("capabilityCode")
                 .containsExactlyInAnyOrder("MARKETPLACE_LISTING", "PRICE_GUIDE");
+        assertThat(listing.getExternalCatalogItem().getCategories())
+                .extracting(ExternalCategory::getExternalCategoryKey)
+                .containsExactly("5");
     }
 
     private record ListingFixture(ExternalCatalogItem item, ItemInventory inventory) {

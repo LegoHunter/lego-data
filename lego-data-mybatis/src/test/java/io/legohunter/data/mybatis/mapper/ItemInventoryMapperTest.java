@@ -1,6 +1,7 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.ExternalCatalogItem;
+import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,11 @@ class ItemInventoryMapperTest extends MapperTestSupport {
         seedDefaultCondition();
         ExternalCatalogItem externalCatalogItem = insertExternalCatalogItem("uuid-inventory-catalog-item");
         externalServiceCapabilityMapper.insert(externalServiceCapability(2, "CATALOG"));
+        ExternalCategory category = externalCategoryMapper.findByExternalServiceIdAndExternalCategoryKey(2, "5").orElseThrow();
+        externalCatalogItemCategoryMapper.insert(externalCatalogItemCategory(
+                externalCatalogItem.getExternalCatalogItemId(),
+                category.getExternalCategoryId()
+        ));
         ItemInventory itemInventory = itemInventory("uuid-inventory");
 
         itemInventoryMapper.insert(itemInventory);
@@ -63,5 +69,8 @@ class ItemInventoryMapperTest extends MapperTestSupport {
         assertThat(link.getExternalCatalogItem().getExternalService().getCapabilities())
                 .extracting("capabilityCode")
                 .containsExactly("CATALOG");
+        assertThat(link.getExternalCatalogItem().getCategories())
+                .extracting(ExternalCategory::getExternalCategoryKey)
+                .containsExactly("5");
     }
 }

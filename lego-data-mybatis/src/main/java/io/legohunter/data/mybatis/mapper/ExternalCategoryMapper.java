@@ -24,6 +24,21 @@ public interface ExternalCategoryMapper {
     Optional<ExternalCategory> findByExternalCategoryId(Integer externalCategoryId);
 
     @Select("""
+            SELECT ec.external_category_id,
+                   ec.external_service_id,
+                   ec.external_category_key,
+                   ec.category_name,
+                   ec.parent_external_category_id
+            FROM external_category ec
+            JOIN external_catalog_item_category ecic
+                ON ecic.external_category_id = ec.external_category_id
+            WHERE ecic.external_catalog_item_id = #{externalCatalogItemId}
+            ORDER BY ecic.is_primary DESC, ec.category_name, ec.external_category_id
+            """)
+    @ResultMap("externalCategoryResultMap")
+    Set<ExternalCategory> findByExternalCatalogItemId(Integer externalCatalogItemId);
+
+    @Select("""
             SELECT external_category_id,
                    external_service_id,
                    external_category_key,
