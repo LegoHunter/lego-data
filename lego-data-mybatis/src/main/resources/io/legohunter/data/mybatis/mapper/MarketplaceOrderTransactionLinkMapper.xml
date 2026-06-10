@@ -1,7 +1,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.legohunter.data.mybatis.mapper.MarketplaceOrderTransactionLinkMapper">
   <resultMap type="io.legohunter.data.dto.MarketplaceOrderTransactionLink" id="marketplaceOrderTransactionLinkResultMap">
-    <result column="marketplace_order_transaction_link_id" property="marketplaceOrderTransactionLinkId"/>
+    <id     column="marketplace_order_transaction_link_id" property="marketplaceOrderTransactionLinkId"/>
     <result column="marketplace_order_id"                  property="marketplaceOrderId"/>
     <result column="transaction_id"                        property="transactionId"/>
     <result column="marketplace_order_item_id"             property="marketplaceOrderItemId"/>
