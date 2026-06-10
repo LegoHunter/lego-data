@@ -1,3 +1,8 @@
+DROP TABLE IF EXISTS marketplace_order_transaction_link;
+DROP TABLE IF EXISTS marketplace_order_payload;
+DROP TABLE IF EXISTS marketplace_order_item;
+DROP TABLE IF EXISTS marketplace_order;
+DROP TABLE IF EXISTS marketplace_order_sync_run;
 DROP TABLE IF EXISTS ebay_listing_item_specific;
 DROP TABLE IF EXISTS ebay_marketplace_listing;
 DROP TABLE IF EXISTS bricklink_marketplace_listing;
@@ -210,6 +215,110 @@ CREATE TABLE ebay_listing_item_specific (
     PRIMARY KEY (marketplace_listing_id, name, `value`)
 );
 
+CREATE TABLE marketplace_order_sync_run (
+    marketplace_order_sync_run_id INT AUTO_INCREMENT PRIMARY KEY,
+    marketplace_code VARCHAR(30) NOT NULL,
+    sync_job_name VARCHAR(100),
+    sync_direction VARCHAR(20) NOT NULL,
+    sync_status_code VARCHAR(30) NOT NULL,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP,
+    orders_discovered INT NOT NULL DEFAULT 0,
+    orders_fetched INT NOT NULL DEFAULT 0,
+    orders_failed INT NOT NULL DEFAULT 0,
+    error_message CLOB,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE marketplace_order (
+    marketplace_order_id INT AUTO_INCREMENT PRIMARY KEY,
+    last_sync_run_id INT,
+    marketplace_code VARCHAR(30) NOT NULL,
+    external_order_id VARCHAR(100) NOT NULL,
+    order_direction VARCHAR(20) NOT NULL,
+    external_status_code VARCHAR(50) NOT NULL,
+    ordered_at TIMESTAMP,
+    status_changed_at TIMESTAMP,
+    buyer_display_name VARCHAR(150),
+    buyer_email VARCHAR(255),
+    payment_status_code VARCHAR(50),
+    payment_method VARCHAR(100),
+    payment_currency_code CHAR(3),
+    paid_at TIMESTAMP,
+    shipping_method VARCHAR(150),
+    shipping_method_id VARCHAR(100),
+    shipping_address_present BOOLEAN DEFAULT FALSE,
+    tracking_present BOOLEAN DEFAULT FALSE,
+    subtotal_amount DECIMAL(10,2),
+    shipping_amount DECIMAL(10,2),
+    grand_total_amount DECIMAL(10,2),
+    currency_code CHAR(3),
+    display_currency_code CHAR(3),
+    total_count INT,
+    unique_count INT,
+    total_weight DECIMAL(10,3),
+    is_invoiced BOOLEAN,
+    is_filed BOOLEAN,
+    sent_drive_thru BOOLEAN,
+    require_insurance BOOLEAN,
+    payload_hash VARCHAR(64),
+    last_seen_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_marketplace_order_source_order UNIQUE (marketplace_code, external_order_id)
+);
+
+CREATE TABLE marketplace_order_item (
+    marketplace_order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    marketplace_order_id INT NOT NULL,
+    marketplace_listing_id INT,
+    item_inventory_id INT,
+    external_order_item_id VARCHAR(100),
+    external_inventory_id VARCHAR(100),
+    external_item_no VARCHAR(100),
+    external_item_type VARCHAR(30),
+    color_id INT,
+    color_name VARCHAR(100),
+    quantity INT NOT NULL DEFAULT 0,
+    condition_code VARCHAR(10),
+    completeness_code VARCHAR(10),
+    unit_price DECIMAL(10,2),
+    final_unit_price DECIMAL(10,2),
+    currency_code CHAR(3),
+    item_weight DECIMAL(10,3),
+    remarks CLOB,
+    description CLOB,
+    payload_hash VARCHAR(64),
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE marketplace_order_payload (
+    marketplace_order_payload_id INT AUTO_INCREMENT PRIMARY KEY,
+    marketplace_order_id INT NOT NULL,
+    marketplace_order_sync_run_id INT,
+    payload_type_code VARCHAR(50) NOT NULL,
+    payload_hash VARCHAR(64),
+    payload_json CLOB,
+    captured_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE marketplace_order_transaction_link (
+    marketplace_order_transaction_link_id INT AUTO_INCREMENT PRIMARY KEY,
+    marketplace_order_id INT NOT NULL,
+    transaction_id BIGINT NOT NULL,
+    marketplace_order_item_id INT,
+    transaction_item_id BIGINT,
+    link_type_code VARCHAR(30) NOT NULL,
+    link_status_code VARCHAR(30) NOT NULL,
+    linked_at TIMESTAMP NOT NULL,
+    unlinked_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE inventory_index (
     box_id INT NOT NULL,
     box_index INT NOT NULL,
@@ -302,6 +411,38 @@ CREATE INDEX idx_marketplace_listing_inventory
     ON marketplace_listing (item_inventory_id);
 CREATE INDEX idx_marketplace_listing_catalog_item
     ON marketplace_listing (external_catalog_item_id);
+CREATE INDEX idx_marketplace_order_sync_run_marketplace_status
+    ON marketplace_order_sync_run (marketplace_code, sync_status_code);
+CREATE INDEX idx_marketplace_order_sync_run_started_at
+    ON marketplace_order_sync_run (started_at);
+CREATE INDEX idx_marketplace_order_status
+    ON marketplace_order (marketplace_code, external_status_code);
+CREATE INDEX idx_marketplace_order_last_sync_run
+    ON marketplace_order (last_sync_run_id);
+CREATE INDEX idx_marketplace_order_item_order
+    ON marketplace_order_item (marketplace_order_id);
+CREATE INDEX idx_marketplace_order_item_listing
+    ON marketplace_order_item (marketplace_listing_id);
+CREATE INDEX idx_marketplace_order_item_inventory
+    ON marketplace_order_item (item_inventory_id);
+CREATE INDEX idx_marketplace_order_item_external_inventory
+    ON marketplace_order_item (external_inventory_id);
+CREATE INDEX idx_marketplace_order_payload_order
+    ON marketplace_order_payload (marketplace_order_id);
+CREATE INDEX idx_marketplace_order_payload_sync_run
+    ON marketplace_order_payload (marketplace_order_sync_run_id);
+CREATE INDEX idx_marketplace_order_payload_type_hash
+    ON marketplace_order_payload (payload_type_code, payload_hash);
+CREATE INDEX idx_marketplace_order_transaction_link_order
+    ON marketplace_order_transaction_link (marketplace_order_id);
+CREATE INDEX idx_marketplace_order_transaction_link_transaction
+    ON marketplace_order_transaction_link (transaction_id);
+CREATE INDEX idx_marketplace_order_transaction_link_order_item
+    ON marketplace_order_transaction_link (marketplace_order_item_id);
+CREATE INDEX idx_marketplace_order_transaction_link_transaction_item
+    ON marketplace_order_transaction_link (transaction_item_id);
+CREATE INDEX idx_marketplace_order_transaction_link_type_status
+    ON marketplace_order_transaction_link (link_type_code, link_status_code);
 
 CREATE TABLE party (
     party_id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -447,6 +588,36 @@ ALTER TABLE ebay_listing_item_specific
     FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
+ALTER TABLE marketplace_order
+    ADD CONSTRAINT fk_marketplace_order_sync_run1
+    FOREIGN KEY (last_sync_run_id) REFERENCES marketplace_order_sync_run (marketplace_order_sync_run_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_item
+    ADD CONSTRAINT fk_marketplace_order_item_order1
+    FOREIGN KEY (marketplace_order_id) REFERENCES marketplace_order (marketplace_order_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_item
+    ADD CONSTRAINT fk_marketplace_order_item_marketplace_listing1
+    FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_item
+    ADD CONSTRAINT fk_marketplace_order_item_item_inventory1
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_payload
+    ADD CONSTRAINT fk_marketplace_order_payload_order1
+    FOREIGN KEY (marketplace_order_id) REFERENCES marketplace_order (marketplace_order_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_payload
+    ADD CONSTRAINT fk_marketplace_order_payload_sync_run1
+    FOREIGN KEY (marketplace_order_sync_run_id) REFERENCES marketplace_order_sync_run (marketplace_order_sync_run_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
 ALTER TABLE item_inventory_photo
     ADD CONSTRAINT fk_item_inventory_photo_item_inventory1
     FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
@@ -510,6 +681,26 @@ ALTER TABLE transaction_item
 ALTER TABLE transaction_item
     ADD CONSTRAINT fk_transaction_item_item_inventory1
     FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_transaction_link
+    ADD CONSTRAINT fk_marketplace_order_transaction_link_order1
+    FOREIGN KEY (marketplace_order_id) REFERENCES marketplace_order (marketplace_order_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_transaction_link
+    ADD CONSTRAINT fk_marketplace_order_transaction_link_transaction1
+    FOREIGN KEY (transaction_id) REFERENCES transactions (transaction_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_transaction_link
+    ADD CONSTRAINT fk_marketplace_order_transaction_link_order_item1
+    FOREIGN KEY (marketplace_order_item_id) REFERENCES marketplace_order_item (marketplace_order_item_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE marketplace_order_transaction_link
+    ADD CONSTRAINT fk_marketplace_order_transaction_link_transaction_item1
+    FOREIGN KEY (transaction_item_id) REFERENCES transaction_item (transaction_item_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE transaction_cost
