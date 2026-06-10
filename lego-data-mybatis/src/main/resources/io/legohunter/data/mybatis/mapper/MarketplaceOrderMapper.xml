@@ -1,0 +1,39 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketplaceOrderMapper">
+  <resultMap type="io.legohunter.data.dto.MarketplaceOrder" id="marketplaceOrderResultMap">
+    <result column="marketplace_order_id"       property="marketplaceOrderId"/>
+    <result column="last_sync_run_id"           property="lastSyncRunId"/>
+    <result column="marketplace_code"           property="marketplaceCode"/>
+    <result column="external_order_id"          property="externalOrderId"/>
+    <result column="order_direction"            property="orderDirection"/>
+    <result column="external_status_code"       property="externalStatusCode"/>
+    <result column="ordered_at"                 property="orderedAt"/>
+    <result column="status_changed_at"          property="statusChangedAt"/>
+    <result column="buyer_display_name"         property="buyerDisplayName"/>
+    <result column="buyer_email"                property="buyerEmail"/>
+    <result column="payment_status_code"        property="paymentStatusCode"/>
+    <result column="payment_method"             property="paymentMethod"/>
+    <result column="payment_currency_code"      property="paymentCurrencyCode"/>
+    <result column="paid_at"                    property="paidAt"/>
+    <result column="shipping_method"            property="shippingMethod"/>
+    <result column="shipping_method_id"         property="shippingMethodId"/>
+    <result column="shipping_address_present"   property="shippingAddressPresent"/>
+    <result column="tracking_present"           property="trackingPresent"/>
+    <result column="subtotal_amount"            property="subtotalAmount"/>
+    <result column="shipping_amount"            property="shippingAmount"/>
+    <result column="grand_total_amount"         property="grandTotalAmount"/>
+    <result column="currency_code"              property="currencyCode"/>
+    <result column="display_currency_code"      property="displayCurrencyCode"/>
+    <result column="total_count"                property="totalCount"/>
+    <result column="unique_count"               property="uniqueCount"/>
+    <result column="total_weight"               property="totalWeight"/>
+    <result column="is_invoiced"                property="invoiced"/>
+    <result column="is_filed"                   property="filed"/>
+    <result column="sent_drive_thru"            property="sentDriveThru"/>
+    <result column="require_insurance"          property="requireInsurance"/>
+    <result column="payload_hash"               property="payloadHash"/>
+    <result column="last_seen_at"               property="lastSeenAt"/>
+    <result column="created_at"                 property="createdAt"/>
+    <result column="updated_at"                 property="updatedAt"/>
+  </resultMap>
+</mapper>
