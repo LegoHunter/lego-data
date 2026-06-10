@@ -13,12 +13,12 @@
     <result column="is_stock_room"                    property="isStockRoom"/>
     <result column="stock_room_id"                    property="stockRoomId"/>
     <result column="sale_rate"                        property="saleRate"/>
-    <result column="tier_quantity_1"                  property="tierQuantity1"/>
-    <result column="tier_price_1"                     property="tierPrice1"/>
-    <result column="tier_quantity_2"                  property="tierQuantity2"/>
-    <result column="tier_price_2"                     property="tierPrice2"/>
-    <result column="tier_quantity_3"                  property="tierQuantity3"/>
-    <result column="tier_price_3"                     property="tierPrice3"/>
+    <result column="tier_quantity1"                  property="tierQuantity1"/>
+    <result column="tier_price1"                     property="tierPrice1"/>
+    <result column="tier_quantity2"                  property="tierQuantity2"/>
+    <result column="tier_price2"                     property="tierPrice2"/>
+    <result column="tier_quantity3"                  property="tierQuantity3"/>
+    <result column="tier_price3"                     property="tierPrice3"/>
     <result column="my_weight"                        property="myWeight"/>
     <result column="remarks"                          property="remarks"/>
     <result column="last_remote_quantity"             property="lastRemoteQuantity"/>

@@ -45,6 +45,12 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
         ExternalCatalogItem item = externalCatalogItem("3001-1", "123", "Brick 2 x 4", 2);
 
         externalCatalogItemMapper.insert(item);
+        ExternalCategory category = externalCategoryMapper.findByExternalServiceIdAndExternalCategoryKey(2, "5").orElseThrow();
+        ExternalCatalogItemCategory itemCategory = externalCatalogItemCategory(
+                item.getExternalCatalogItemId(),
+                category.getExternalCategoryId()
+        );
+        externalCatalogItemCategoryMapper.insert(itemCategory);
         item.setItemName("Brick 2 x 4 Updated");
         externalCatalogItemMapper.update(item);
 
@@ -56,6 +62,9 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
                     assertThat(found.getExternalService().getCapabilities())
                             .extracting("capabilityCode")
                             .containsExactlyInAnyOrder("CATALOG", "PRICE_GUIDE");
+                    assertThat(found.getCategories())
+                            .extracting(ExternalCategory::getExternalCategoryKey)
+                            .containsExactly("5");
                 });
         assertThat(externalCatalogItemMapper.findByExternalServiceIdAndExternalItemKey(2, "3001-1")).isPresent();
         assertThat(externalCatalogItemMapper.findByExternalServiceIdAndExternalUniqueKey(2, "123")).isPresent();
@@ -66,6 +75,7 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
         assertThat(externalCatalogItemMapper.findByExternalCatalogItemId(item.getExternalCatalogItemId()))
                 .hasValueSatisfying(found -> assertThat(found.getItemName()).isEqualTo("Upserted Brick"));
 
+        assertThat(externalCatalogItemCategoryMapper.delete(item.getExternalCatalogItemId(), category.getExternalCategoryId())).isOne();
         assertThat(externalCatalogItemMapper.delete(item.getExternalCatalogItemId())).isOne();
         assertThat(externalCatalogItemMapper.findByExternalCatalogItemId(item.getExternalCatalogItemId())).isEmpty();
     }
@@ -98,6 +108,8 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
     void itemInventoryExternalCatalogItemSupportsJoinCrud() {
         ExternalCatalogItem item = insertExternalCatalogItem("iieci-1");
         externalServiceCapabilityMapper.insert(externalServiceCapability(2, "CATALOG"));
+        ExternalCategory category = externalCategoryMapper.findByExternalServiceIdAndExternalCategoryKey(2, "5").orElseThrow();
+        externalCatalogItemCategoryMapper.insert(externalCatalogItemCategory(item.getExternalCatalogItemId(), category.getExternalCategoryId()));
         ItemInventory inventory = insertItemInventory("uuid-iieci");
         ItemInventoryExternalCatalogItem join = itemInventoryExternalCatalogItem(inventory.getItemInventoryId(), item.getExternalCatalogItemId());
 
@@ -116,6 +128,9 @@ class ExternalCatalogMapperTest extends MapperTestSupport {
                     assertThat(found.getExternalCatalogItem().getExternalService().getCapabilities())
                             .extracting("capabilityCode")
                             .containsExactly("CATALOG");
+                    assertThat(found.getExternalCatalogItem().getCategories())
+                            .extracting(ExternalCategory::getExternalCategoryKey)
+                            .containsExactly("5");
                 });
         assertThat(itemInventoryExternalCatalogItemMapper.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);
         assertThat(itemInventoryExternalCatalogItemMapper.findByExternalCatalogItemId(item.getExternalCatalogItemId())).hasSize(1);

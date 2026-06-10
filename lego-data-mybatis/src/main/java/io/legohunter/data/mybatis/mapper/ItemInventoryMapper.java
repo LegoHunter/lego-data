@@ -47,9 +47,7 @@ public interface ItemInventoryMapper {
             es.external_service_type_id AS iieci_eci_es_external_service_type_id,
             est.external_service_type_id AS iieci_eci_es_est_external_service_type_id,
             est.external_service_type_name AS iieci_eci_es_est_external_service_type_name,
-            est.external_service_type_description AS iieci_eci_es_est_external_service_type_description,
-            esc.external_service_id AS iieci_eci_es_esc_external_service_id,
-            esc.capability_code AS iieci_eci_es_esc_capability_code
+            est.external_service_type_description AS iieci_eci_es_est_external_service_type_description
             """;
 
     String FROM_CLAUSE = """
@@ -62,8 +60,6 @@ public interface ItemInventoryMapper {
                 ON es.external_service_id = eci.external_service_id
             LEFT JOIN external_service_type est
                 ON est.external_service_type_id = es.external_service_type_id
-            LEFT JOIN external_service_capability esc
-                ON esc.external_service_id = es.external_service_id
             """;
 
     @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)

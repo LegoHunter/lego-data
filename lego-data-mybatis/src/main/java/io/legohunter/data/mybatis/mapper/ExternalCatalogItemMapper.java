@@ -23,9 +23,7 @@ public interface ExternalCatalogItemMapper {
             es.external_service_type_id AS es_external_service_type_id,
             est.external_service_type_id AS es_est_external_service_type_id,
             est.external_service_type_name AS es_est_external_service_type_name,
-            est.external_service_type_description AS es_est_external_service_type_description,
-            esc.external_service_id AS es_esc_external_service_id,
-            esc.capability_code AS es_esc_capability_code
+            est.external_service_type_description AS es_est_external_service_type_description
             """;
 
     String FROM_CLAUSE = """
@@ -34,8 +32,6 @@ public interface ExternalCatalogItemMapper {
                 ON es.external_service_id = eci.external_service_id
             JOIN external_service_type est
                 ON est.external_service_type_id = es.external_service_type_id
-            LEFT JOIN external_service_capability esc
-                ON esc.external_service_id = es.external_service_id
             """;
 
     @Select("""

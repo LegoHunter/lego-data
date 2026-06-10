@@ -15,17 +15,13 @@ public interface ExternalServiceMapper {
             es.external_service_type_id,
             est.external_service_type_id AS est_external_service_type_id,
             est.external_service_type_name AS est_external_service_type_name,
-            est.external_service_type_description AS est_external_service_type_description,
-            esc.external_service_id AS esc_external_service_id,
-            esc.capability_code AS esc_capability_code
+            est.external_service_type_description AS est_external_service_type_description
             """;
 
     String FROM_CLAUSE = """
             FROM external_service es
             JOIN external_service_type est
                 ON est.external_service_type_id = es.external_service_type_id
-            LEFT JOIN external_service_capability esc
-                ON esc.external_service_id = es.external_service_id
             """;
 
     @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)

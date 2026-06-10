@@ -12,9 +12,9 @@
                  notNullColumn="external_service_type_id"
                  javaType="io.legohunter.data.dto.ExternalServiceType"/>
     <collection property="capabilities"
-                resultMap="io.legohunter.data.mybatis.mapper.ExternalServiceCapabilityMapper.externalServiceCapabilityResultMap"
-                columnPrefix="esc_"
-                notNullColumn="capability_code"
+                select="io.legohunter.data.mybatis.mapper.ExternalServiceCapabilityMapper.findByExternalServiceId"
+                column="external_service_id"
+                fetchType="eager"
                 javaType="java.util.LinkedHashSet"/>
   </resultMap>
 </mapper>
