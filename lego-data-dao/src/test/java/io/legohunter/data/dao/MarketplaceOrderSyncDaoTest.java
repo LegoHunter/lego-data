@@ -104,6 +104,14 @@ class MarketplaceOrderSyncDaoTest {
                     assertThat(found.getRemarks()).isEqualTo("DAO updated remarks");
                     assertThat(found.getDescription()).isEqualTo("DAO updated description");
                 });
+        assertThat(marketplaceOrderItemDao.findByMarketplaceOrderId(order.getMarketplaceOrderId()))
+                .extracting(MarketplaceOrderItem::getMarketplaceOrderItemId)
+                .containsExactly(item.getMarketplaceOrderItemId());
+        assertThat(marketplaceOrderItemDao.findByMarketplaceOrderIdAndExternalInventoryId(
+                order.getMarketplaceOrderId(),
+                "dao-inventory-1"
+        )).extracting(MarketplaceOrderItem::getMarketplaceOrderItemId)
+                .containsExactly(item.getMarketplaceOrderItemId());
         assertThat(marketplaceOrderItemDao.findAll()).hasSize(1);
 
         item.setQuantity(6);
@@ -111,7 +119,7 @@ class MarketplaceOrderSyncDaoTest {
         assertThat(marketplaceOrderItemDao.findByMarketplaceOrderItemId(item.getMarketplaceOrderItemId()))
                 .hasValueSatisfying(found -> assertThat(found.getQuantity()).isEqualTo(6));
 
-        assertThat(marketplaceOrderItemDao.delete(item.getMarketplaceOrderItemId())).isOne();
+        assertThat(marketplaceOrderItemDao.deleteByMarketplaceOrderId(order.getMarketplaceOrderId())).isOne();
         assertThat(marketplaceOrderItemDao.findByMarketplaceOrderItemId(item.getMarketplaceOrderItemId())).isEmpty();
     }
 
