@@ -4,6 +4,7 @@ import io.legohunter.data.dto.MarketplaceOrderItem;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -44,6 +45,20 @@ public interface MarketplaceOrderItemMapper {
     @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_order_item WHERE marketplace_order_item_id = #{marketplaceOrderItemId}")
     @ResultMap("marketplaceOrderItemResultMap")
     Optional<MarketplaceOrderItem> findByMarketplaceOrderItemId(Integer marketplaceOrderItemId);
+
+    @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_order_item WHERE marketplace_order_id = #{marketplaceOrderId}")
+    @ResultMap("marketplaceOrderItemResultMap")
+    Set<MarketplaceOrderItem> findByMarketplaceOrderId(Integer marketplaceOrderId);
+
+    @Select("SELECT " + ALL_COLUMNS + """
+            FROM marketplace_order_item
+            WHERE marketplace_order_id = #{marketplaceOrderId}
+              AND external_inventory_id = #{externalInventoryId}
+            """)
+    @ResultMap("marketplaceOrderItemResultMap")
+    Set<MarketplaceOrderItem> findByMarketplaceOrderIdAndExternalInventoryId(
+            @Param("marketplaceOrderId") Integer marketplaceOrderId,
+            @Param("externalInventoryId") String externalInventoryId);
 
     @Insert("""
             INSERT INTO marketplace_order_item (
@@ -125,6 +140,9 @@ public interface MarketplaceOrderItemMapper {
 
     @Delete("DELETE FROM marketplace_order_item WHERE marketplace_order_item_id = #{marketplaceOrderItemId}")
     int delete(Integer marketplaceOrderItemId);
+
+    @Delete("DELETE FROM marketplace_order_item WHERE marketplace_order_id = #{marketplaceOrderId}")
+    int deleteByMarketplaceOrderId(Integer marketplaceOrderId);
 
     @Insert("""
             INSERT INTO marketplace_order_item (

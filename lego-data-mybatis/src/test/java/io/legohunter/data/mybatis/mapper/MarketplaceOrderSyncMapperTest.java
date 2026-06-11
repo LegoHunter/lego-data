@@ -90,6 +90,14 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
                     assertThat(found.getRemarks()).isEqualTo("Updated remarks");
                     assertThat(found.getDescription()).isEqualTo("Updated description");
                 });
+        assertThat(marketplaceOrderItemMapper.findByMarketplaceOrderId(order.getMarketplaceOrderId()))
+                .extracting(MarketplaceOrderItem::getMarketplaceOrderItemId)
+                .containsExactly(item.getMarketplaceOrderItemId());
+        assertThat(marketplaceOrderItemMapper.findByMarketplaceOrderIdAndExternalInventoryId(
+                order.getMarketplaceOrderId(),
+                "inventory-1"
+        )).extracting(MarketplaceOrderItem::getMarketplaceOrderItemId)
+                .containsExactly(item.getMarketplaceOrderItemId());
         assertThat(marketplaceOrderItemMapper.findAll()).hasSize(1);
 
         item.setQuantity(5);
@@ -97,7 +105,7 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
         assertThat(marketplaceOrderItemMapper.findByMarketplaceOrderItemId(item.getMarketplaceOrderItemId()))
                 .hasValueSatisfying(found -> assertThat(found.getQuantity()).isEqualTo(5));
 
-        assertThat(marketplaceOrderItemMapper.delete(item.getMarketplaceOrderItemId())).isOne();
+        assertThat(marketplaceOrderItemMapper.deleteByMarketplaceOrderId(order.getMarketplaceOrderId())).isOne();
         assertThat(marketplaceOrderItemMapper.findByMarketplaceOrderItemId(item.getMarketplaceOrderItemId())).isEmpty();
     }
 

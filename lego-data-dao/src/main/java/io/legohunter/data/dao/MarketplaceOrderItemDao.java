@@ -21,6 +21,14 @@ public class MarketplaceOrderItemDao {
         return marketplaceOrderItemMapper.findByMarketplaceOrderItemId(marketplaceOrderItemId);
     }
 
+    public Set<MarketplaceOrderItem> findByMarketplaceOrderId(Integer marketplaceOrderId) {
+        return marketplaceOrderItemMapper.findByMarketplaceOrderId(marketplaceOrderId);
+    }
+
+    public Set<MarketplaceOrderItem> findByMarketplaceOrderIdAndExternalInventoryId(Integer marketplaceOrderId, String externalInventoryId) {
+        return marketplaceOrderItemMapper.findByMarketplaceOrderIdAndExternalInventoryId(marketplaceOrderId, externalInventoryId);
+    }
+
     public MarketplaceOrderItem insert(MarketplaceOrderItem marketplaceOrderItem) {
         marketplaceOrderItemMapper.insert(marketplaceOrderItem);
         return marketplaceOrderItem;
@@ -32,6 +40,10 @@ public class MarketplaceOrderItemDao {
 
     public int delete(Integer marketplaceOrderItemId) {
         return marketplaceOrderItemMapper.delete(marketplaceOrderItemId);
+    }
+
+    public int deleteByMarketplaceOrderId(Integer marketplaceOrderId) {
+        return marketplaceOrderItemMapper.deleteByMarketplaceOrderId(marketplaceOrderId);
     }
 
     public MarketplaceOrderItem upsert(MarketplaceOrderItem marketplaceOrderItem) {
