@@ -4,6 +4,7 @@ import io.legohunter.data.dto.MarketplaceOrderPayload;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -30,6 +31,18 @@ public interface MarketplaceOrderPayloadMapper {
     @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_order_payload WHERE marketplace_order_payload_id = #{marketplaceOrderPayloadId}")
     @ResultMap("marketplaceOrderPayloadResultMap")
     Optional<MarketplaceOrderPayload> findByMarketplaceOrderPayloadId(Integer marketplaceOrderPayloadId);
+
+    @Select("SELECT " + ALL_COLUMNS + """
+            FROM marketplace_order_payload
+            WHERE marketplace_order_id = #{marketplaceOrderId}
+              AND payload_type_code = #{payloadTypeCode}
+            ORDER BY captured_at DESC, marketplace_order_payload_id DESC
+            LIMIT 1
+            """)
+    @ResultMap("marketplaceOrderPayloadResultMap")
+    Optional<MarketplaceOrderPayload> findLatestByMarketplaceOrderIdAndPayloadTypeCode(
+            @Param("marketplaceOrderId") Integer marketplaceOrderId,
+            @Param("payloadTypeCode") String payloadTypeCode);
 
     @Insert("""
             INSERT INTO marketplace_order_payload (
