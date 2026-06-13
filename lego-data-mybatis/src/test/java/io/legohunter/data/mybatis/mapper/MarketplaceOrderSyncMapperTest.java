@@ -74,6 +74,25 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void marketplaceOrderFindsFulfillmentCandidatesWithOrderItems() {
+        MarketplaceOrder candidate = insertedOrder("BL-CANDIDATE-1");
+        insertedOrderItem(candidate.getMarketplaceOrderId());
+        MarketplaceOrder withoutItems = insertedOrder("BL-CANDIDATE-2");
+        MarketplaceOrder shipped = insertedOrder("BL-CANDIDATE-3");
+        shipped.setExternalStatusCode("SHIPPED");
+        marketplaceOrderMapper.update(shipped);
+        insertedOrderItem(shipped.getMarketplaceOrderId());
+
+        assertThat(marketplaceOrderMapper.findFulfillmentCandidatesByStatus("BRICKLINK", "PENDING", 10))
+                .extracting(MarketplaceOrder::getMarketplaceOrderId)
+                .containsExactly(candidate.getMarketplaceOrderId());
+        assertThat(marketplaceOrderMapper.findFulfillmentCandidatesByStatus("BRICKLINK", "SHIPPED", 10))
+                .extracting(MarketplaceOrder::getMarketplaceOrderId)
+                .containsExactly(shipped.getMarketplaceOrderId());
+        assertThat(withoutItems.getMarketplaceOrderId()).isNotNull();
+    }
+
+    @Test
     void marketplaceOrderItemSupportsCrudAndUpsert() {
         MarketplaceOrder order = insertedOrder("BL-ITEM-1");
         MarketplaceOrderItem item = marketplaceOrderItem(order.getMarketplaceOrderId());
@@ -131,6 +150,28 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
 
         assertThat(marketplaceOrderPayloadMapper.delete(payload.getMarketplaceOrderPayloadId())).isOne();
         assertThat(marketplaceOrderPayloadMapper.findByMarketplaceOrderPayloadId(payload.getMarketplaceOrderPayloadId())).isEmpty();
+    }
+
+    @Test
+    void marketplaceOrderPayloadFindsLatestByOrderAndType() {
+        MarketplaceOrderSyncRun syncRun = insertedSyncRun();
+        MarketplaceOrder order = insertedOrder(syncRun.getMarketplaceOrderSyncRunId(), "BL-PAYLOAD-LATEST-1");
+        MarketplaceOrderPayload older = marketplaceOrderPayload(order.getMarketplaceOrderId(), syncRun.getMarketplaceOrderSyncRunId());
+        older.setPayloadJson("{\"version\":\"older\"}");
+        marketplaceOrderPayloadMapper.insert(older);
+        MarketplaceOrderPayload latest = marketplaceOrderPayload(order.getMarketplaceOrderId(), syncRun.getMarketplaceOrderSyncRunId());
+        latest.setPayloadJson("{\"version\":\"latest\"}");
+        latest.setCapturedAt(STARTED_AT.plusMinutes(2));
+        marketplaceOrderPayloadMapper.insert(latest);
+
+        assertThat(marketplaceOrderPayloadMapper.findLatestByMarketplaceOrderIdAndPayloadTypeCode(
+                order.getMarketplaceOrderId(),
+                "ORDER_RESPONSE"
+        )).hasValueSatisfying(found -> assertThat(found.getPayloadJson()).isEqualTo("{\"version\":\"latest\"}"));
+        assertThat(marketplaceOrderPayloadMapper.findLatestByMarketplaceOrderIdAndPayloadTypeCode(
+                order.getMarketplaceOrderId(),
+                "ORDER_ITEMS_RESPONSE"
+        )).isEmpty();
     }
 
     @Test

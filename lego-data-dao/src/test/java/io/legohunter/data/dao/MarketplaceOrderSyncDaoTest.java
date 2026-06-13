@@ -25,6 +25,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -90,6 +91,22 @@ class MarketplaceOrderSyncDaoTest {
     }
 
     @Test
+    void marketplaceOrderDaoFindsFulfillmentCandidatesAcrossStatuses() {
+        MarketplaceOrder pending = insertedOrder("DAO-BL-CANDIDATE-1");
+        marketplaceOrderItemDao.insert(marketplaceOrderItem(pending.getMarketplaceOrderId()));
+        MarketplaceOrder ready = insertedOrder("DAO-BL-CANDIDATE-2");
+        ready.setExternalStatusCode("READY");
+        marketplaceOrderDao.update(ready);
+        marketplaceOrderItemDao.insert(marketplaceOrderItem(ready.getMarketplaceOrderId()));
+        MarketplaceOrder withoutItems = insertedOrder("DAO-BL-CANDIDATE-3");
+
+        assertThat(marketplaceOrderDao.findFulfillmentCandidates("BRICKLINK", List.of("PENDING", "READY"), 10))
+                .extracting(MarketplaceOrder::getMarketplaceOrderId)
+                .containsExactly(pending.getMarketplaceOrderId(), ready.getMarketplaceOrderId());
+        assertThat(withoutItems.getMarketplaceOrderId()).isNotNull();
+    }
+
+    @Test
     void marketplaceOrderItemDaoExposesMapperMethods() {
         MarketplaceOrder order = insertedOrder("DAO-BL-ITEM-1");
         MarketplaceOrderItem item = marketplaceOrderItemDao.insert(marketplaceOrderItem(order.getMarketplaceOrderId()));
@@ -143,6 +160,24 @@ class MarketplaceOrderSyncDaoTest {
 
         assertThat(marketplaceOrderPayloadDao.delete(payload.getMarketplaceOrderPayloadId())).isOne();
         assertThat(marketplaceOrderPayloadDao.findByMarketplaceOrderPayloadId(payload.getMarketplaceOrderPayloadId())).isEmpty();
+    }
+
+    @Test
+    void marketplaceOrderPayloadDaoFindsLatestByOrderAndType() {
+        MarketplaceOrderSyncRun syncRun = insertedSyncRun();
+        MarketplaceOrder order = insertedOrder(syncRun.getMarketplaceOrderSyncRunId(), "DAO-BL-PAYLOAD-LATEST-1");
+        MarketplaceOrderPayload older = marketplaceOrderPayload(order.getMarketplaceOrderId(), syncRun.getMarketplaceOrderSyncRunId());
+        older.setPayloadJson("{\"dao\":\"older\"}");
+        marketplaceOrderPayloadDao.insert(older);
+        MarketplaceOrderPayload latest = marketplaceOrderPayload(order.getMarketplaceOrderId(), syncRun.getMarketplaceOrderSyncRunId());
+        latest.setPayloadJson("{\"dao\":\"latest\"}");
+        latest.setCapturedAt(STARTED_AT.plusMinutes(2));
+        marketplaceOrderPayloadDao.insert(latest);
+
+        assertThat(marketplaceOrderPayloadDao.findLatestByMarketplaceOrderIdAndPayloadTypeCode(
+                order.getMarketplaceOrderId(),
+                "ORDER_RESPONSE"
+        )).hasValueSatisfying(found -> assertThat(found.getPayloadJson()).isEqualTo("{\"dao\":\"latest\"}"));
     }
 
     @Test

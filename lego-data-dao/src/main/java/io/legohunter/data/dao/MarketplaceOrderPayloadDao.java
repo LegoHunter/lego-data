@@ -21,6 +21,13 @@ public class MarketplaceOrderPayloadDao {
         return marketplaceOrderPayloadMapper.findByMarketplaceOrderPayloadId(marketplaceOrderPayloadId);
     }
 
+    public Optional<MarketplaceOrderPayload> findLatestByMarketplaceOrderIdAndPayloadTypeCode(
+            Integer marketplaceOrderId,
+            String payloadTypeCode
+    ) {
+        return marketplaceOrderPayloadMapper.findLatestByMarketplaceOrderIdAndPayloadTypeCode(marketplaceOrderId, payloadTypeCode);
+    }
+
     public MarketplaceOrderPayload insert(MarketplaceOrderPayload marketplaceOrderPayload) {
         marketplaceOrderPayloadMapper.insert(marketplaceOrderPayload);
         return marketplaceOrderPayload;

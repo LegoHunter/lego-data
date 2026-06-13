@@ -68,6 +68,24 @@ public interface MarketplaceOrderMapper {
             @Param("marketplaceCode") String marketplaceCode,
             @Param("externalOrderId") String externalOrderId);
 
+    @Select("SELECT " + ALL_COLUMNS + """
+            FROM marketplace_order mo
+            WHERE mo.marketplace_code = #{marketplaceCode}
+              AND mo.external_status_code = #{externalStatusCode}
+              AND EXISTS (
+                  SELECT 1
+                  FROM marketplace_order_item moi
+                  WHERE moi.marketplace_order_id = mo.marketplace_order_id
+              )
+            ORDER BY mo.ordered_at, mo.marketplace_order_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("marketplaceOrderResultMap")
+    Set<MarketplaceOrder> findFulfillmentCandidatesByStatus(
+            @Param("marketplaceCode") String marketplaceCode,
+            @Param("externalStatusCode") String externalStatusCode,
+            @Param("limit") int limit);
+
     @Insert("""
             INSERT INTO marketplace_order (
                 last_sync_run_id,
