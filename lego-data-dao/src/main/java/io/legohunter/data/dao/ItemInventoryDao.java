@@ -8,6 +8,8 @@ import io.legohunter.data.mybatis.mapper.ItemInventoryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -58,6 +60,36 @@ public class ItemInventoryDao {
     public ItemInventory update(ItemInventory itemInventory) {
         itemInventoryMapper.update(itemInventory);
         return findByItemInventoryId(itemInventory.getItemInventoryId()).orElseThrow();
+    }
+
+    public ItemInventory updateInventoryState(Integer itemInventoryId, String inventoryStateCode, ZonedDateTime inventoryStateChangedAt) {
+        ItemInventory existing = findByItemInventoryId(itemInventoryId).orElseThrow();
+        if (Objects.equals(existing.getInventoryStateCode(), inventoryStateCode)) {
+            return existing;
+        }
+
+        itemInventoryMapper.updateInventoryState(
+                itemInventoryId,
+                inventoryStateCode,
+                Objects.requireNonNullElseGet(inventoryStateChangedAt, () -> ZonedDateTime.now(ZoneOffset.UTC))
+        );
+        return findByItemInventoryId(itemInventoryId).orElseThrow();
+    }
+
+    public ItemInventory updateSaleIntent(Integer itemInventoryId, String saleIntentCode, ZonedDateTime saleIntentUpdatedAt, String saleIntentNote) {
+        ItemInventory existing = findByItemInventoryId(itemInventoryId).orElseThrow();
+        if (Objects.equals(existing.getSaleIntentCode(), saleIntentCode)
+                && Objects.equals(existing.getSaleIntentNote(), saleIntentNote)) {
+            return existing;
+        }
+
+        itemInventoryMapper.updateSaleIntent(
+                itemInventoryId,
+                saleIntentCode,
+                Objects.requireNonNullElseGet(saleIntentUpdatedAt, () -> ZonedDateTime.now(ZoneOffset.UTC)),
+                saleIntentNote
+        );
+        return findByItemInventoryId(itemInventoryId).orElseThrow();
     }
 
     public void delete(Integer itemInventoryId) {

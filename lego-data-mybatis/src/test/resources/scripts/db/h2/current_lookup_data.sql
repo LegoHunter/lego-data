@@ -25,6 +25,18 @@ INSERT INTO cost_type (cost_type_code, cost_type_name, cost_type_description) VA
     ('SHIPPING', 'Shipping', 'The cost of shipping an item or an entire order'),
     ('TAX', 'Tax', 'The sales tax amount added to an item or entire order');
 
+INSERT INTO item_inventory_state (inventory_state_code, inventory_state_name, inventory_state_description, active, sort_order) VALUES
+    ('AVAILABLE', 'Available', 'Owned item is available for normal inventory workflows and may be listed when sale intent allows it.', TRUE, 10),
+    ('RESERVED_FOR_ORDER', 'Reserved for Order', 'Owned item is temporarily reserved for an external marketplace order and should not be listed again.', TRUE, 20),
+    ('SOLD', 'Sold', 'Owned item has been sold and should not be listed.', TRUE, 30),
+    ('REMOVED', 'Removed', 'Owned item has been intentionally removed from the collection outside a marketplace sale.', TRUE, 40),
+    ('LOST', 'Lost', 'Owned item cannot currently be located and should not be listed.', TRUE, 50);
+
+INSERT INTO item_inventory_sale_intent (sale_intent_code, sale_intent_name, sale_intent_description, active, sort_order) VALUES
+    ('SELLABLE', 'Sellable', 'May be listed for sale when inventory state is AVAILABLE.', TRUE, 10),
+    ('KEEP', 'Keep', 'Personal collection item that should not be listed for sale.', TRUE, 20),
+    ('UNDECIDED', 'Undecided', 'Sale intent has not been classified; item should not be listed automatically.', TRUE, 30);
+
 INSERT INTO transaction_type (transaction_type_code, transaction_type_description, conversion_factor) VALUES
     ('A', 'Auction Purchase', 1),
     ('B', 'Built from Loose Pieces', 1),

@@ -1,0 +1,10 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.ItemInventoryStateMapper">
+  <resultMap type="io.legohunter.data.dto.ItemInventoryState" id="itemInventoryStateResultMap">
+    <id     column="inventory_state_code"        property="inventoryStateCode"/>
+    <result column="inventory_state_name"        property="inventoryStateName"/>
+    <result column="inventory_state_description" property="inventoryStateDescription"/>
+    <result column="active"                      property="active"/>
+    <result column="sort_order"                  property="sortOrder"/>
+  </resultMap>
+</mapper>

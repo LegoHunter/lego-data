@@ -29,6 +29,8 @@ DROP TABLE IF EXISTS category;
 DROP TABLE IF EXISTS external_service;
 DROP TABLE IF EXISTS external_service_type;
 DROP TABLE IF EXISTS item_inventory;
+DROP TABLE IF EXISTS item_inventory_sale_intent;
+DROP TABLE IF EXISTS item_inventory_state;
 DROP TABLE IF EXISTS inventory_index;
 DROP TABLE IF EXISTS item;
 DROP TABLE IF EXISTS carrier;
@@ -55,6 +57,22 @@ CREATE TABLE cost_type (
     cost_type_code VARCHAR(32) PRIMARY KEY,
     cost_type_name VARCHAR(255),
     cost_type_description VARCHAR(1024)
+);
+
+CREATE TABLE item_inventory_state (
+    inventory_state_code VARCHAR(30) PRIMARY KEY,
+    inventory_state_name VARCHAR(100) NOT NULL,
+    inventory_state_description VARCHAR(500),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INT
+);
+
+CREATE TABLE item_inventory_sale_intent (
+    sale_intent_code VARCHAR(30) PRIMARY KEY,
+    sale_intent_name VARCHAR(100) NOT NULL,
+    sale_intent_description VARCHAR(500),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    sort_order INT
 );
 
 CREATE TABLE transaction_type (
@@ -138,7 +156,12 @@ CREATE TABLE item_inventory (
     box_condition_id INT,
     instructions_condition_id INT,
     sealed BOOLEAN,
-    built_once BOOLEAN
+    built_once BOOLEAN,
+    inventory_state_code VARCHAR(30) NOT NULL DEFAULT 'AVAILABLE',
+    inventory_state_changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sale_intent_code VARCHAR(30) NOT NULL DEFAULT 'UNDECIDED',
+    sale_intent_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sale_intent_note VARCHAR(500)
 );
 
 CREATE TABLE item_inventory_external_catalog_item (

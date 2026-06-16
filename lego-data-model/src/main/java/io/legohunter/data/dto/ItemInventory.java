@@ -3,6 +3,7 @@ package io.legohunter.data.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 import java.util.Set;
 
 @Data
@@ -21,5 +22,10 @@ public class ItemInventory {
     private Integer instructionsConditionId;
     private Boolean sealed;
     private Boolean builtOnce;
+    private String inventoryStateCode;
+    private ZonedDateTime inventoryStateChangedAt;
+    private String saleIntentCode;
+    private ZonedDateTime saleIntentUpdatedAt;
+    private String saleIntentNote;
     private Set<ItemInventoryExternalCatalogItem> externalCatalogItems;
 }

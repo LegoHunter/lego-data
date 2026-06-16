@@ -11,9 +11,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,5 +93,88 @@ class ItemInventoryDaoUnitTest {
         assertThat(itemInventoryDao.findMarketplaceListings(inventory)).containsExactly(marketplaceListing);
 
         verify(marketplaceListingDao).findByItemInventoryId(200);
+    }
+
+    @Test
+    void updateInventoryStateSkipsMapperUpdateWhenStateIsUnchanged() {
+        ItemInventory inventory = new ItemInventory();
+        inventory.setItemInventoryId(200);
+        inventory.setInventoryStateCode("AVAILABLE");
+        when(itemInventoryMapper.findByItemInventoryId(200)).thenReturn(Optional.of(inventory));
+
+        assertThat(itemInventoryDao.updateInventoryState(200, "AVAILABLE", ZonedDateTime.parse("2026-06-16T10:00:00Z")))
+                .isSameAs(inventory);
+
+        verify(itemInventoryMapper, never()).updateInventoryState(any(), any(), any());
+    }
+
+    @Test
+    void updateInventoryStateUpdatesMapperWhenStateChanges() {
+        ItemInventory existing = new ItemInventory();
+        existing.setItemInventoryId(200);
+        existing.setInventoryStateCode("AVAILABLE");
+        ItemInventory updated = new ItemInventory();
+        updated.setItemInventoryId(200);
+        updated.setInventoryStateCode("RESERVED_FOR_ORDER");
+        ZonedDateTime changedAt = ZonedDateTime.parse("2026-06-16T10:00:00Z");
+        when(itemInventoryMapper.findByItemInventoryId(200))
+                .thenReturn(Optional.of(existing))
+                .thenReturn(Optional.of(updated));
+
+        assertThat(itemInventoryDao.updateInventoryState(200, "RESERVED_FOR_ORDER", changedAt))
+                .isSameAs(updated);
+
+        verify(itemInventoryMapper).updateInventoryState(200, "RESERVED_FOR_ORDER", changedAt);
+    }
+
+    @Test
+    void updateSaleIntentSkipsMapperUpdateWhenIntentAndNoteAreUnchanged() {
+        ItemInventory inventory = new ItemInventory();
+        inventory.setItemInventoryId(200);
+        inventory.setSaleIntentCode("KEEP");
+        inventory.setSaleIntentNote("Collection hold");
+        when(itemInventoryMapper.findByItemInventoryId(200)).thenReturn(Optional.of(inventory));
+
+        assertThat(itemInventoryDao.updateSaleIntent(200, "KEEP", ZonedDateTime.parse("2026-06-16T10:00:00Z"), "Collection hold"))
+                .isSameAs(inventory);
+
+        verify(itemInventoryMapper, never()).updateSaleIntent(any(), any(), any(), any());
+    }
+
+    @Test
+    void updateSaleIntentUpdatesMapperWhenIntentChanges() {
+        ItemInventory existing = new ItemInventory();
+        existing.setItemInventoryId(200);
+        existing.setSaleIntentCode("UNDECIDED");
+        ItemInventory updated = new ItemInventory();
+        updated.setItemInventoryId(200);
+        updated.setSaleIntentCode("KEEP");
+        updated.setSaleIntentNote("Collection hold");
+        ZonedDateTime updatedAt = ZonedDateTime.parse("2026-06-16T11:00:00Z");
+        when(itemInventoryMapper.findByItemInventoryId(200))
+                .thenReturn(Optional.of(existing))
+                .thenReturn(Optional.of(updated));
+
+        assertThat(itemInventoryDao.updateSaleIntent(200, "KEEP", updatedAt, "Collection hold"))
+                .isSameAs(updated);
+
+        verify(itemInventoryMapper).updateSaleIntent(200, "KEEP", updatedAt, "Collection hold");
+    }
+
+    @Test
+    void updateSaleIntentSuppliesTimestampWhenIntentChangesWithoutOne() {
+        ItemInventory existing = new ItemInventory();
+        existing.setItemInventoryId(200);
+        existing.setSaleIntentCode("UNDECIDED");
+        ItemInventory updated = new ItemInventory();
+        updated.setItemInventoryId(200);
+        updated.setSaleIntentCode("KEEP");
+        when(itemInventoryMapper.findByItemInventoryId(200))
+                .thenReturn(Optional.of(existing))
+                .thenReturn(Optional.of(updated));
+
+        itemInventoryDao.updateSaleIntent(200, "KEEP", null, null);
+
+        verify(itemInventoryMapper).updateSaleIntent(eq(200), eq("KEEP"), any(ZonedDateTime.class), eq(null));
     }
 }

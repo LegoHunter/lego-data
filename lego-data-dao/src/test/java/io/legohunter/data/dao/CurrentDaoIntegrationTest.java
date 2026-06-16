@@ -14,6 +14,8 @@ import io.legohunter.data.dto.ExternalServiceCapability;
 import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
+import io.legohunter.data.dto.ItemInventorySaleIntent;
+import io.legohunter.data.dto.ItemInventoryState;
 import io.legohunter.data.dto.MarketplaceListing;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,6 +49,8 @@ class CurrentDaoIntegrationTest {
     @Autowired ExternalCatalogItemCategoryDao externalCatalogItemCategoryDao;
     @Autowired ItemInventoryDao itemInventoryDao;
     @Autowired ItemInventoryExternalCatalogItemDao itemInventoryExternalCatalogItemDao;
+    @Autowired ItemInventorySaleIntentDao itemInventorySaleIntentDao;
+    @Autowired ItemInventoryStateDao itemInventoryStateDao;
     @Autowired MarketplaceListingDao marketplaceListingDao;
     @Autowired BricklinkMarketplaceListingDao bricklinkMarketplaceListingDao;
     @Autowired EbayMarketplaceListingDao ebayMarketplaceListingDao;
@@ -61,6 +65,10 @@ class CurrentDaoIntegrationTest {
                 .contains("BRICKLINK", "EBAY", "FLICKR");
         assertThat(externalServiceCapabilityDao.findAll()).extracting(ExternalServiceCapability::getCapabilityCode)
                 .contains("CATALOG", "PRICE_GUIDE", "IMAGE_HOSTING");
+        assertThat(itemInventoryStateDao.findAll()).extracting(ItemInventoryState::getInventoryStateCode)
+                .contains("AVAILABLE", "RESERVED_FOR_ORDER", "SOLD", "REMOVED", "LOST");
+        assertThat(itemInventorySaleIntentDao.findAll()).extracting(ItemInventorySaleIntent::getSaleIntentCode)
+                .contains("SELLABLE", "KEEP", "UNDECIDED");
 
         ExternalServiceType serviceType = ExternalServiceType.builder()
                 .externalServiceTypeId(100)
@@ -102,6 +110,36 @@ class CurrentDaoIntegrationTest {
         externalServiceCapabilityDao.delete(100, "UNIT_TEST_CAPABILITY");
         externalServiceDao.delete(100);
         externalServiceTypeDao.delete(100);
+
+        ItemInventoryState state = ItemInventoryState.builder()
+                .inventoryStateCode("UNIT_TEST_STATE")
+                .inventoryStateName("Unit Test State")
+                .inventoryStateDescription("Unit test state")
+                .active(true)
+                .sortOrder(100)
+                .build();
+        assertThat(itemInventoryStateDao.insert(state)).isSameAs(state);
+        state.setInventoryStateDescription("Updated");
+        assertThat(itemInventoryStateDao.update(state).getInventoryStateDescription()).isEqualTo("Updated");
+        state.setInventoryStateDescription("Upserted");
+        assertThat(itemInventoryStateDao.upsert(state).getInventoryStateDescription()).isEqualTo("Upserted");
+        assertThat(itemInventoryStateDao.findByInventoryStateCode("UNIT_TEST_STATE")).isPresent();
+        itemInventoryStateDao.delete("UNIT_TEST_STATE");
+
+        ItemInventorySaleIntent saleIntent = ItemInventorySaleIntent.builder()
+                .saleIntentCode("UNIT_TEST_INTENT")
+                .saleIntentName("Unit Test Intent")
+                .saleIntentDescription("Unit test intent")
+                .active(true)
+                .sortOrder(100)
+                .build();
+        assertThat(itemInventorySaleIntentDao.insert(saleIntent)).isSameAs(saleIntent);
+        saleIntent.setSaleIntentDescription("Updated");
+        assertThat(itemInventorySaleIntentDao.update(saleIntent).getSaleIntentDescription()).isEqualTo("Updated");
+        saleIntent.setSaleIntentDescription("Upserted");
+        assertThat(itemInventorySaleIntentDao.upsert(saleIntent).getSaleIntentDescription()).isEqualTo("Upserted");
+        assertThat(itemInventorySaleIntentDao.findBySaleIntentCode("UNIT_TEST_INTENT")).isPresent();
+        itemInventorySaleIntentDao.delete("UNIT_TEST_INTENT");
     }
 
     @Test
@@ -174,6 +212,17 @@ class CurrentDaoIntegrationTest {
         assertThat(itemInventoryDao.findByUuid("dao-inventory-1")).isPresent();
         assertThat(itemInventoryDao.findAll()).extracting(ItemInventory::getUuid).contains("dao-inventory-1");
         assertThat(itemInventoryDao.getPrimaryExternalCatalogItem(inventory)).isEmpty();
+        assertThat(itemInventoryDao.updateInventoryState(
+                inventory.getItemInventoryId(),
+                "RESERVED_FOR_ORDER",
+                ZonedDateTime.parse("2026-06-16T10:00:00Z")
+        ).getInventoryStateCode()).isEqualTo("RESERVED_FOR_ORDER");
+        assertThat(itemInventoryDao.updateSaleIntent(
+                inventory.getItemInventoryId(),
+                "KEEP",
+                ZonedDateTime.parse("2026-06-16T11:00:00Z"),
+                "Collection hold"
+        ).getSaleIntentNote()).isEqualTo("Collection hold");
 
         ItemInventoryExternalCatalogItem inventoryCatalogItem = ItemInventoryExternalCatalogItem.builder()
                 .itemInventoryId(inventory.getItemInventoryId())
