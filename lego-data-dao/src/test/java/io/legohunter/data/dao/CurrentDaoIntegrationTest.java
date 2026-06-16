@@ -212,6 +212,17 @@ class CurrentDaoIntegrationTest {
         assertThat(itemInventoryDao.findByUuid("dao-inventory-1")).isPresent();
         assertThat(itemInventoryDao.findAll()).extracting(ItemInventory::getUuid).contains("dao-inventory-1");
         assertThat(itemInventoryDao.getPrimaryExternalCatalogItem(inventory)).isEmpty();
+        assertThat(itemInventoryDao.updateInventoryState(
+                inventory.getItemInventoryId(),
+                "RESERVED_FOR_ORDER",
+                ZonedDateTime.parse("2026-06-16T10:00:00Z")
+        ).getInventoryStateCode()).isEqualTo("RESERVED_FOR_ORDER");
+        assertThat(itemInventoryDao.updateSaleIntent(
+                inventory.getItemInventoryId(),
+                "KEEP",
+                ZonedDateTime.parse("2026-06-16T11:00:00Z"),
+                "Collection hold"
+        ).getSaleIntentNote()).isEqualTo("Collection hold");
 
         ItemInventoryExternalCatalogItem inventoryCatalogItem = ItemInventoryExternalCatalogItem.builder()
                 .itemInventoryId(inventory.getItemInventoryId())

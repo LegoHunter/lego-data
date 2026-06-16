@@ -15,6 +15,11 @@
         <result column="instructions_condition_id" property="instructionsConditionId"/>
         <result column="sealed"                    property="sealed"/>
         <result column="built_once"                property="builtOnce"/>
+        <result column="inventory_state_code"      property="inventoryStateCode"/>
+        <result column="inventory_state_changed_at" property="inventoryStateChangedAt"/>
+        <result column="sale_intent_code"          property="saleIntentCode"/>
+        <result column="sale_intent_updated_at"    property="saleIntentUpdatedAt"/>
+        <result column="sale_intent_note"          property="saleIntentNote"/>
         <collection property="externalCatalogItems"
                     resultMap="io.legohunter.data.mybatis.mapper.ItemInventoryExternalCatalogItemMapper.itemInventoryExternalCatalogItemResultMap"
                     columnPrefix="iieci_"

@@ -156,7 +156,12 @@ CREATE TABLE item_inventory (
     box_condition_id INT,
     instructions_condition_id INT,
     sealed BOOLEAN,
-    built_once BOOLEAN
+    built_once BOOLEAN,
+    inventory_state_code VARCHAR(30) NOT NULL DEFAULT 'AVAILABLE',
+    inventory_state_changed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sale_intent_code VARCHAR(30) NOT NULL DEFAULT 'UNDECIDED',
+    sale_intent_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sale_intent_note VARCHAR(500)
 );
 
 CREATE TABLE item_inventory_external_catalog_item (

@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -28,6 +29,11 @@ public interface ItemInventoryMapper {
             ii.instructions_condition_id,
             ii.sealed,
             ii.built_once,
+            ii.inventory_state_code,
+            ii.inventory_state_changed_at,
+            ii.sale_intent_code,
+            ii.sale_intent_updated_at,
+            ii.sale_intent_note,
             iieci.item_inventory_id AS iieci_item_inventory_id,
             iieci.external_catalog_item_id AS iieci_external_catalog_item_id,
             iieci.is_primary AS iieci_is_primary,
@@ -112,7 +118,12 @@ public interface ItemInventoryMapper {
                 box_condition_id,
                 instructions_condition_id,
                 sealed,
-                built_once
+                built_once,
+                inventory_state_code,
+                inventory_state_changed_at,
+                sale_intent_code,
+                sale_intent_updated_at,
+                sale_intent_note
             )
             VALUES (
                 #{uuid},
@@ -127,7 +138,12 @@ public interface ItemInventoryMapper {
                 #{boxConditionId},
                 #{instructionsConditionId},
                 #{sealed},
-                #{builtOnce}
+                #{builtOnce},
+                COALESCE(#{inventoryStateCode}, 'AVAILABLE'),
+                COALESCE(#{inventoryStateChangedAt}, CURRENT_TIMESTAMP),
+                COALESCE(#{saleIntentCode}, 'UNDECIDED'),
+                COALESCE(#{saleIntentUpdatedAt}, CURRENT_TIMESTAMP),
+                #{saleIntentNote}
             )
             """)
     @Options(useGeneratedKeys = true, keyColumn = "item_inventory_id", keyProperty = "itemInventoryId")
@@ -147,10 +163,41 @@ public interface ItemInventoryMapper {
                 box_condition_id = #{boxConditionId},
                 instructions_condition_id = #{instructionsConditionId},
                 sealed = #{sealed},
-                built_once = #{builtOnce}
+                built_once = #{builtOnce},
+                inventory_state_code = COALESCE(#{inventoryStateCode}, inventory_state_code, 'AVAILABLE'),
+                inventory_state_changed_at = COALESCE(#{inventoryStateChangedAt}, inventory_state_changed_at, CURRENT_TIMESTAMP),
+                sale_intent_code = COALESCE(#{saleIntentCode}, sale_intent_code, 'UNDECIDED'),
+                sale_intent_updated_at = COALESCE(#{saleIntentUpdatedAt}, sale_intent_updated_at, CURRENT_TIMESTAMP),
+                sale_intent_note = #{saleIntentNote}
             WHERE item_inventory_id = #{itemInventoryId}
             """)
     int update(ItemInventory itemInventory);
+
+    @Update("""
+            UPDATE item_inventory
+            SET inventory_state_code = #{inventoryStateCode},
+                inventory_state_changed_at = COALESCE(#{inventoryStateChangedAt}, CURRENT_TIMESTAMP)
+            WHERE item_inventory_id = #{itemInventoryId}
+            """)
+    int updateInventoryState(
+            @Param("itemInventoryId") Integer itemInventoryId,
+            @Param("inventoryStateCode") String inventoryStateCode,
+            @Param("inventoryStateChangedAt") ZonedDateTime inventoryStateChangedAt
+    );
+
+    @Update("""
+            UPDATE item_inventory
+            SET sale_intent_code = #{saleIntentCode},
+                sale_intent_updated_at = COALESCE(#{saleIntentUpdatedAt}, CURRENT_TIMESTAMP),
+                sale_intent_note = #{saleIntentNote}
+            WHERE item_inventory_id = #{itemInventoryId}
+            """)
+    int updateSaleIntent(
+            @Param("itemInventoryId") Integer itemInventoryId,
+            @Param("saleIntentCode") String saleIntentCode,
+            @Param("saleIntentUpdatedAt") ZonedDateTime saleIntentUpdatedAt,
+            @Param("saleIntentNote") String saleIntentNote
+    );
 
     @Delete("DELETE FROM item_inventory WHERE item_inventory_id = #{itemInventoryId}")
     int delete(Integer itemInventoryId);
@@ -170,7 +217,12 @@ public interface ItemInventoryMapper {
                 box_condition_id,
                 instructions_condition_id,
                 sealed,
-                built_once
+                built_once,
+                inventory_state_code,
+                inventory_state_changed_at,
+                sale_intent_code,
+                sale_intent_updated_at,
+                sale_intent_note
             )
             VALUES (
                 #{itemInventoryId},
@@ -186,7 +238,12 @@ public interface ItemInventoryMapper {
                 #{boxConditionId},
                 #{instructionsConditionId},
                 #{sealed},
-                #{builtOnce}
+                #{builtOnce},
+                COALESCE(#{inventoryStateCode}, 'AVAILABLE'),
+                COALESCE(#{inventoryStateChangedAt}, CURRENT_TIMESTAMP),
+                COALESCE(#{saleIntentCode}, 'UNDECIDED'),
+                COALESCE(#{saleIntentUpdatedAt}, CURRENT_TIMESTAMP),
+                #{saleIntentNote}
             )
             ON DUPLICATE KEY UPDATE
                 uuid = VALUES(uuid),
@@ -201,7 +258,12 @@ public interface ItemInventoryMapper {
                 box_condition_id = VALUES(box_condition_id),
                 instructions_condition_id = VALUES(instructions_condition_id),
                 sealed = VALUES(sealed),
-                built_once = VALUES(built_once)
+                built_once = VALUES(built_once),
+                inventory_state_code = COALESCE(VALUES(inventory_state_code), inventory_state_code, 'AVAILABLE'),
+                inventory_state_changed_at = COALESCE(VALUES(inventory_state_changed_at), inventory_state_changed_at, CURRENT_TIMESTAMP),
+                sale_intent_code = COALESCE(VALUES(sale_intent_code), sale_intent_code, 'UNDECIDED'),
+                sale_intent_updated_at = COALESCE(VALUES(sale_intent_updated_at), sale_intent_updated_at, CURRENT_TIMESTAMP),
+                sale_intent_note = VALUES(sale_intent_note)
             """)
     @Options(useGeneratedKeys = true, keyColumn = "item_inventory_id", keyProperty = "itemInventoryId")
     int upsert(ItemInventory itemInventory);
