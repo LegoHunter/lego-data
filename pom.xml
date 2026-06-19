@@ -22,6 +22,7 @@
         <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
         <github.organization>LegoHunter</github.organization>
         <github.repo.url>https://github.com/${github.organization}/lego-data.git</github.repo.url>
+        <surefire.argLine></surefire.argLine>
     </properties>
 
     <scm>
@@ -101,7 +102,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.1.2</version>
                     <configuration>
-                        <argLine>-javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy.version}/byte-buddy-agent-${byte-buddy.version}.jar -Xshare:off</argLine>
+                        <argLine>@{surefire.argLine} -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/${byte-buddy.version}/byte-buddy-agent-${byte-buddy.version}.jar -Xshare:off</argLine>
                     </configuration>
                 </plugin>
             </plugins>
