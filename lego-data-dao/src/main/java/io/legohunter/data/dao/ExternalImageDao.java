@@ -65,6 +65,13 @@ public class ExternalImageDao {
                 externalImageMapper::findItemInventoryIdsMissingExternalImageLinks,
                 externalServiceId
         );
+        addCandidates(
+                candidates,
+                effectiveLimit,
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_MEMBERSHIP,
+                externalImageMapper::findItemInventoryIdsMissingAlbumMemberships,
+                externalServiceId
+        );
         if (includeFailed) {
             addCandidates(
                     candidates,
