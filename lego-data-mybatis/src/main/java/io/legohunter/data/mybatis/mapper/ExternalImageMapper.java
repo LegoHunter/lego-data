@@ -110,6 +110,34 @@ public interface ExternalImageMapper {
             INNER JOIN external_image image
               ON image.item_inventory_photo_id = photo.item_inventory_photo_id
              AND image.external_service_id = #{externalServiceId}
+            INNER JOIN external_image_album album
+              ON album.item_inventory_id = photo.item_inventory_id
+             AND album.external_service_id = #{externalServiceId}
+            LEFT JOIN external_image_album_image membership
+              ON membership.external_image_album_id = album.external_image_album_id
+             AND membership.external_image_id = image.external_image_id
+            WHERE photo.status = 'PROCESSED'
+              AND image.sync_status = 'SYNCED'
+              AND image.external_service_image_id IS NOT NULL
+              AND image.external_service_image_id <> ''
+              AND album.sync_status = 'SYNCED'
+              AND album.external_album_id IS NOT NULL
+              AND album.external_album_id <> ''
+              AND membership.external_image_id IS NULL
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsMissingAlbumMemberships(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("limit") int limit
+    );
+
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            INNER JOIN external_image image
+              ON image.item_inventory_photo_id = photo.item_inventory_photo_id
+             AND image.external_service_id = #{externalServiceId}
             WHERE photo.status = 'PROCESSED'
               AND (
                     image.sync_status = 'PENDING'
