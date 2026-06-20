@@ -271,6 +271,11 @@ class CurrentDaoIntegrationTest {
                 .containsExactly(listing.getMarketplaceListingId(), "Natural Key Upserted listing");
         assertThat(marketplaceListingDao.findByMarketplaceListingId(listing.getMarketplaceListingId())).isPresent();
         assertThat(marketplaceListingDao.findByListingExternalServiceIdAndExternalListingId(2, "DAO-BL-1")).isPresent();
+        assertThat(marketplaceListingDao.findByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .hasSize(1)
+                .first()
+                .extracting(MarketplaceListing::getExternalListingId)
+                .isEqualTo("DAO-BL-1");
         assertThat(marketplaceListingDao.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);
         assertThat(itemInventoryDao.findMarketplaceListings(inventory))
                 .hasSize(1)

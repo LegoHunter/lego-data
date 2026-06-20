@@ -25,6 +25,18 @@ public class MarketplaceListingDao {
         return marketplaceListingMapper.findByItemInventoryId(itemInventoryId);
     }
 
+    public Set<MarketplaceListing> findByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            int limit
+    ) {
+        return marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                limit
+        );
+    }
+
     public Optional<MarketplaceListing> findByListingExternalServiceIdAndExternalListingId(Integer listingExternalServiceId, String externalListingId) {
         return marketplaceListingMapper.findByListingExternalServiceIdAndExternalListingId(listingExternalServiceId, externalListingId);
     }
