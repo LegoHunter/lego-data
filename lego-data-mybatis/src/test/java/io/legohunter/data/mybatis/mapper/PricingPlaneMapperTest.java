@@ -123,6 +123,79 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingSnapshotListingsCanBeQueriedAsExactConditionAndCompletenessComparables() {
+        PricingFixture fixture = pricingFixture("pricing-exact-comparables");
+        PricingCrawlWorkItem workItem = insertedWorkItem(fixture, CRAWL_AT);
+        PricingSnapshot olderSealedSnapshot = pricingSnapshot(
+                workItem.getPricingCrawlWorkItemId(),
+                fixture.listing().getMarketplaceListingId(),
+                fixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                SNAPSHOT_AT.minusHours(1)
+        );
+        olderSealedSnapshot.setItemConditionCode("N");
+        olderSealedSnapshot.setCompletenessCode("S");
+        pricingSnapshotMapper.insert(olderSealedSnapshot);
+
+        PricingSnapshot latestSealedSnapshot = pricingSnapshot(
+                workItem.getPricingCrawlWorkItemId(),
+                fixture.listing().getMarketplaceListingId(),
+                fixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                SNAPSHOT_AT
+        );
+        latestSealedSnapshot.setItemConditionCode("N");
+        latestSealedSnapshot.setCompletenessCode("S");
+        pricingSnapshotMapper.insert(latestSealedSnapshot);
+
+        PricingSnapshot latestCompleteSnapshot = pricingSnapshot(
+                workItem.getPricingCrawlWorkItemId(),
+                fixture.listing().getMarketplaceListingId(),
+                fixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                SNAPSHOT_AT.plusHours(1)
+        );
+        latestCompleteSnapshot.setItemConditionCode("N");
+        latestCompleteSnapshot.setCompletenessCode("C");
+        pricingSnapshotMapper.insert(latestCompleteSnapshot);
+
+        PricingSnapshotListing exactHigh = pricingSnapshotListing(latestSealedSnapshot.getPricingSnapshotId(), "exact-high");
+        exactHigh.setItemConditionCode("N");
+        exactHigh.setCompletenessCode("S");
+        exactHigh.setUnitPrice(new BigDecimal("25.00"));
+        pricingSnapshotListingMapper.insert(exactHigh);
+
+        PricingSnapshotListing exactLow = pricingSnapshotListing(latestSealedSnapshot.getPricingSnapshotId(), "exact-low");
+        exactLow.setItemConditionCode("N");
+        exactLow.setCompletenessCode("S");
+        exactLow.setUnitPrice(new BigDecimal("20.00"));
+        pricingSnapshotListingMapper.insert(exactLow);
+
+        PricingSnapshotListing completenessMismatch = pricingSnapshotListing(latestSealedSnapshot.getPricingSnapshotId(), "complete-mismatch");
+        completenessMismatch.setItemConditionCode("N");
+        completenessMismatch.setCompletenessCode("C");
+        completenessMismatch.setUnitPrice(new BigDecimal("15.00"));
+        pricingSnapshotListingMapper.insert(completenessMismatch);
+
+        PricingSnapshotListing conditionMismatch = pricingSnapshotListing(latestSealedSnapshot.getPricingSnapshotId(), "condition-mismatch");
+        conditionMismatch.setItemConditionCode("U");
+        conditionMismatch.setCompletenessCode("S");
+        conditionMismatch.setUnitPrice(new BigDecimal("10.00"));
+        pricingSnapshotListingMapper.insert(conditionMismatch);
+
+        assertThat(pricingSnapshotMapper.findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+                fixture.listing().getMarketplaceListingId(), "N", "S"
+        )).map(PricingSnapshot::getPricingSnapshotId).contains(latestSealedSnapshot.getPricingSnapshotId());
+        assertThat(pricingSnapshotMapper.findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+                fixture.catalogItem().getExternalCatalogItemId(), "N", "S"
+        )).map(PricingSnapshot::getPricingSnapshotId).contains(latestSealedSnapshot.getPricingSnapshotId());
+        assertThat(pricingSnapshotListingMapper.findByPricingSnapshotId(latestSealedSnapshot.getPricingSnapshotId())).hasSize(4);
+        assertThat(pricingSnapshotListingMapper.findExactComparablesByPricingSnapshotId(latestSealedSnapshot.getPricingSnapshotId()))
+                .extracting(PricingSnapshotListing::getExternalListingId)
+                .containsExactly("exact-low", "exact-high");
+    }
+
+    @Test
     void pricingDecisionSupportsCrudAndReasonLookups() {
         PricingFixture fixture = pricingFixture("pricing-decision");
         PricingSnapshot snapshot = insertedSnapshot(fixture);

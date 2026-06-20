@@ -64,6 +64,72 @@ public interface PricingSnapshotMapper {
         return findLatestByMarketplaceListingId(marketplaceListingId, ALL_COLUMNS);
     }
 
+    @Select("""
+            SELECT ${columns}
+            FROM pricing_snapshot
+            WHERE marketplace_listing_id = #{marketplaceListingId}
+              AND item_condition_code = #{itemConditionCode}
+              AND (
+                    completeness_code = #{completenessCode}
+                    OR (completeness_code IS NULL AND #{completenessCode} IS NULL)
+                  )
+            ORDER BY captured_at DESC, pricing_snapshot_id DESC
+            LIMIT 1
+            """)
+    @ResultMap("pricingSnapshotResultMap")
+    Optional<PricingSnapshot> findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+            @Param("marketplaceListingId") Integer marketplaceListingId,
+            @Param("itemConditionCode") String itemConditionCode,
+            @Param("completenessCode") String completenessCode,
+            @Param("columns") String columns
+    );
+
+    default Optional<PricingSnapshot> findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+            Integer marketplaceListingId,
+            String itemConditionCode,
+            String completenessCode
+    ) {
+        return findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+                marketplaceListingId,
+                itemConditionCode,
+                completenessCode,
+                ALL_COLUMNS
+        );
+    }
+
+    @Select("""
+            SELECT ${columns}
+            FROM pricing_snapshot
+            WHERE external_catalog_item_id = #{externalCatalogItemId}
+              AND item_condition_code = #{itemConditionCode}
+              AND (
+                    completeness_code = #{completenessCode}
+                    OR (completeness_code IS NULL AND #{completenessCode} IS NULL)
+                  )
+            ORDER BY captured_at DESC, pricing_snapshot_id DESC
+            LIMIT 1
+            """)
+    @ResultMap("pricingSnapshotResultMap")
+    Optional<PricingSnapshot> findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+            @Param("externalCatalogItemId") Integer externalCatalogItemId,
+            @Param("itemConditionCode") String itemConditionCode,
+            @Param("completenessCode") String completenessCode,
+            @Param("columns") String columns
+    );
+
+    default Optional<PricingSnapshot> findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+            Integer externalCatalogItemId,
+            String itemConditionCode,
+            String completenessCode
+    ) {
+        return findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+                externalCatalogItemId,
+                itemConditionCode,
+                completenessCode,
+                ALL_COLUMNS
+        );
+    }
+
     @Insert("""
             INSERT INTO pricing_snapshot (
                 pricing_crawl_work_item_id,

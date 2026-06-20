@@ -117,6 +117,41 @@ class PricingPlaneDaoTest {
         assertThat(pricingCrawlWorkItemDao.findAll()).isEmpty();
     }
 
+    @Test
+    void pricingDaosExposeExactConditionAndCompletenessComparables() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        PricingSnapshot snapshot = pricingSnapshot(workItem, fixture);
+        snapshot.setItemConditionCode("N");
+        snapshot.setCompletenessCode("S");
+        snapshot = pricingSnapshotDao.insert(snapshot);
+
+        PricingSnapshotListing sealedComparable = pricingSnapshotListing(snapshot);
+        sealedComparable.setExternalListingId("sealed-comparable");
+        sealedComparable.setItemConditionCode("N");
+        sealedComparable.setCompletenessCode("S");
+        sealedComparable.setUnitPrice(new BigDecimal("30.00"));
+        pricingSnapshotListingDao.insert(sealedComparable);
+
+        PricingSnapshotListing completeComparable = pricingSnapshotListing(snapshot);
+        completeComparable.setExternalListingId("complete-comparable");
+        completeComparable.setItemConditionCode("N");
+        completeComparable.setCompletenessCode("C");
+        completeComparable.setUnitPrice(new BigDecimal("20.00"));
+        pricingSnapshotListingDao.insert(completeComparable);
+
+        assertThat(pricingSnapshotDao.findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+                fixture.listing().getMarketplaceListingId(), "N", "S"
+        )).map(PricingSnapshot::getPricingSnapshotId).contains(snapshot.getPricingSnapshotId());
+        assertThat(pricingSnapshotDao.findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+                fixture.catalogItem().getExternalCatalogItemId(), "N", "S"
+        )).map(PricingSnapshot::getPricingSnapshotId).contains(snapshot.getPricingSnapshotId());
+        assertThat(pricingSnapshotListingDao.findByPricingSnapshotId(snapshot.getPricingSnapshotId())).hasSize(2);
+        assertThat(pricingSnapshotListingDao.findExactComparablesByPricingSnapshotId(snapshot.getPricingSnapshotId()))
+                .extracting(PricingSnapshotListing::getExternalListingId)
+                .containsExactly("sealed-comparable");
+    }
+
     private PricingFixture pricingFixture() {
         seedDefaultCondition();
         ExternalService bricklink = externalServiceDao.findByServiceCode("BRICKLINK").orElseThrow();

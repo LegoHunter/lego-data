@@ -33,6 +33,30 @@ public class PricingSnapshotDao {
         return pricingSnapshotMapper.findLatestByMarketplaceListingId(marketplaceListingId);
     }
 
+    public Optional<PricingSnapshot> findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+            Integer marketplaceListingId,
+            String itemConditionCode,
+            String completenessCode
+    ) {
+        return pricingSnapshotMapper.findLatestByMarketplaceListingIdAndConditionAndCompleteness(
+                marketplaceListingId,
+                itemConditionCode,
+                completenessCode
+        );
+    }
+
+    public Optional<PricingSnapshot> findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+            Integer externalCatalogItemId,
+            String itemConditionCode,
+            String completenessCode
+    ) {
+        return pricingSnapshotMapper.findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
+                externalCatalogItemId,
+                itemConditionCode,
+                completenessCode
+        );
+    }
+
     public PricingSnapshot insert(PricingSnapshot pricingSnapshot) {
         pricingSnapshotMapper.insert(pricingSnapshot);
         return findByPricingSnapshotId(pricingSnapshot.getPricingSnapshotId()).orElseThrow();
