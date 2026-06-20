@@ -87,6 +87,12 @@ class ExternalImageMapperTest extends MapperTestSupport {
         ExternalImageAlbum metadataMismatchAlbum = externalImageAlbum(10, metadataMismatchInventory.getItemInventoryId(), "album-metadata-mismatch");
         metadataMismatchAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
         externalImageAlbumMapper.insert(metadataMismatchAlbum);
+        externalImageAlbumImageMapper.insert(externalImageAlbumImage(
+                metadataMismatchAlbum.getExternalImageAlbumId(),
+                metadataMismatchImage.getExternalImageId(),
+                1,
+                true
+        ));
 
         ItemInventory missingAlbumLinkInventory = insertItemInventory("uuid-missing-album-link");
         ItemInventoryPhoto missingAlbumLinkPhoto = insertItemInventoryPhoto(missingAlbumLinkInventory.getItemInventoryId(), "33333333333333333333333333333333");
@@ -141,6 +147,15 @@ class ExternalImageMapperTest extends MapperTestSupport {
         pendingAlbum.setSyncStatus(ExternalSyncStatus.PENDING);
         externalImageAlbumMapper.insert(pendingAlbum);
 
+        ItemInventory missingAlbumMembershipInventory = insertItemInventory("uuid-missing-album-membership");
+        ItemInventoryPhoto missingAlbumMembershipPhoto = insertItemInventoryPhoto(missingAlbumMembershipInventory.getItemInventoryId(), "12121212121212121212121212121212");
+        ExternalImage missingAlbumMembershipImage = externalImage(10, missingAlbumMembershipPhoto.getItemInventoryPhotoId(), "image-missing-album-membership", "12121212121212121212121212121212");
+        missingAlbumMembershipImage.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageMapper.insert(missingAlbumMembershipImage);
+        ExternalImageAlbum missingAlbumMembershipAlbum = externalImageAlbum(10, missingAlbumMembershipInventory.getItemInventoryId(), "album-missing-album-membership");
+        missingAlbumMembershipAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(missingAlbumMembershipAlbum);
+
         ItemInventory syncedInventory = insertItemInventory("uuid-synced");
         ItemInventoryPhoto syncedPhoto = insertItemInventoryPhoto(syncedInventory.getItemInventoryId(), "55555555555555555555555555555555");
         ExternalImage syncedImage = externalImage(10, syncedPhoto.getItemInventoryPhotoId(), "image-synced", "55555555555555555555555555555555");
@@ -149,6 +164,12 @@ class ExternalImageMapperTest extends MapperTestSupport {
         ExternalImageAlbum syncedAlbum = externalImageAlbum(10, syncedInventory.getItemInventoryId(), "album-synced");
         syncedAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
         externalImageAlbumMapper.insert(syncedAlbum);
+        externalImageAlbumImageMapper.insert(externalImageAlbumImage(
+                syncedAlbum.getExternalImageAlbumId(),
+                syncedImage.getExternalImageId(),
+                1,
+                true
+        ));
 
         assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 10))
                 .containsExactly(
@@ -170,6 +191,8 @@ class ExternalImageMapperTest extends MapperTestSupport {
                         failedImageInventory.getItemInventoryId(),
                         failedAlbumInventory.getItemInventoryId()
                 );
+        assertThat(externalImageMapper.findItemInventoryIdsMissingAlbumMemberships(10, 10))
+                .containsExactly(missingAlbumMembershipInventory.getItemInventoryId());
         assertThat(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
                 .containsExactly(metadataMismatchInventory.getItemInventoryId());
         assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 1))

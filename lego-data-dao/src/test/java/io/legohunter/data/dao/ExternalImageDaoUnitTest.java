@@ -34,29 +34,31 @@ class ExternalImageDaoUnitTest {
                 .thenReturn(List.of(100, 101));
         when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 10))
                 .thenReturn(List.of(101, 102));
-        when(externalImageMapper.findItemInventoryIdsWithFailedSyncRows(10, 10))
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumMemberships(10, 10))
                 .thenReturn(List.of(102, 103));
-        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 10))
+        when(externalImageMapper.findItemInventoryIdsWithFailedSyncRows(10, 10))
                 .thenReturn(List.of(103, 104));
-        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 10))
                 .thenReturn(List.of(104, 105));
+        when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
+                .thenReturn(List.of(105, 106));
 
         List<ImageHostingSyncCandidate> candidates = externalImageDao.findItemInventorySyncCandidates(10, true, 10);
 
         assertThat(candidates)
                 .extracting(ImageHostingSyncCandidate::itemInventoryId)
-                .containsExactly(100, 101, 102, 103, 104, 105);
+                .containsExactly(100, 101, 102, 103, 104, 105, 106);
         assertThat(candidates.get(1).reasons()).containsExactlyInAnyOrder(
                 ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
                 ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK
         );
         assertThat(candidates.get(2).reasons()).containsExactlyInAnyOrder(
                 ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK,
-                ImageHostingSyncCandidateReason.FAILED_SYNC
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_MEMBERSHIP
         );
         assertThat(candidates.get(4).reasons()).containsExactlyInAnyOrder(
-                ImageHostingSyncCandidateReason.PENDING_SYNC,
-                ImageHostingSyncCandidateReason.METADATA_CHANGED
+                ImageHostingSyncCandidateReason.FAILED_SYNC,
+                ImageHostingSyncCandidateReason.PENDING_SYNC
         );
         verify(externalImageMapper).findItemInventoryIdsWithFailedSyncRows(10, 10);
     }
@@ -67,8 +69,10 @@ class ExternalImageDaoUnitTest {
                 .thenReturn(List.of(100, 101));
         when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 2))
                 .thenReturn(List.of(101, 102));
-        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 2))
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumMemberships(10, 2))
                 .thenReturn(List.of(100, 103));
+        when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 2))
+                .thenReturn(List.of(100, 104));
         when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 2))
                 .thenReturn(List.of(104));
 
@@ -79,6 +83,7 @@ class ExternalImageDaoUnitTest {
                 .containsExactly(100, 101);
         assertThat(candidates.get(0).reasons()).containsExactlyInAnyOrder(
                 ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
+                ImageHostingSyncCandidateReason.MISSING_ALBUM_MEMBERSHIP,
                 ImageHostingSyncCandidateReason.PENDING_SYNC
         );
         assertThat(candidates.get(1).reasons()).containsExactlyInAnyOrder(
@@ -92,6 +97,8 @@ class ExternalImageDaoUnitTest {
         when(externalImageMapper.findItemInventoryIdsMissingAlbumLinks(10, 1))
                 .thenReturn(List.of(100, 101));
         when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 1))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumMemberships(10, 1))
                 .thenReturn(List.of());
         when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 1))
                 .thenReturn(List.of());
@@ -107,6 +114,8 @@ class ExternalImageDaoUnitTest {
         when(externalImageMapper.findItemInventoryIdsMissingAlbumLinks(10, 10))
                 .thenReturn(List.of());
         when(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 10))
+                .thenReturn(List.of());
+        when(externalImageMapper.findItemInventoryIdsMissingAlbumMemberships(10, 10))
                 .thenReturn(List.of());
         when(externalImageMapper.findItemInventoryIdsWithPendingSyncRows(10, 10))
                 .thenReturn(List.of());
