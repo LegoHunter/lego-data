@@ -39,6 +39,10 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 .hasSize(1)
                 .first()
                 .satisfies(this::assertHydratedCatalogItem);
+        assertThat(marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .hasSize(1)
+                .first()
+                .satisfies(found -> assertThat(found.getExternalListingId()).isEqualTo("BL-1"));
         assertThat(marketplaceListingMapper.findAll()).hasSize(1);
 
         listing.setListingStatusCode("ENDED");

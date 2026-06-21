@@ -5,6 +5,7 @@ import io.legohunter.data.mybatis.mapper.PricingSnapshotListingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -27,6 +28,10 @@ public class PricingSnapshotListingDao {
 
     public Optional<PricingSnapshotListing> findByPricingSnapshotIdAndExternalListingId(Long pricingSnapshotId, String externalListingId) {
         return pricingSnapshotListingMapper.findByPricingSnapshotIdAndExternalListingId(pricingSnapshotId, externalListingId);
+    }
+
+    public List<PricingSnapshotListing> findExactComparablesByPricingSnapshotId(Long pricingSnapshotId) {
+        return pricingSnapshotListingMapper.findExactComparablesByPricingSnapshotId(pricingSnapshotId);
     }
 
     public PricingSnapshotListing insert(PricingSnapshotListing pricingSnapshotListing) {
