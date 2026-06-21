@@ -18,6 +18,10 @@ import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventoryPhoto;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.Party;
+import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingDecision;
+import io.legohunter.data.dto.PricingSnapshot;
+import io.legohunter.data.dto.PricingSnapshotListing;
 import io.legohunter.data.dto.TransactionPlatform;
 import io.legohunter.data.dto.TransactionType;
 import io.legohunter.data.dto.Transactions;
@@ -53,6 +57,10 @@ abstract class MapperTestSupport {
     @Autowired BricklinkMarketplaceListingMapper bricklinkMarketplaceListingMapper;
     @Autowired EbayMarketplaceListingMapper ebayMarketplaceListingMapper;
     @Autowired EbayListingItemSpecificMapper ebayListingItemSpecificMapper;
+    @Autowired PricingCrawlWorkItemMapper pricingCrawlWorkItemMapper;
+    @Autowired PricingSnapshotMapper pricingSnapshotMapper;
+    @Autowired PricingSnapshotListingMapper pricingSnapshotListingMapper;
+    @Autowired PricingDecisionMapper pricingDecisionMapper;
     @Autowired PartyMapper partyMapper;
     @Autowired PaymentPlatformMapper paymentPlatformMapper;
     @Autowired TransactionCostMapper transactionCostMapper;
@@ -285,6 +293,85 @@ abstract class MapperTestSupport {
                 .marketplaceListingId(marketplaceListingId)
                 .name(name)
                 .value(value)
+                .build();
+    }
+
+    PricingCrawlWorkItem pricingCrawlWorkItem(
+            Integer marketplaceListingId,
+            Integer externalCatalogItemId,
+            Integer sourceExternalServiceId,
+            ZonedDateTime nextAttemptAt
+    ) {
+        return PricingCrawlWorkItem.builder()
+                .marketplaceListingId(marketplaceListingId)
+                .externalCatalogItemId(externalCatalogItemId)
+                .sourceExternalServiceId(sourceExternalServiceId)
+                .workStatusCode("PENDING")
+                .attemptCount(0)
+                .maxAttempts(3)
+                .nextAttemptAt(nextAttemptAt)
+                .sourceRequestUrl("https://bricklink.example/ajax/clone/catalogifs.ajax")
+                .sourceRequestParameters("itemid=4997&rpp=500&iconly=0")
+                .build();
+    }
+
+    PricingSnapshot pricingSnapshot(
+            Long pricingCrawlWorkItemId,
+            Integer marketplaceListingId,
+            Integer externalCatalogItemId,
+            Integer sourceExternalServiceId,
+            ZonedDateTime capturedAt
+    ) {
+        return PricingSnapshot.builder()
+                .pricingCrawlWorkItemId(pricingCrawlWorkItemId)
+                .marketplaceListingId(marketplaceListingId)
+                .externalCatalogItemId(externalCatalogItemId)
+                .sourceExternalServiceId(sourceExternalServiceId)
+                .sourceItemKey("6390-1")
+                .sourceUniqueKey("4997")
+                .itemConditionCode("U")
+                .completenessCode("COMPLETE")
+                .sourceRequestUrl("https://bricklink.example/ajax/clone/catalogifs.ajax")
+                .sourceRequestParameters("itemid=4997&rpp=500&iconly=0")
+                .rawPayloadHash("payload-hash")
+                .comparableCount(2)
+                .capturedAt(capturedAt)
+                .build();
+    }
+
+    PricingSnapshotListing pricingSnapshotListing(Long pricingSnapshotId, String externalListingId) {
+        return PricingSnapshotListing.builder()
+                .pricingSnapshotId(pricingSnapshotId)
+                .externalListingId(externalListingId)
+                .sellerName("seller-one")
+                .sellerCountryCode("US")
+                .itemConditionCode("U")
+                .completenessCode("COMPLETE")
+                .quantityAvailable(1)
+                .unitPrice(new BigDecimal("220.00"))
+                .currencyCode("USD")
+                .description("Main Street")
+                .extendedDescription("Complete with box")
+                .sourceListingPayload("{\"listing\":\"" + externalListingId + "\"}")
+                .build();
+    }
+
+    PricingDecision pricingDecision(Integer marketplaceListingId, Long pricingSnapshotId) {
+        return PricingDecision.builder()
+                .marketplaceListingId(marketplaceListingId)
+                .pricingSnapshotId(pricingSnapshotId)
+                .algorithmVersion("BRICKLINK_COMPETITIVE_V1")
+                .decisionStatusCode("PROPOSED")
+                .reasonCode("MATCHED_LOWEST_COMPETITOR")
+                .strategyCode("COMPETITIVE")
+                .computedPrice(new BigDecimal("219.00"))
+                .finalPrice(new BigDecimal("219.00"))
+                .previousPrice(new BigDecimal("225.00"))
+                .currencyCode("USD")
+                .comparableCount(2)
+                .confidence(new BigDecimal("0.7500"))
+                .sourceSummaryJson("{\"snapshot\":true}")
+                .notes("Initial recommendation")
                 .build();
     }
 
