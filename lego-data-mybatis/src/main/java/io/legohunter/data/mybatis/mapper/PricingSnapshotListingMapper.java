@@ -15,22 +15,6 @@ import java.util.Set;
 
 public interface PricingSnapshotListingMapper {
     String ALL_COLUMNS = """
-            pricing_snapshot_listing_id,
-            pricing_snapshot_id,
-            external_listing_id,
-            seller_name,
-            seller_country_code,
-            item_condition_code,
-            completeness_code,
-            quantity_available,
-            unit_price,
-            currency_code,
-            description,
-            extended_description,
-            source_listing_payload,
-            created_at
-            """;
-    String QUALIFIED_COLUMNS = """
             psl.pricing_snapshot_listing_id,
             psl.pricing_snapshot_id,
             psl.external_listing_id,
@@ -47,23 +31,23 @@ public interface PricingSnapshotListingMapper {
             psl.created_at
             """;
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM pricing_snapshot_listing")
+    @Select("SELECT " + ALL_COLUMNS + " FROM pricing_snapshot_listing psl")
     @ResultMap("pricingSnapshotListingResultMap")
     Set<PricingSnapshotListing> findAll();
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM pricing_snapshot_listing WHERE pricing_snapshot_listing_id = #{pricingSnapshotListingId}")
+    @Select("SELECT " + ALL_COLUMNS + " FROM pricing_snapshot_listing psl WHERE psl.pricing_snapshot_listing_id = #{pricingSnapshotListingId}")
     @ResultMap("pricingSnapshotListingResultMap")
     Optional<PricingSnapshotListing> findByPricingSnapshotListingId(Long pricingSnapshotListingId);
 
-    @Select("SELECT " + ALL_COLUMNS + " FROM pricing_snapshot_listing WHERE pricing_snapshot_id = #{pricingSnapshotId}")
+    @Select("SELECT " + ALL_COLUMNS + " FROM pricing_snapshot_listing psl WHERE psl.pricing_snapshot_id = #{pricingSnapshotId}")
     @ResultMap("pricingSnapshotListingResultMap")
     Set<PricingSnapshotListing> findByPricingSnapshotId(Long pricingSnapshotId);
 
     @Select("""
             SELECT ${columns}
-            FROM pricing_snapshot_listing
-            WHERE pricing_snapshot_id = #{pricingSnapshotId}
-              AND external_listing_id = #{externalListingId}
+            FROM pricing_snapshot_listing psl
+            WHERE psl.pricing_snapshot_id = #{pricingSnapshotId}
+              AND psl.external_listing_id = #{externalListingId}
             """)
     @ResultMap("pricingSnapshotListingResultMap")
     Optional<PricingSnapshotListing> findByPricingSnapshotIdAndExternalListingId(
@@ -96,7 +80,7 @@ public interface PricingSnapshotListingMapper {
     );
 
     default List<PricingSnapshotListing> findExactComparablesByPricingSnapshotId(Long pricingSnapshotId) {
-        return findExactComparablesByPricingSnapshotId(pricingSnapshotId, QUALIFIED_COLUMNS);
+        return findExactComparablesByPricingSnapshotId(pricingSnapshotId, ALL_COLUMNS);
     }
 
     @Insert("""
