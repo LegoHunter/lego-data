@@ -10,7 +10,6 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -79,14 +78,14 @@ public interface PricingCrawlWorkItemMapper {
             LIMIT #{limit}
             """)
     @ResultMap("pricingCrawlWorkItemResultMap")
-    List<PricingCrawlWorkItem> findClaimableByWorkStatusCode(
+    Set<PricingCrawlWorkItem> findClaimableByWorkStatusCode(
             @Param("workStatusCode") String workStatusCode,
             @Param("dueAt") ZonedDateTime dueAt,
             @Param("limit") int limit,
             @Param("columns") String columns
     );
 
-    default List<PricingCrawlWorkItem> findClaimableByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
+    default Set<PricingCrawlWorkItem> findClaimableByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
         return findClaimableByWorkStatusCode(workStatusCode, dueAt, limit, ALL_COLUMNS);
     }
 

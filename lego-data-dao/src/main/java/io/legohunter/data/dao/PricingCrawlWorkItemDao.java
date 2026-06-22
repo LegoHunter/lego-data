@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,21 +37,21 @@ public class PricingCrawlWorkItemDao {
         return pricingCrawlWorkItemMapper.findDueByWorkStatusCode(workStatusCode, dueAt, limit);
     }
 
-    public List<PricingCrawlWorkItem> findClaimableByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
+    public Set<PricingCrawlWorkItem> findClaimableByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
         return pricingCrawlWorkItemMapper.findClaimableByWorkStatusCode(workStatusCode, dueAt, limit);
     }
 
     @Transactional
-    public List<PricingCrawlWorkItem> claimDueWorkItems(
+    public Set<PricingCrawlWorkItem> claimDueWorkItems(
             String pendingStatusCode,
             String claimedStatusCode,
             ZonedDateTime dueAt,
             ZonedDateTime claimedAt,
             int limit
     ) {
-        List<PricingCrawlWorkItem> candidates = findClaimableByWorkStatusCode(pendingStatusCode, dueAt, limit);
-        List<PricingCrawlWorkItem> claimed = new ArrayList<>();
-        for (PricingCrawlWorkItem candidate : candidates) {
+        Set<PricingCrawlWorkItem> candidates = findClaimableByWorkStatusCode(pendingStatusCode, dueAt, limit);
+        Set<PricingCrawlWorkItem> claimed = new LinkedHashSet<>();
+        for (PricingCrawlWorkItem candidate : sortedByDueOrder(candidates)) {
             int updated = pricingCrawlWorkItemMapper.claim(
                     candidate.getPricingCrawlWorkItemId(),
                     pendingStatusCode,
@@ -64,6 +64,14 @@ public class PricingCrawlWorkItemDao {
             }
         }
         return claimed;
+    }
+
+    private Set<PricingCrawlWorkItem> sortedByDueOrder(Set<PricingCrawlWorkItem> candidates) {
+        return candidates.stream()
+                .sorted(Comparator
+                        .comparing(PricingCrawlWorkItem::getNextAttemptAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(PricingCrawlWorkItem::getPricingCrawlWorkItemId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
     }
 
     public int requeueStaleClaimed(
