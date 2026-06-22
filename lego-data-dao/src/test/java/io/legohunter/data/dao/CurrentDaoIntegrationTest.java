@@ -276,6 +276,11 @@ class CurrentDaoIntegrationTest {
                 .first()
                 .extracting(MarketplaceListing::getExternalListingId)
                 .isEqualTo("DAO-BL-1");
+        assertThat(marketplaceListingDao.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .hasSize(1)
+                .first()
+                .extracting(MarketplaceListing::getExternalListingId)
+                .isEqualTo("DAO-BL-1");
         assertThat(marketplaceListingDao.findByItemInventoryId(inventory.getItemInventoryId())).hasSize(1);
         assertThat(itemInventoryDao.findMarketplaceListings(inventory))
                 .hasSize(1)

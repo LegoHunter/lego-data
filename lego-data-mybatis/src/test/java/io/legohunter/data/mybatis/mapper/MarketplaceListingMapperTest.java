@@ -55,6 +55,40 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingDecisionCandidatesSkipNonFixedListingsWithoutConditionData() {
+        ListingFixture unpriceableFixture = listingFixture("listing-unpriceable");
+        unpriceableFixture.inventory().setNewOrUsed(null);
+        unpriceableFixture.inventory().setCompleteness(null);
+        itemInventoryMapper.update(unpriceableFixture.inventory());
+        MarketplaceListing unpriceableListing = marketplaceListing(unpriceableFixture.inventory().getItemInventoryId(), unpriceableFixture.item().getExternalCatalogItemId(), 2, "BL-UNPRICEABLE");
+        unpriceableListing.setFixedPrice(false);
+        marketplaceListingMapper.insert(unpriceableListing);
+
+        ListingFixture priceableFixture = listingFixture("listing-priceable");
+        MarketplaceListing priceableListing = marketplaceListing(priceableFixture.inventory().getItemInventoryId(), priceableFixture.item().getExternalCatalogItemId(), 2, "BL-PRICEABLE");
+        priceableListing.setFixedPrice(false);
+        marketplaceListingMapper.insert(priceableListing);
+
+        ListingFixture fixedPriceFixture = listingFixture("listing-fixed");
+        fixedPriceFixture.inventory().setNewOrUsed(null);
+        fixedPriceFixture.inventory().setCompleteness(null);
+        itemInventoryMapper.update(fixedPriceFixture.inventory());
+        MarketplaceListing fixedPriceListing = marketplaceListing(fixedPriceFixture.inventory().getItemInventoryId(), fixedPriceFixture.item().getExternalCatalogItemId(), 2, "BL-FIXED");
+        fixedPriceListing.setFixedPrice(true);
+        marketplaceListingMapper.insert(fixedPriceListing);
+
+        assertThat(marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-UNPRICEABLE", "BL-PRICEABLE", "BL-FIXED");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-PRICEABLE", "BL-FIXED");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 1))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-PRICEABLE");
+    }
+
+    @Test
     void bricklinkMarketplaceListingSupportsCrudAndInventoryLookup() {
         MarketplaceListing listing = insertedMarketplaceListing("bricklink-listing", "BL-2", 2);
         BricklinkMarketplaceListing bricklink = bricklinkMarketplaceListing(listing.getMarketplaceListingId(), 2001);

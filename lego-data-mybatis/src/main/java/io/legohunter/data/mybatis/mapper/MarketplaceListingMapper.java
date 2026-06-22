@@ -107,6 +107,49 @@ public interface MarketplaceListingMapper {
     @Select("""
             SELECT ${columns}
             ${fromClause}
+            JOIN item_inventory ii
+                ON ii.item_inventory_id = ml.item_inventory_id
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code = #{listingStatusCode}
+              AND ml.external_catalog_item_id IS NOT NULL
+              AND (
+                  COALESCE(ml.fixed_price, FALSE) = TRUE
+                  OR (
+                      ii.new_or_used IS NOT NULL
+                      AND TRIM(ii.new_or_used) <> ''
+                      AND ii.completeness IS NOT NULL
+                      AND TRIM(ii.completeness) <> ''
+                  )
+              )
+            ORDER BY ml.marketplace_listing_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("marketplaceListingResultMap")
+    Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCode") String listingStatusCode,
+            @Param("limit") int limit,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
+
+    default Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            int limit
+    ) {
+        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                limit,
+                ALL_COLUMNS,
+                FROM_CLAUSE
+        );
+    }
+
+    @Select("""
+            SELECT ${columns}
+            ${fromClause}
             WHERE ml.listing_external_service_id = #{listingExternalServiceId}
               AND ml.external_listing_id = #{externalListingId}
             """)
