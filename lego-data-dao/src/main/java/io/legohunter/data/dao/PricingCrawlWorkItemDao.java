@@ -4,8 +4,11 @@ import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,6 +35,51 @@ public class PricingCrawlWorkItemDao {
 
     public Set<PricingCrawlWorkItem> findDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
         return pricingCrawlWorkItemMapper.findDueByWorkStatusCode(workStatusCode, dueAt, limit);
+    }
+
+    public List<PricingCrawlWorkItem> findClaimableByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
+        return pricingCrawlWorkItemMapper.findClaimableByWorkStatusCode(workStatusCode, dueAt, limit);
+    }
+
+    @Transactional
+    public List<PricingCrawlWorkItem> claimDueWorkItems(
+            String pendingStatusCode,
+            String claimedStatusCode,
+            ZonedDateTime dueAt,
+            ZonedDateTime claimedAt,
+            int limit
+    ) {
+        List<PricingCrawlWorkItem> candidates = findClaimableByWorkStatusCode(pendingStatusCode, dueAt, limit);
+        List<PricingCrawlWorkItem> claimed = new ArrayList<>();
+        for (PricingCrawlWorkItem candidate : candidates) {
+            int updated = pricingCrawlWorkItemMapper.claim(
+                    candidate.getPricingCrawlWorkItemId(),
+                    pendingStatusCode,
+                    claimedStatusCode,
+                    dueAt,
+                    claimedAt
+            );
+            if (updated == 1) {
+                findByPricingCrawlWorkItemId(candidate.getPricingCrawlWorkItemId()).ifPresent(claimed::add);
+            }
+        }
+        return claimed;
+    }
+
+    public int requeueStaleClaimed(
+            String claimedStatusCode,
+            String pendingStatusCode,
+            ZonedDateTime claimedBefore,
+            ZonedDateTime nextAttemptAt,
+            String lastErrorMessage
+    ) {
+        return pricingCrawlWorkItemMapper.requeueStaleClaimed(
+                claimedStatusCode,
+                pendingStatusCode,
+                claimedBefore,
+                nextAttemptAt,
+                lastErrorMessage
+        );
     }
 
     public PricingCrawlWorkItem insert(PricingCrawlWorkItem pricingCrawlWorkItem) {

@@ -118,6 +118,41 @@ class PricingPlaneDaoTest {
     }
 
     @Test
+    void pricingCrawlDaoClaimsDueWorkAndRequeuesStaleClaims() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItem(fixture);
+        workItem.setNextAttemptAt(CRAWL_AT.minusMinutes(1));
+        workItem = pricingCrawlWorkItemDao.insert(workItem);
+
+        assertThat(pricingCrawlWorkItemDao.claimDueWorkItems("PENDING", "CLAIMED", CRAWL_AT, CRAWL_AT, 5))
+                .extracting(PricingCrawlWorkItem::getPricingCrawlWorkItemId)
+                .containsExactly(workItem.getPricingCrawlWorkItemId());
+        assertThat(pricingCrawlWorkItemDao.claimDueWorkItems("PENDING", "CLAIMED", CRAWL_AT, CRAWL_AT.plusSeconds(1), 5))
+                .isEmpty();
+
+        assertThat(pricingCrawlWorkItemDao.findByPricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getWorkStatusCode()).isEqualTo("CLAIMED");
+                    assertThat(found.getAttemptCount()).isOne();
+                    assertThat(found.getClaimedAt()).isEqualTo(CRAWL_AT);
+                });
+
+        assertThat(pricingCrawlWorkItemDao.requeueStaleClaimed(
+                "CLAIMED",
+                "PENDING",
+                CRAWL_AT.plusMinutes(10),
+                CRAWL_AT.plusHours(1),
+                "Recovered stale pricing crawl claim"
+        )).isOne();
+        assertThat(pricingCrawlWorkItemDao.findByPricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getWorkStatusCode()).isEqualTo("PENDING");
+                    assertThat(found.getClaimedAt()).isNull();
+                    assertThat(found.getNextAttemptAt()).isEqualTo(CRAWL_AT.plusHours(1));
+                });
+    }
+
+    @Test
     void pricingDaosExposeExactConditionAndCompletenessComparables() {
         PricingFixture fixture = pricingFixture();
         PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
