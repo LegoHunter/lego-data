@@ -56,6 +56,62 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingCrawlWorkItemSupportsClaimAndStaleRequeue() {
+        PricingFixture fixture = pricingFixture("pricing-work-claim");
+        PricingCrawlWorkItem dueWorkItem = insertedWorkItem(fixture, CRAWL_AT.minusMinutes(1));
+        PricingCrawlWorkItem maxedWorkItem = pricingCrawlWorkItem(
+                fixture.listing().getMarketplaceListingId(),
+                fixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.minusMinutes(1)
+        );
+        maxedWorkItem.setAttemptCount(3);
+        maxedWorkItem.setMaxAttempts(3);
+        pricingCrawlWorkItemMapper.insert(maxedWorkItem);
+
+        assertThat(pricingCrawlWorkItemMapper.findClaimableByWorkStatusCode("PENDING", CRAWL_AT, 10))
+                .extracting(PricingCrawlWorkItem::getPricingCrawlWorkItemId)
+                .containsExactly(dueWorkItem.getPricingCrawlWorkItemId());
+
+        assertThat(pricingCrawlWorkItemMapper.claim(
+                dueWorkItem.getPricingCrawlWorkItemId(),
+                "PENDING",
+                "CLAIMED",
+                CRAWL_AT,
+                CRAWL_AT
+        )).isOne();
+        assertThat(pricingCrawlWorkItemMapper.claim(
+                dueWorkItem.getPricingCrawlWorkItemId(),
+                "PENDING",
+                "CLAIMED",
+                CRAWL_AT,
+                CRAWL_AT.plusSeconds(1)
+        )).isZero();
+
+        assertThat(pricingCrawlWorkItemMapper.findByPricingCrawlWorkItemId(dueWorkItem.getPricingCrawlWorkItemId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getWorkStatusCode()).isEqualTo("CLAIMED");
+                    assertThat(found.getAttemptCount()).isOne();
+                    assertThat(found.getClaimedAt()).isEqualTo(CRAWL_AT);
+                });
+
+        assertThat(pricingCrawlWorkItemMapper.requeueStaleClaimed(
+                "CLAIMED",
+                "PENDING",
+                CRAWL_AT.plusMinutes(5),
+                CRAWL_AT.plusHours(1),
+                "Recovered stale claim"
+        )).isOne();
+        assertThat(pricingCrawlWorkItemMapper.findByPricingCrawlWorkItemId(dueWorkItem.getPricingCrawlWorkItemId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getWorkStatusCode()).isEqualTo("PENDING");
+                    assertThat(found.getClaimedAt()).isNull();
+                    assertThat(found.getNextAttemptAt()).isEqualTo(CRAWL_AT.plusHours(1));
+                    assertThat(found.getLastErrorMessage()).isEqualTo("Recovered stale claim");
+                });
+    }
+
+    @Test
     void pricingSnapshotSupportsCrudAndLatestLookup() {
         PricingFixture fixture = pricingFixture("pricing-snapshot");
         PricingCrawlWorkItem workItem = insertedWorkItem(fixture, CRAWL_AT);

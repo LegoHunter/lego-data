@@ -68,6 +68,68 @@ public interface PricingCrawlWorkItemMapper {
         return findDueByWorkStatusCode(workStatusCode, dueAt, limit, ALL_COLUMNS);
     }
 
+    @Select("""
+            SELECT ${columns}
+            FROM pricing_crawl_work_item
+            WHERE work_status_code = #{workStatusCode}
+              AND next_attempt_at <= #{dueAt}
+              AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+            ORDER BY next_attempt_at, pricing_crawl_work_item_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingCrawlWorkItemResultMap")
+    Set<PricingCrawlWorkItem> findClaimableByWorkStatusCode(
+            @Param("workStatusCode") String workStatusCode,
+            @Param("dueAt") ZonedDateTime dueAt,
+            @Param("limit") int limit,
+            @Param("columns") String columns
+    );
+
+    default Set<PricingCrawlWorkItem> findClaimableByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
+        return findClaimableByWorkStatusCode(workStatusCode, dueAt, limit, ALL_COLUMNS);
+    }
+
+    @Update("""
+            UPDATE pricing_crawl_work_item
+            SET work_status_code = #{claimedStatusCode},
+                attempt_count = COALESCE(attempt_count, 0) + 1,
+                claimed_at = #{claimedAt},
+                completed_at = NULL,
+                last_error_message = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE pricing_crawl_work_item_id = #{pricingCrawlWorkItemId}
+              AND work_status_code = #{pendingStatusCode}
+              AND next_attempt_at <= #{dueAt}
+              AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+            """)
+    int claim(
+            @Param("pricingCrawlWorkItemId") Long pricingCrawlWorkItemId,
+            @Param("pendingStatusCode") String pendingStatusCode,
+            @Param("claimedStatusCode") String claimedStatusCode,
+            @Param("dueAt") ZonedDateTime dueAt,
+            @Param("claimedAt") ZonedDateTime claimedAt
+    );
+
+    @Update("""
+            UPDATE pricing_crawl_work_item
+            SET work_status_code = #{pendingStatusCode},
+                next_attempt_at = #{nextAttemptAt},
+                claimed_at = NULL,
+                completed_at = NULL,
+                last_error_message = #{lastErrorMessage},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE work_status_code = #{claimedStatusCode}
+              AND claimed_at <= #{claimedBefore}
+              AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+            """)
+    int requeueStaleClaimed(
+            @Param("claimedStatusCode") String claimedStatusCode,
+            @Param("pendingStatusCode") String pendingStatusCode,
+            @Param("claimedBefore") ZonedDateTime claimedBefore,
+            @Param("nextAttemptAt") ZonedDateTime nextAttemptAt,
+            @Param("lastErrorMessage") String lastErrorMessage
+    );
+
     @Insert("""
             INSERT INTO pricing_crawl_work_item (
                 marketplace_listing_id,

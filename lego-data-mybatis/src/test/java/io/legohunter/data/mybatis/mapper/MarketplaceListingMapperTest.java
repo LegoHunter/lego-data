@@ -7,14 +7,18 @@ import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingCrawlWorkItem;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.ZonedDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @MapperIntegrationTest
 class MarketplaceListingMapperTest extends MapperTestSupport {
+    private static final ZonedDateTime CRAWL_AT = ZonedDateTime.parse("2026-06-18T14:00:00Z");
+
 
     @Test
     void marketplaceListingSupportsCrudAndExternalListingLookup() {
@@ -86,6 +90,77 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 1))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-PRICEABLE");
+    }
+
+    @Test
+    void pricingCrawlSchedulingCandidatesSkipOpenAndFutureScheduledWork() {
+        ListingFixture availableFixture = listingFixture("crawl-available");
+        MarketplaceListing availableListing = marketplaceListing(
+                availableFixture.inventory().getItemInventoryId(),
+                availableFixture.item().getExternalCatalogItemId(),
+                2,
+                "BL-CRAWL-AVAILABLE"
+        );
+        marketplaceListingMapper.insert(availableListing);
+
+        ListingFixture pendingFixture = listingFixture("crawl-pending");
+        MarketplaceListing pendingListing = marketplaceListing(
+                pendingFixture.inventory().getItemInventoryId(),
+                pendingFixture.item().getExternalCatalogItemId(),
+                2,
+                "BL-CRAWL-PENDING"
+        );
+        marketplaceListingMapper.insert(pendingListing);
+        pricingCrawlWorkItemMapper.insert(pricingCrawlWorkItem(
+                pendingListing.getMarketplaceListingId(),
+                pendingFixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.minusMinutes(1)
+        ));
+
+        ListingFixture futureFixture = listingFixture("crawl-future");
+        MarketplaceListing futureListing = marketplaceListing(
+                futureFixture.inventory().getItemInventoryId(),
+                futureFixture.item().getExternalCatalogItemId(),
+                2,
+                "BL-CRAWL-FUTURE"
+        );
+        marketplaceListingMapper.insert(futureListing);
+        PricingCrawlWorkItem futureWorkItem = pricingCrawlWorkItem(
+                futureListing.getMarketplaceListingId(),
+                futureFixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusHours(1)
+        );
+        futureWorkItem.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.insert(futureWorkItem);
+
+        ListingFixture dueFixture = listingFixture("crawl-due");
+        MarketplaceListing dueListing = marketplaceListing(
+                dueFixture.inventory().getItemInventoryId(),
+                dueFixture.item().getExternalCatalogItemId(),
+                2,
+                "BL-CRAWL-DUE"
+        );
+        marketplaceListingMapper.insert(dueListing);
+        PricingCrawlWorkItem dueWorkItem = pricingCrawlWorkItem(
+                dueListing.getMarketplaceListingId(),
+                dueFixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.minusHours(1)
+        );
+        dueWorkItem.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.insert(dueWorkItem);
+
+        assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+                2,
+                "ACTIVE",
+                "PENDING",
+                "CLAIMED",
+                CRAWL_AT,
+                10
+        )).extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-CRAWL-AVAILABLE", "BL-CRAWL-DUE");
     }
 
     @Test

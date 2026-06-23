@@ -5,6 +5,7 @@ import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -45,6 +46,24 @@ public class MarketplaceListingDao {
         return marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
                 listingExternalServiceId,
                 listingStatusCode,
+                limit
+        );
+    }
+
+    public Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            String pendingStatusCode,
+            String claimedStatusCode,
+            ZonedDateTime asOf,
+            int limit
+    ) {
+        return marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                pendingStatusCode,
+                claimedStatusCode,
+                asOf,
                 limit
         );
     }

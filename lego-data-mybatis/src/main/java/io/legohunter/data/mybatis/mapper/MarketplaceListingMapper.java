@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -98,6 +99,56 @@ public interface MarketplaceListingMapper {
         return findByListingExternalServiceIdAndListingStatusCode(
                 listingExternalServiceId,
                 listingStatusCode,
+                limit,
+                ALL_COLUMNS,
+                FROM_CLAUSE
+        );
+    }
+
+    @Select("""
+            SELECT ${columns}
+            ${fromClause}
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code = #{listingStatusCode}
+              AND ml.external_catalog_item_id IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM pricing_crawl_work_item pcwi
+                  WHERE pcwi.marketplace_listing_id = ml.marketplace_listing_id
+                    AND (
+                        pcwi.work_status_code IN (#{pendingStatusCode}, #{claimedStatusCode})
+                        OR pcwi.next_attempt_at > #{asOf}
+                    )
+              )
+            ORDER BY ml.marketplace_listing_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("marketplaceListingResultMap")
+    Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCode") String listingStatusCode,
+            @Param("pendingStatusCode") String pendingStatusCode,
+            @Param("claimedStatusCode") String claimedStatusCode,
+            @Param("asOf") ZonedDateTime asOf,
+            @Param("limit") int limit,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
+
+    default Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            String pendingStatusCode,
+            String claimedStatusCode,
+            ZonedDateTime asOf,
+            int limit
+    ) {
+        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                pendingStatusCode,
+                claimedStatusCode,
+                asOf,
                 limit,
                 ALL_COLUMNS,
                 FROM_CLAUSE
