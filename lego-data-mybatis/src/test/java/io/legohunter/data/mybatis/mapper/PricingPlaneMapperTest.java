@@ -5,12 +5,14 @@ import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDecision;
+import io.legohunter.data.dto.PricingDecisionReview;
 import io.legohunter.data.dto.PricingSnapshot;
 import io.legohunter.data.dto.PricingSnapshotListing;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -285,6 +287,54 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId())).isEmpty();
     }
 
+    @Test
+    void pricingDecisionReviewReturnsLatestDecisionWithListingContext() {
+        PricingFixture decidedFixture = pricingFixture("pricing-review-decided");
+        PricingSnapshot snapshot = insertedSnapshot(decidedFixture);
+        PricingDecision olderDecision = pricingDecision(decidedFixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        olderDecision.setReasonCode("NO_CURRENT_SNAPSHOT");
+        olderDecision.setDecisionStatusCode("FAILED");
+        olderDecision.setFinalPrice(null);
+        pricingDecisionMapper.insert(olderDecision);
+
+        PricingDecision latestDecision = pricingDecision(decidedFixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        latestDecision.setReasonCode("MATCHED_LOWEST_COMPETITOR");
+        latestDecision.setDecisionStatusCode("PROPOSED");
+        latestDecision.setFinalPrice(new BigDecimal("199.99"));
+        pricingDecisionMapper.insert(latestDecision);
+
+        PricingFixture undecidedFixture = pricingFixture("pricing-review-undecided");
+
+        Set<PricingDecisionReview> reviews = pricingDecisionMapper.findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
+                2,
+                "ACTIVE",
+                10
+        );
+
+        assertThat(reviews).hasSize(2);
+        assertThat(reviews)
+                .filteredOn(review -> review.getMarketplaceListingId().equals(decidedFixture.listing().getMarketplaceListingId()))
+                .singleElement()
+                .satisfies(review -> {
+                    assertThat(review.getPricingDecisionId()).isEqualTo(latestDecision.getPricingDecisionId());
+                    assertThat(review.getReasonCode()).isEqualTo("MATCHED_LOWEST_COMPETITOR");
+                    assertThat(review.getDecisionStatusCode()).isEqualTo("PROPOSED");
+                    assertThat(review.getFinalPrice()).isEqualByComparingTo("199.99");
+                    assertThat(review.getCurrentUnitPrice()).isEqualByComparingTo(decidedFixture.listing().getUnitPrice());
+                    assertThat(review.getExternalItemKey()).isEqualTo("pricing-review-decided");
+                    assertThat(review.getSnapshotComparableCount()).isEqualTo(snapshot.getComparableCount());
+                    assertThat(review.getSnapshotCapturedAt()).isEqualTo(snapshot.getCapturedAt());
+                });
+        assertThat(reviews)
+                .filteredOn(review -> review.getMarketplaceListingId().equals(undecidedFixture.listing().getMarketplaceListingId()))
+                .singleElement()
+                .satisfies(review -> {
+                    assertThat(review.getPricingDecisionId()).isNull();
+                    assertThat(review.getDecisionStatusCode()).isNull();
+                    assertThat(review.getExternalItemKey()).isEqualTo("pricing-review-undecided");
+                });
+    }
+
     private PricingSnapshot insertedSnapshot(PricingFixture fixture) {
         PricingCrawlWorkItem workItem = insertedWorkItem(fixture, CRAWL_AT);
         PricingSnapshot snapshot = pricingSnapshot(
@@ -311,8 +361,8 @@ class PricingPlaneMapperTest extends MapperTestSupport {
 
     private PricingFixture pricingFixture(String key) {
         seedExternalCatalog();
-        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "MARKETPLACE_LISTING"));
-        externalServiceCapabilityMapper.insert(externalServiceCapability(2, "PRICE_GUIDE"));
+        externalServiceCapabilityMapper.upsert(externalServiceCapability(2, "MARKETPLACE_LISTING"));
+        externalServiceCapabilityMapper.upsert(externalServiceCapability(2, "PRICE_GUIDE"));
         ExternalCatalogItem catalogItem = insertExternalCatalogItem(key);
         ItemInventory inventory = insertItemInventory("inventory-" + key);
         MarketplaceListing listing = marketplaceListing(

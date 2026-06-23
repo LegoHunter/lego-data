@@ -8,6 +8,7 @@ import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -90,6 +91,44 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 1))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-PRICEABLE");
+    }
+
+    @Test
+    void pricingDecisionCandidatesCanRequireMatchingCurrentSnapshot() {
+        ListingFixture noSnapshotFixture = listingFixture("listing-no-snapshot");
+        MarketplaceListing noSnapshotListing = marketplaceListing(noSnapshotFixture.inventory().getItemInventoryId(), noSnapshotFixture.item().getExternalCatalogItemId(), 2, "BL-NO-SNAPSHOT");
+        noSnapshotListing.setFixedPrice(false);
+        marketplaceListingMapper.insert(noSnapshotListing);
+
+        ListingFixture snapshotFixture = listingFixture("listing-with-snapshot");
+        MarketplaceListing snapshotListing = marketplaceListing(snapshotFixture.inventory().getItemInventoryId(), snapshotFixture.item().getExternalCatalogItemId(), 2, "BL-WITH-SNAPSHOT");
+        snapshotListing.setFixedPrice(false);
+        marketplaceListingMapper.insert(snapshotListing);
+        PricingSnapshot snapshot = pricingSnapshot(
+                null,
+                snapshotListing.getMarketplaceListingId(),
+                snapshotFixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT
+        );
+        snapshot.setItemConditionCode("U");
+        snapshot.setCompletenessCode("C");
+        pricingSnapshotMapper.insert(snapshot);
+
+        ListingFixture fixedPriceFixture = listingFixture("listing-fixed-without-snapshot");
+        fixedPriceFixture.inventory().setNewOrUsed(null);
+        fixedPriceFixture.inventory().setCompleteness(null);
+        itemInventoryMapper.update(fixedPriceFixture.inventory());
+        MarketplaceListing fixedPriceListing = marketplaceListing(fixedPriceFixture.inventory().getItemInventoryId(), fixedPriceFixture.item().getExternalCatalogItemId(), 2, "BL-FIXED-NO-SNAPSHOT");
+        fixedPriceListing.setFixedPrice(true);
+        marketplaceListingMapper.insert(fixedPriceListing);
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-NO-SNAPSHOT", "BL-WITH-SNAPSHOT", "BL-FIXED-NO-SNAPSHOT");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-WITH-SNAPSHOT", "BL-FIXED-NO-SNAPSHOT");
     }
 
     @Test

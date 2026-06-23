@@ -1,6 +1,7 @@
 package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.PricingDecision;
+import io.legohunter.data.dto.PricingDecisionReview;
 import io.legohunter.data.mybatis.mapper.PricingDecisionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,18 @@ public class PricingDecisionDao {
 
     public Optional<PricingDecision> findLatestByMarketplaceListingId(Integer marketplaceListingId) {
         return pricingDecisionMapper.findLatestByMarketplaceListingId(marketplaceListingId);
+    }
+
+    public Set<PricingDecisionReview> findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            int limit
+    ) {
+        return pricingDecisionMapper.findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                limit
+        );
     }
 
     public PricingDecision insert(PricingDecision pricingDecision) {

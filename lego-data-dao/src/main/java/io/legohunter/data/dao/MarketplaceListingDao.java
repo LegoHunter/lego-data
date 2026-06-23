@@ -50,6 +50,26 @@ public class MarketplaceListingDao {
         );
     }
 
+    public Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            int limit,
+            boolean requireCurrentSnapshot
+    ) {
+        if (requireCurrentSnapshot) {
+            return marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
+                    listingExternalServiceId,
+                    listingStatusCode,
+                    limit
+            );
+        }
+        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                limit
+        );
+    }
+
     public Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
             Integer listingExternalServiceId,
             String listingStatusCode,
