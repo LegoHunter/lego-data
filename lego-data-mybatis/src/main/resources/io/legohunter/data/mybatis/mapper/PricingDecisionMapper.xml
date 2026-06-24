@@ -25,7 +25,9 @@
     <result column="external_listing_id"     property="externalListingId"/>
     <result column="listing_status_code"     property="listingStatusCode"/>
     <result column="current_unit_price"      property="currentUnitPrice"/>
+    <result column="current_currency_code"   property="currentCurrencyCode"/>
     <result column="currency_code"           property="currencyCode"/>
+    <result column="decision_currency_code"  property="decisionCurrencyCode"/>
     <result column="fixed_price"             property="fixedPrice"/>
     <result column="item_inventory_id"       property="itemInventoryId"/>
     <result column="item_inventory_uuid"     property="itemInventoryUuid"/>

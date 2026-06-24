@@ -321,6 +321,9 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                     assertThat(review.getDecisionStatusCode()).isEqualTo("PROPOSED");
                     assertThat(review.getFinalPrice()).isEqualByComparingTo("199.99");
                     assertThat(review.getCurrentUnitPrice()).isEqualByComparingTo(decidedFixture.listing().getUnitPrice());
+                    assertThat(review.getCurrentCurrencyCode()).isEqualTo("USD");
+                    assertThat(review.getDecisionCurrencyCode()).isEqualTo("USD");
+                    assertThat(review.getCurrencyCode()).isEqualTo("USD");
                     assertThat(review.getExternalItemKey()).isEqualTo("pricing-review-decided");
                     assertThat(review.getSnapshotComparableCount()).isEqualTo(snapshot.getComparableCount());
                     assertThat(review.getSnapshotCapturedAt()).isEqualTo(snapshot.getCapturedAt());
@@ -332,6 +335,63 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                     assertThat(review.getPricingDecisionId()).isNull();
                     assertThat(review.getDecisionStatusCode()).isNull();
                     assertThat(review.getExternalItemKey()).isEqualTo("pricing-review-undecided");
+                });
+    }
+
+    @Test
+    void pricingDecisionApplyReadinessReviewReturnsLatestUnappliedProposedDecisionsOnly() {
+        PricingFixture readyFixture = pricingFixture("pricing-apply-ready");
+        PricingSnapshot readySnapshot = insertedSnapshot(readyFixture);
+        PricingDecision failedDecision = pricingDecision(readyFixture.listing().getMarketplaceListingId(), readySnapshot.getPricingSnapshotId());
+        failedDecision.setDecisionStatusCode("FAILED");
+        failedDecision.setReasonCode("NO_EXACT_COMPARABLES");
+        failedDecision.setFinalPrice(null);
+        pricingDecisionMapper.insert(failedDecision);
+        PricingDecision readyDecision = pricingDecision(readyFixture.listing().getMarketplaceListingId(), readySnapshot.getPricingSnapshotId());
+        readyDecision.setDecisionStatusCode("PROPOSED");
+        readyDecision.setReasonCode("MEAN_PLUS_STDDEV");
+        readyDecision.setFinalPrice(new BigDecimal("212.25"));
+        pricingDecisionMapper.insert(readyDecision);
+
+        PricingFixture appliedFixture = pricingFixture("pricing-apply-applied");
+        PricingSnapshot appliedSnapshot = insertedSnapshot(appliedFixture);
+        PricingDecision appliedDecision = pricingDecision(appliedFixture.listing().getMarketplaceListingId(), appliedSnapshot.getPricingSnapshotId());
+        appliedDecision.setDecisionStatusCode("PROPOSED");
+        appliedDecision.setReasonCode("MATCHED_LOWEST_COMPETITOR");
+        appliedDecision.setFinalPrice(new BigDecimal("190.00"));
+        appliedDecision.setAppliedAt(SNAPSHOT_AT.plusMinutes(10));
+        pricingDecisionMapper.insert(appliedDecision);
+
+        PricingFixture failedFixture = pricingFixture("pricing-apply-failed");
+        PricingSnapshot failedSnapshot = insertedSnapshot(failedFixture);
+        PricingDecision latestFailedDecision = pricingDecision(failedFixture.listing().getMarketplaceListingId(), failedSnapshot.getPricingSnapshotId());
+        latestFailedDecision.setDecisionStatusCode("FAILED");
+        latestFailedDecision.setReasonCode("NO_CURRENT_SNAPSHOT");
+        latestFailedDecision.setFinalPrice(null);
+        pricingDecisionMapper.insert(latestFailedDecision);
+
+        Set<PricingDecisionReview> reviews = pricingDecisionMapper
+                .findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+                        2,
+                        "ACTIVE",
+                        "PROPOSED",
+                        10
+                );
+
+        assertThat(reviews)
+                .extracting(PricingDecisionReview::getMarketplaceListingId)
+                .containsExactly(readyFixture.listing().getMarketplaceListingId());
+        assertThat(reviews)
+                .singleElement()
+                .satisfies(review -> {
+                    assertThat(review.getPricingDecisionId()).isEqualTo(readyDecision.getPricingDecisionId());
+                    assertThat(review.getDecisionStatusCode()).isEqualTo("PROPOSED");
+                    assertThat(review.getReasonCode()).isEqualTo("MEAN_PLUS_STDDEV");
+                    assertThat(review.getFinalPrice()).isEqualByComparingTo("212.25");
+                    assertThat(review.getAppliedAt()).isNull();
+                    assertThat(review.getCurrentUnitPrice()).isEqualByComparingTo(readyFixture.listing().getUnitPrice());
+                    assertThat(review.getCurrentCurrencyCode()).isEqualTo("USD");
+                    assertThat(review.getDecisionCurrencyCode()).isEqualTo("USD");
                 });
     }
 

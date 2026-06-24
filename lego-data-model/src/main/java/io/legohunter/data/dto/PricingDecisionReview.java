@@ -17,7 +17,9 @@ public class PricingDecisionReview {
     private String externalListingId;
     private String listingStatusCode;
     private BigDecimal currentUnitPrice;
+    private String currentCurrencyCode;
     private String currencyCode;
+    private String decisionCurrencyCode;
     private Boolean fixedPrice;
     private Integer itemInventoryId;
     private String itemInventoryUuid;
