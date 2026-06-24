@@ -297,7 +297,19 @@ class DaoDelegationCoverageTest {
         PricingDecisionDao dao = new PricingDecisionDao(mapper);
 
         dao.findLatestReviewsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 25);
+        dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+                1,
+                "ACTIVE",
+                "PROPOSED",
+                25
+        );
 
         verify(mapper).findLatestReviewsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 25);
+        verify(mapper).findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+                1,
+                "ACTIVE",
+                "PROPOSED",
+                25
+        );
     }
 }

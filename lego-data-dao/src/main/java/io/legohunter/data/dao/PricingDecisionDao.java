@@ -50,6 +50,20 @@ public class PricingDecisionDao {
         );
     }
 
+    public Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            String decisionStatusCode,
+            int limit
+    ) {
+        return pricingDecisionMapper.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                decisionStatusCode,
+                limit
+        );
+    }
+
     public PricingDecision insert(PricingDecision pricingDecision) {
         pricingDecisionMapper.insert(pricingDecision);
         return findByPricingDecisionId(pricingDecision.getPricingDecisionId()).orElseThrow();

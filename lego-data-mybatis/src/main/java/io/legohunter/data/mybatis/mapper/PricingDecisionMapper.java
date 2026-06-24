@@ -39,7 +39,7 @@ public interface PricingDecisionMapper {
             ml.external_listing_id,
             ml.listing_status_code,
             ml.unit_price AS current_unit_price,
-            ml.currency_code,
+            ml.currency_code AS current_currency_code,
             ml.fixed_price,
             ii.item_inventory_id,
             ii.uuid AS item_inventory_uuid,
@@ -57,6 +57,8 @@ public interface PricingDecisionMapper {
             pd.computed_price,
             pd.final_price,
             pd.previous_price,
+            pd.currency_code,
+            pd.currency_code AS decision_currency_code,
             pd.comparable_count,
             pd.confidence,
             pd.notes,
@@ -145,6 +147,59 @@ public interface PricingDecisionMapper {
         return findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
                 listingExternalServiceId,
                 listingStatusCode,
+                limit,
+                REVIEW_COLUMNS
+        );
+    }
+
+    @Select("""
+            SELECT ${columns}
+            FROM marketplace_listing ml
+            JOIN item_inventory ii
+              ON ii.item_inventory_id = ml.item_inventory_id
+            JOIN external_catalog_item eci
+              ON eci.external_catalog_item_id = ml.external_catalog_item_id
+            JOIN (
+                SELECT pd.*
+                FROM pricing_decision pd
+                JOIN (
+                    SELECT marketplace_listing_id,
+                           MAX(pricing_decision_id) AS pricing_decision_id
+                    FROM pricing_decision
+                    GROUP BY marketplace_listing_id
+                ) latest
+                  ON latest.pricing_decision_id = pd.pricing_decision_id
+            ) pd
+              ON pd.marketplace_listing_id = ml.marketplace_listing_id
+            LEFT JOIN pricing_snapshot ps
+              ON ps.pricing_snapshot_id = pd.pricing_snapshot_id
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code = #{listingStatusCode}
+              AND pd.decision_status_code = #{decisionStatusCode}
+              AND pd.applied_at IS NULL
+            ORDER BY pd.created_at DESC,
+                     pd.pricing_decision_id DESC
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingDecisionReviewResultMap")
+    Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCode") String listingStatusCode,
+            @Param("decisionStatusCode") String decisionStatusCode,
+            @Param("limit") int limit,
+            @Param("columns") String columns
+    );
+
+    default Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            String decisionStatusCode,
+            int limit
+    ) {
+        return findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                decisionStatusCode,
                 limit,
                 REVIEW_COLUMNS
         );
