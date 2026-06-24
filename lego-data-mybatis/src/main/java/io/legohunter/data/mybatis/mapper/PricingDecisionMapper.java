@@ -1,6 +1,7 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.PricingDecision;
+import io.legohunter.data.dto.PricingDecisionReview;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
@@ -31,6 +32,38 @@ public interface PricingDecisionMapper {
             notes,
             applied_at,
             created_at
+            """;
+
+    String REVIEW_COLUMNS = """
+            ml.marketplace_listing_id,
+            ml.external_listing_id,
+            ml.listing_status_code,
+            ml.unit_price AS current_unit_price,
+            ml.currency_code,
+            ml.fixed_price,
+            ii.item_inventory_id,
+            ii.uuid AS item_inventory_uuid,
+            ii.new_or_used,
+            ii.completeness,
+            eci.external_catalog_item_id,
+            eci.external_item_key,
+            eci.external_unique_key,
+            pd.pricing_decision_id,
+            pd.pricing_snapshot_id,
+            pd.algorithm_version,
+            pd.decision_status_code,
+            pd.reason_code,
+            pd.strategy_code,
+            pd.computed_price,
+            pd.final_price,
+            pd.previous_price,
+            pd.comparable_count,
+            pd.confidence,
+            pd.notes,
+            pd.created_at AS decision_created_at,
+            pd.applied_at,
+            ps.captured_at AS snapshot_captured_at,
+            ps.comparable_count AS snapshot_comparable_count
             """;
 
     @Select("SELECT " + ALL_COLUMNS + " FROM pricing_decision")
@@ -68,6 +101,53 @@ public interface PricingDecisionMapper {
 
     default Optional<PricingDecision> findLatestByMarketplaceListingId(Integer marketplaceListingId) {
         return findLatestByMarketplaceListingId(marketplaceListingId, ALL_COLUMNS);
+    }
+
+    @Select("""
+            SELECT ${columns}
+            FROM marketplace_listing ml
+            JOIN item_inventory ii
+              ON ii.item_inventory_id = ml.item_inventory_id
+            JOIN external_catalog_item eci
+              ON eci.external_catalog_item_id = ml.external_catalog_item_id
+            LEFT JOIN (
+                SELECT pd.*
+                FROM pricing_decision pd
+                JOIN (
+                    SELECT marketplace_listing_id,
+                           MAX(pricing_decision_id) AS pricing_decision_id
+                    FROM pricing_decision
+                    GROUP BY marketplace_listing_id
+                ) latest
+                  ON latest.pricing_decision_id = pd.pricing_decision_id
+            ) pd
+              ON pd.marketplace_listing_id = ml.marketplace_listing_id
+            LEFT JOIN pricing_snapshot ps
+              ON ps.pricing_snapshot_id = pd.pricing_snapshot_id
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code = #{listingStatusCode}
+            ORDER BY ml.marketplace_listing_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingDecisionReviewResultMap")
+    Set<PricingDecisionReview> findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCode") String listingStatusCode,
+            @Param("limit") int limit,
+            @Param("columns") String columns
+    );
+
+    default Set<PricingDecisionReview> findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            int limit
+    ) {
+        return findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                limit,
+                REVIEW_COLUMNS
+        );
     }
 
     @Insert("""
