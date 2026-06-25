@@ -189,6 +189,16 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         listing.setFixedPrice(true);
         listing.setUnitPrice(new BigDecimal("25.00"));
         marketplaceListingMapper.insert(listing);
+        PricingSnapshot snapshot = pricingSnapshot(
+                null,
+                listing.getMarketplaceListingId(),
+                fixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT
+        );
+        snapshot.setItemConditionCode("U");
+        snapshot.setCompletenessCode("C");
+        pricingSnapshotMapper.insert(snapshot);
 
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
