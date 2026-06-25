@@ -25,4 +25,220 @@
                  notNullColumn="external_catalog_item_id"
                  javaType="io.legohunter.data.dto.ExternalCatalogItem"/>
   </resultMap>
+
+  <sql id="marketplaceListingColumns">
+    ml.marketplace_listing_id,
+    ml.item_inventory_id,
+    ml.listing_external_service_id,
+    ml.external_catalog_item_id,
+    ml.external_listing_id,
+    ml.external_listing_url,
+    ml.listing_status_code,
+    ml.title,
+    ml.description,
+    ml.private_notes,
+    ml.unit_price,
+    ml.currency_code,
+    ml.fixed_price,
+    ml.created_at,
+    ml.updated_at,
+    ml.published_at,
+    ml.ended_at,
+    ml.last_synchronized_at,
+    eci.external_catalog_item_id AS eci_external_catalog_item_id,
+    eci.external_service_id AS eci_external_service_id,
+    eci.external_item_key AS eci_external_item_key,
+    eci.external_unique_key AS eci_external_unique_key,
+    eci.item_name AS eci_item_name,
+    eci.item_type_code AS eci_item_type_code,
+    eci.item_url AS eci_item_url,
+    eci.year_released AS eci_year_released,
+    es.external_service_id AS eci_es_external_service_id,
+    es.service_code AS eci_es_service_code,
+    es.display_name AS eci_es_display_name,
+    es.service_url AS eci_es_service_url,
+    es.external_service_type_id AS eci_es_external_service_type_id,
+    est.external_service_type_id AS eci_es_est_external_service_type_id,
+    est.external_service_type_name AS eci_es_est_external_service_type_name,
+    est.external_service_type_description AS eci_es_est_external_service_type_description
+  </sql>
+
+  <sql id="marketplaceListingFromClause">
+    FROM marketplace_listing ml
+    LEFT JOIN external_catalog_item eci
+      ON eci.external_catalog_item_id = ml.external_catalog_item_id
+    LEFT JOIN external_service es
+      ON es.external_service_id = eci.external_service_id
+    LEFT JOIN external_service_type est
+      ON est.external_service_type_id = es.external_service_type_id
+  </sql>
+
+  <sql id="priceableInventoryConditionPresent">
+    ii.new_or_used IS NOT NULL
+    AND TRIM(ii.new_or_used) &lt;&gt; ''
+    AND ii.completeness IS NOT NULL
+    AND TRIM(ii.completeness) &lt;&gt; ''
+  </sql>
+
+  <sql id="normalizedItemConditionCode">
+    CASE UPPER(TRIM(${value}))
+      WHEN 'NEW' THEN 'N'
+      WHEN 'N' THEN 'N'
+      WHEN 'USED' THEN 'U'
+      WHEN 'U' THEN 'U'
+      ELSE NULL
+    END
+  </sql>
+
+  <sql id="normalizedCompletenessCode">
+    CASE UPPER(TRIM(${value}))
+      WHEN 'SEALED' THEN 'S'
+      WHEN 'S' THEN 'S'
+      WHEN 'COMPLETE' THEN 'C'
+      WHEN 'C' THEN 'C'
+      WHEN 'INCOMPLETE' THEN 'X'
+      WHEN 'I' THEN 'X'
+      WHEN 'X' THEN 'X'
+      ELSE UPPER(TRIM(${value}))
+    END
+  </sql>
+
+  <sql id="pricingSnapshotMatchesInventoryCondition">
+    ps.item_condition_code = <include refid="normalizedItemConditionCode">
+      <property name="value" value="ii.new_or_used"/>
+    </include>
+    AND (
+      ps.completeness_code = <include refid="normalizedCompletenessCode">
+        <property name="value" value="ii.completeness"/>
+      </include>
+      OR (
+        ps.completeness_code IS NULL
+        AND <include refid="normalizedCompletenessCode">
+          <property name="value" value="ii.completeness"/>
+        </include> IS NULL
+      )
+    )
+  </sql>
+
+  <sql id="latestMatchingPricingSnapshotId">
+    SELECT ps.pricing_snapshot_id
+    FROM pricing_snapshot ps
+    WHERE ps.marketplace_listing_id = ml.marketplace_listing_id
+      AND <include refid="pricingSnapshotMatchesInventoryCondition"/>
+    ORDER BY ps.captured_at DESC,
+             ps.pricing_snapshot_id DESC
+    LIMIT 1
+  </sql>
+
+  <sql id="matchingPricingSnapshotExists">
+    EXISTS (
+      SELECT 1
+      FROM pricing_snapshot ps
+      WHERE ps.marketplace_listing_id = ml.marketplace_listing_id
+        AND <include refid="pricingSnapshotMatchesInventoryCondition"/>
+    )
+  </sql>
+
+  <sql id="latestPricingDecisionJoin">
+    JOIN (
+      SELECT marketplace_listing_id,
+             MAX(pricing_decision_id) AS pricing_decision_id
+      FROM pricing_decision
+      GROUP BY marketplace_listing_id
+    ) latest
+      ON latest.pricing_decision_id = latest_pd.pricing_decision_id
+  </sql>
+
+  <sql id="latestPricingDecisionExists">
+    EXISTS (
+      SELECT 1
+      FROM pricing_decision latest_pd
+      <include refid="latestPricingDecisionJoin"/>
+      WHERE latest_pd.marketplace_listing_id = ml.marketplace_listing_id
+    )
+  </sql>
+
+  <sql id="fixedPriceNotAlreadyDecided">
+    COALESCE(ml.fixed_price, FALSE) = TRUE
+    AND NOT EXISTS (
+      SELECT 1
+      FROM pricing_decision latest_pd
+      <include refid="latestPricingDecisionJoin"/>
+      WHERE latest_pd.marketplace_listing_id = ml.marketplace_listing_id
+        AND latest_pd.decision_status_code = 'SKIPPED'
+        AND latest_pd.reason_code = 'FIXED_PRICE_OVERRIDE'
+        AND (
+          latest_pd.final_price = ml.unit_price
+          OR (
+            latest_pd.final_price IS NULL
+            AND ml.unit_price IS NULL
+          )
+        )
+    )
+  </sql>
+
+  <sql id="notAlreadyDecidedForLatestMatchingSnapshot">
+    NOT EXISTS (
+      SELECT 1
+      FROM pricing_decision latest_pd
+      <include refid="latestPricingDecisionJoin"/>
+      WHERE latest_pd.marketplace_listing_id = ml.marketplace_listing_id
+        AND latest_pd.pricing_snapshot_id = (
+          <include refid="latestMatchingPricingSnapshotId"/>
+        )
+    )
+  </sql>
+
+  <select id="findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode"
+          resultMap="marketplaceListingResultMap">
+    SELECT <include refid="marketplaceListingColumns"/>
+    <include refid="marketplaceListingFromClause"/>
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code = #{listingStatusCode}
+      AND ml.external_catalog_item_id IS NOT NULL
+      AND (
+        (
+          <include refid="fixedPriceNotAlreadyDecided"/>
+        )
+        OR (
+          <include refid="priceableInventoryConditionPresent"/>
+          AND (
+            NOT <include refid="latestPricingDecisionExists"/>
+            OR (
+              (
+                <include refid="latestMatchingPricingSnapshotId"/>
+              ) IS NOT NULL
+              AND <include refid="notAlreadyDecidedForLatestMatchingSnapshot"/>
+            )
+          )
+        )
+      )
+    ORDER BY ml.marketplace_listing_id
+    LIMIT #{limit}
+  </select>
+
+  <select id="findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode"
+          resultMap="marketplaceListingResultMap">
+    SELECT <include refid="marketplaceListingColumns"/>
+    <include refid="marketplaceListingFromClause"/>
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code = #{listingStatusCode}
+      AND ml.external_catalog_item_id IS NOT NULL
+      AND (
+        (
+          <include refid="fixedPriceNotAlreadyDecided"/>
+        )
+        OR (
+          <include refid="priceableInventoryConditionPresent"/>
+          AND <include refid="matchingPricingSnapshotExists"/>
+          AND <include refid="notAlreadyDecidedForLatestMatchingSnapshot"/>
+        )
+      )
+    ORDER BY ml.marketplace_listing_id
+    LIMIT #{limit}
+  </select>
 </mapper>

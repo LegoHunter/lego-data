@@ -8,6 +8,7 @@ import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingSnapshot;
 import org.junit.jupiter.api.Test;
 
@@ -129,6 +130,92 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactlyInAnyOrder("BL-WITH-SNAPSHOT", "BL-FIXED-NO-SNAPSHOT");
+    }
+
+    @Test
+    void pricingDecisionCandidatesSkipAlreadyDecidedListingsUntilNewMatchingSnapshotExists() {
+        ListingFixture fixture = listingFixture("listing-decision-dedupe");
+        MarketplaceListing listing = marketplaceListing(fixture.inventory().getItemInventoryId(), fixture.item().getExternalCatalogItemId(), 2, "BL-DEDUPE");
+        listing.setFixedPrice(false);
+        marketplaceListingMapper.insert(listing);
+        PricingSnapshot firstSnapshot = pricingSnapshot(
+                null,
+                listing.getMarketplaceListingId(),
+                fixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT
+        );
+        firstSnapshot.setItemConditionCode("U");
+        firstSnapshot.setCompletenessCode("C");
+        pricingSnapshotMapper.insert(firstSnapshot);
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-DEDUPE");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-DEDUPE");
+
+        pricingDecisionMapper.insert(pricingDecision(listing.getMarketplaceListingId(), firstSnapshot.getPricingSnapshotId()));
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .isEmpty();
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .isEmpty();
+
+        PricingSnapshot newerSnapshot = pricingSnapshot(
+                null,
+                listing.getMarketplaceListingId(),
+                fixture.item().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusHours(1)
+        );
+        newerSnapshot.setItemConditionCode("U");
+        newerSnapshot.setCompletenessCode("C");
+        pricingSnapshotMapper.insert(newerSnapshot);
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-DEDUPE");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-DEDUPE");
+    }
+
+    @Test
+    void pricingDecisionCandidatesSkipFixedPriceListingsUntilCurrentPriceChanges() {
+        ListingFixture fixture = listingFixture("listing-fixed-dedupe");
+        MarketplaceListing listing = marketplaceListing(fixture.inventory().getItemInventoryId(), fixture.item().getExternalCatalogItemId(), 2, "BL-FIXED-DEDUPE");
+        listing.setFixedPrice(true);
+        listing.setUnitPrice(new BigDecimal("25.00"));
+        marketplaceListingMapper.insert(listing);
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-FIXED-DEDUPE");
+
+        PricingDecision fixedPriceDecision = pricingDecision(listing.getMarketplaceListingId(), null);
+        fixedPriceDecision.setDecisionStatusCode("SKIPPED");
+        fixedPriceDecision.setReasonCode("FIXED_PRICE_OVERRIDE");
+        fixedPriceDecision.setComputedPrice(null);
+        fixedPriceDecision.setFinalPrice(new BigDecimal("25.00"));
+        fixedPriceDecision.setComparableCount(0);
+        pricingDecisionMapper.insert(fixedPriceDecision);
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .isEmpty();
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .isEmpty();
+
+        listing.setUnitPrice(new BigDecimal("30.00"));
+        marketplaceListingMapper.update(listing);
+
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-FIXED-DEDUPE");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactly("BL-FIXED-DEDUPE");
     }
 
     @Test
