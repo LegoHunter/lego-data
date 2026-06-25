@@ -203,6 +203,8 @@
           <include refid="fixedPriceNotAlreadyDecided"/>
         )
         OR (
+          COALESCE(ml.fixed_price, FALSE) &lt;&gt; TRUE
+          AND
           <include refid="priceableInventoryConditionPresent"/>
           AND (
             NOT <include refid="latestPricingDecisionExists"/>
@@ -233,6 +235,8 @@
           <include refid="fixedPriceNotAlreadyDecided"/>
         )
         OR (
+          COALESCE(ml.fixed_price, FALSE) &lt;&gt; TRUE
+          AND
           <include refid="priceableInventoryConditionPresent"/>
           AND <include refid="matchingPricingSnapshotExists"/>
           AND <include refid="notAlreadyDecidedForLatestMatchingSnapshot"/>
