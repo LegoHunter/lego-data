@@ -155,128 +155,17 @@ public interface MarketplaceListingMapper {
         );
     }
 
-    @Select("""
-            SELECT ${columns}
-            ${fromClause}
-            JOIN item_inventory ii
-                ON ii.item_inventory_id = ml.item_inventory_id
-            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code = #{listingStatusCode}
-              AND ml.external_catalog_item_id IS NOT NULL
-              AND (
-                  COALESCE(ml.fixed_price, FALSE) = TRUE
-                  OR (
-                      ii.new_or_used IS NOT NULL
-                      AND TRIM(ii.new_or_used) <> ''
-                      AND ii.completeness IS NOT NULL
-                      AND TRIM(ii.completeness) <> ''
-                  )
-              )
-            ORDER BY ml.marketplace_listing_id
-            LIMIT #{limit}
-            """)
-    @ResultMap("marketplaceListingResultMap")
     Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,
-            @Param("limit") int limit,
-            @Param("columns") String columns,
-            @Param("fromClause") String fromClause
+            @Param("limit") int limit
     );
 
-    default Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            int limit
-    ) {
-        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
-                listingExternalServiceId,
-                listingStatusCode,
-                limit,
-                ALL_COLUMNS,
-                FROM_CLAUSE
-        );
-    }
-
-    @Select("""
-            SELECT ${columns}
-            ${fromClause}
-            JOIN item_inventory ii
-                ON ii.item_inventory_id = ml.item_inventory_id
-            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code = #{listingStatusCode}
-              AND ml.external_catalog_item_id IS NOT NULL
-              AND (
-                  COALESCE(ml.fixed_price, FALSE) = TRUE
-                  OR (
-                      ii.new_or_used IS NOT NULL
-                      AND TRIM(ii.new_or_used) <> ''
-                      AND ii.completeness IS NOT NULL
-                      AND TRIM(ii.completeness) <> ''
-                      AND EXISTS (
-                          SELECT 1
-                          FROM pricing_snapshot ps
-                          WHERE ps.marketplace_listing_id = ml.marketplace_listing_id
-                            AND ps.item_condition_code = CASE UPPER(TRIM(ii.new_or_used))
-                                WHEN 'NEW' THEN 'N'
-                                WHEN 'N' THEN 'N'
-                                WHEN 'USED' THEN 'U'
-                                WHEN 'U' THEN 'U'
-                                ELSE NULL
-                            END
-                            AND (
-                                ps.completeness_code = CASE UPPER(TRIM(ii.completeness))
-                                    WHEN 'SEALED' THEN 'S'
-                                    WHEN 'S' THEN 'S'
-                                    WHEN 'COMPLETE' THEN 'C'
-                                    WHEN 'C' THEN 'C'
-                                    WHEN 'INCOMPLETE' THEN 'X'
-                                    WHEN 'I' THEN 'X'
-                                    WHEN 'X' THEN 'X'
-                                    ELSE UPPER(TRIM(ii.completeness))
-                                END
-                                OR (
-                                    ps.completeness_code IS NULL
-                                    AND CASE UPPER(TRIM(ii.completeness))
-                                        WHEN 'SEALED' THEN 'S'
-                                        WHEN 'S' THEN 'S'
-                                        WHEN 'COMPLETE' THEN 'C'
-                                        WHEN 'C' THEN 'C'
-                                        WHEN 'INCOMPLETE' THEN 'X'
-                                        WHEN 'I' THEN 'X'
-                                        WHEN 'X' THEN 'X'
-                                        ELSE UPPER(TRIM(ii.completeness))
-                                    END IS NULL
-                                )
-                            )
-                      )
-                  )
-              )
-            ORDER BY ml.marketplace_listing_id
-            LIMIT #{limit}
-            """)
-    @ResultMap("marketplaceListingResultMap")
     Set<MarketplaceListing> findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,
-            @Param("limit") int limit,
-            @Param("columns") String columns,
-            @Param("fromClause") String fromClause
+            @Param("limit") int limit
     );
-
-    default Set<MarketplaceListing> findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            int limit
-    ) {
-        return findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
-                listingExternalServiceId,
-                listingStatusCode,
-                limit,
-                ALL_COLUMNS,
-                FROM_CLAUSE
-        );
-    }
 
     @Select("""
             SELECT ${columns}
