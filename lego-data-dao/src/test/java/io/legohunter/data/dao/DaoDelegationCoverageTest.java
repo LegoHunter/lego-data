@@ -22,6 +22,7 @@ import io.legohunter.data.mybatis.mapper.InventoryIndexMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import io.legohunter.data.mybatis.mapper.PartyMapper;
 import io.legohunter.data.mybatis.mapper.PaymentPlatformMapper;
+import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import io.legohunter.data.mybatis.mapper.PricingDecisionMapper;
 import io.legohunter.data.mybatis.mapper.TransactionCostMapper;
 import io.legohunter.data.mybatis.mapper.TransactionItemCostMapper;
@@ -296,6 +297,8 @@ class DaoDelegationCoverageTest {
         PricingDecisionMapper mapper = mock(PricingDecisionMapper.class);
         PricingDecisionDao dao = new PricingDecisionDao(mapper);
 
+        dao.countLatestByDecisionStatusCode("PROPOSED");
+        dao.countLatestUnappliedByDecisionStatusCode("PROPOSED");
         dao.findLatestReviewsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 25);
         dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
                 1,
@@ -304,6 +307,8 @@ class DaoDelegationCoverageTest {
                 25
         );
 
+        verify(mapper).countLatestByDecisionStatusCode("PROPOSED");
+        verify(mapper).countLatestUnappliedByDecisionStatusCode("PROPOSED");
         verify(mapper).findLatestReviewsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 25);
         verify(mapper).findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
                 1,
@@ -311,5 +316,22 @@ class DaoDelegationCoverageTest {
                 "PROPOSED",
                 25
         );
+    }
+
+    @Test
+    void pricingCrawlWorkItemDaoCoversObservabilityCounts() {
+        PricingCrawlWorkItemMapper mapper = mock(PricingCrawlWorkItemMapper.class);
+        PricingCrawlWorkItemDao dao = new PricingCrawlWorkItemDao(mapper);
+        ZonedDateTime now = ZonedDateTime.parse("2026-06-25T10:00:00Z");
+
+        dao.countByWorkStatusCode("PENDING");
+        dao.countDueByWorkStatusCode("PENDING", now);
+        dao.countRetryableByWorkStatusCode("PENDING");
+        dao.countStaleClaimed("CLAIMED", now.minusHours(2));
+
+        verify(mapper).countByWorkStatusCode("PENDING");
+        verify(mapper).countDueByWorkStatusCode("PENDING", now);
+        verify(mapper).countRetryableByWorkStatusCode("PENDING");
+        verify(mapper).countStaleClaimed("CLAIMED", now.minusHours(2));
     }
 }

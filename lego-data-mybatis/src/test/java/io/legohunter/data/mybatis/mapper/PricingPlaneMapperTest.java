@@ -61,6 +61,15 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     void pricingCrawlWorkItemSupportsClaimAndStaleRequeue() {
         PricingFixture fixture = pricingFixture("pricing-work-claim");
         PricingCrawlWorkItem dueWorkItem = insertedWorkItem(fixture, CRAWL_AT.minusMinutes(1));
+        PricingCrawlWorkItem retryableWorkItem = pricingCrawlWorkItem(
+                fixture.listing().getMarketplaceListingId(),
+                fixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusHours(6)
+        );
+        retryableWorkItem.setAttemptCount(1);
+        retryableWorkItem.setMaxAttempts(3);
+        pricingCrawlWorkItemMapper.insert(retryableWorkItem);
         PricingCrawlWorkItem maxedWorkItem = pricingCrawlWorkItem(
                 fixture.listing().getMarketplaceListingId(),
                 fixture.catalogItem().getExternalCatalogItemId(),
@@ -71,6 +80,9 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         maxedWorkItem.setMaxAttempts(3);
         pricingCrawlWorkItemMapper.insert(maxedWorkItem);
 
+        assertThat(pricingCrawlWorkItemMapper.countByWorkStatusCode("PENDING")).isEqualTo(3);
+        assertThat(pricingCrawlWorkItemMapper.countDueByWorkStatusCode("PENDING", CRAWL_AT)).isEqualTo(2);
+        assertThat(pricingCrawlWorkItemMapper.countRetryableByWorkStatusCode("PENDING")).isOne();
         assertThat(pricingCrawlWorkItemMapper.findClaimableByWorkStatusCode("PENDING", CRAWL_AT, 10))
                 .extracting(PricingCrawlWorkItem::getPricingCrawlWorkItemId)
                 .containsExactly(dueWorkItem.getPricingCrawlWorkItemId());
@@ -96,6 +108,7 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                     assertThat(found.getAttemptCount()).isOne();
                     assertThat(found.getClaimedAt()).isEqualTo(CRAWL_AT);
                 });
+        assertThat(pricingCrawlWorkItemMapper.countStaleClaimed("CLAIMED", CRAWL_AT.plusMinutes(5))).isOne();
 
         assertThat(pricingCrawlWorkItemMapper.requeueStaleClaimed(
                 "CLAIMED",
@@ -369,6 +382,10 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         latestFailedDecision.setReasonCode("NO_CURRENT_SNAPSHOT");
         latestFailedDecision.setFinalPrice(null);
         pricingDecisionMapper.insert(latestFailedDecision);
+
+        assertThat(pricingDecisionMapper.countLatestByDecisionStatusCode("PROPOSED")).isEqualTo(2);
+        assertThat(pricingDecisionMapper.countLatestUnappliedByDecisionStatusCode("PROPOSED")).isOne();
+        assertThat(pricingDecisionMapper.countLatestByDecisionStatusCode("FAILED")).isOne();
 
         Set<PricingDecisionReview> reviews = pricingDecisionMapper
                 .findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(

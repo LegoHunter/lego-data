@@ -34,6 +34,14 @@ public class PricingDecisionDao {
         return pricingDecisionMapper.findByReasonCode(reasonCode);
     }
 
+    public long countLatestByDecisionStatusCode(String decisionStatusCode) {
+        return pricingDecisionMapper.countLatestByDecisionStatusCode(decisionStatusCode);
+    }
+
+    public long countLatestUnappliedByDecisionStatusCode(String decisionStatusCode) {
+        return pricingDecisionMapper.countLatestUnappliedByDecisionStatusCode(decisionStatusCode);
+    }
+
     public Optional<PricingDecision> findLatestByMarketplaceListingId(Integer marketplaceListingId) {
         return pricingDecisionMapper.findLatestByMarketplaceListingId(marketplaceListingId);
     }

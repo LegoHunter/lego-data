@@ -89,6 +89,35 @@ public interface PricingDecisionMapper {
     Set<PricingDecision> findByReasonCode(String reasonCode);
 
     @Select("""
+            SELECT COUNT(*)
+            FROM pricing_decision pd
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_decision_id) AS pricing_decision_id
+                FROM pricing_decision
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_decision_id = pd.pricing_decision_id
+            WHERE pd.decision_status_code = #{decisionStatusCode}
+            """)
+    long countLatestByDecisionStatusCode(String decisionStatusCode);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_decision pd
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_decision_id) AS pricing_decision_id
+                FROM pricing_decision
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_decision_id = pd.pricing_decision_id
+            WHERE pd.decision_status_code = #{decisionStatusCode}
+              AND pd.applied_at IS NULL
+            """)
+    long countLatestUnappliedByDecisionStatusCode(String decisionStatusCode);
+
+    @Select("""
             SELECT ${columns}
             FROM pricing_decision
             WHERE marketplace_listing_id = #{marketplaceListingId}
