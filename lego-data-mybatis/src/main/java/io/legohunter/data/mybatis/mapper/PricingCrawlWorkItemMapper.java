@@ -48,6 +48,41 @@ public interface PricingCrawlWorkItemMapper {
     @ResultMap("pricingCrawlWorkItemResultMap")
     Set<PricingCrawlWorkItem> findByWorkStatusCode(String workStatusCode);
 
+    @Select("SELECT COUNT(*) FROM pricing_crawl_work_item WHERE work_status_code = #{workStatusCode}")
+    long countByWorkStatusCode(String workStatusCode);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_crawl_work_item
+            WHERE work_status_code = #{workStatusCode}
+              AND next_attempt_at <= #{dueAt}
+            """)
+    long countDueByWorkStatusCode(
+            @Param("workStatusCode") String workStatusCode,
+            @Param("dueAt") ZonedDateTime dueAt
+    );
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_crawl_work_item
+            WHERE work_status_code = #{workStatusCode}
+              AND COALESCE(attempt_count, 0) > 0
+              AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+            """)
+    long countRetryableByWorkStatusCode(String workStatusCode);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_crawl_work_item
+            WHERE work_status_code = #{claimedStatusCode}
+              AND claimed_at <= #{claimedBefore}
+              AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+            """)
+    long countStaleClaimed(
+            @Param("claimedStatusCode") String claimedStatusCode,
+            @Param("claimedBefore") ZonedDateTime claimedBefore
+    );
+
     @Select("""
             SELECT ${columns}
             FROM pricing_crawl_work_item

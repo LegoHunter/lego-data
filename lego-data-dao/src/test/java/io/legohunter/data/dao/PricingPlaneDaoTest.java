@@ -58,6 +58,9 @@ class PricingPlaneDaoTest {
         assertThat(pricingCrawlWorkItemDao.findByPricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId())).isPresent();
         assertThat(pricingCrawlWorkItemDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
         assertThat(pricingCrawlWorkItemDao.findByWorkStatusCode("CLAIMED")).hasSize(1);
+        assertThat(pricingCrawlWorkItemDao.countByWorkStatusCode("CLAIMED")).isOne();
+        assertThat(pricingCrawlWorkItemDao.countDueByWorkStatusCode("CLAIMED", CRAWL_AT.plusMinutes(1))).isOne();
+        assertThat(pricingCrawlWorkItemDao.countRetryableByWorkStatusCode("CLAIMED")).isZero();
         assertThat(pricingCrawlWorkItemDao.findDueByWorkStatusCode("CLAIMED", CRAWL_AT.plusMinutes(1), 5)).hasSize(1);
         assertThat(pricingCrawlWorkItemDao.findAll()).hasSize(1);
         workItem.setWorkStatusCode("SUCCEEDED");
@@ -100,6 +103,8 @@ class PricingPlaneDaoTest {
         assertThat(pricingDecisionDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
         assertThat(pricingDecisionDao.findByDecisionStatusCode("APPLIED")).hasSize(1);
         assertThat(pricingDecisionDao.findByReasonCode("MATCHED_LOWEST_COMPETITOR")).hasSize(1);
+        assertThat(pricingDecisionDao.countLatestByDecisionStatusCode("APPLIED")).isOne();
+        assertThat(pricingDecisionDao.countLatestUnappliedByDecisionStatusCode("APPLIED")).isZero();
         assertThat(pricingDecisionDao.findLatestByMarketplaceListingId(fixture.listing().getMarketplaceListingId()))
                 .map(PricingDecision::getPricingDecisionId)
                 .contains(decision.getPricingDecisionId());
@@ -136,6 +141,7 @@ class PricingPlaneDaoTest {
                     assertThat(found.getAttemptCount()).isOne();
                     assertThat(found.getClaimedAt()).isEqualTo(CRAWL_AT);
                 });
+        assertThat(pricingCrawlWorkItemDao.countStaleClaimed("CLAIMED", CRAWL_AT.plusMinutes(10))).isOne();
 
         assertThat(pricingCrawlWorkItemDao.requeueStaleClaimed(
                 "CLAIMED",

@@ -33,6 +33,22 @@ public class PricingCrawlWorkItemDao {
         return pricingCrawlWorkItemMapper.findByWorkStatusCode(workStatusCode);
     }
 
+    public long countByWorkStatusCode(String workStatusCode) {
+        return pricingCrawlWorkItemMapper.countByWorkStatusCode(workStatusCode);
+    }
+
+    public long countDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt) {
+        return pricingCrawlWorkItemMapper.countDueByWorkStatusCode(workStatusCode, dueAt);
+    }
+
+    public long countRetryableByWorkStatusCode(String workStatusCode) {
+        return pricingCrawlWorkItemMapper.countRetryableByWorkStatusCode(workStatusCode);
+    }
+
+    public long countStaleClaimed(String claimedStatusCode, ZonedDateTime claimedBefore) {
+        return pricingCrawlWorkItemMapper.countStaleClaimed(claimedStatusCode, claimedBefore);
+    }
+
     public Set<PricingCrawlWorkItem> findDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {
         return pricingCrawlWorkItemMapper.findDueByWorkStatusCode(workStatusCode, dueAt, limit);
     }
