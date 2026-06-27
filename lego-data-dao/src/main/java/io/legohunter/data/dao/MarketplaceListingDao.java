@@ -1,6 +1,7 @@
 package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingHydrationGap;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -90,6 +91,18 @@ public class MarketplaceListingDao {
 
     public Optional<MarketplaceListing> findByListingExternalServiceIdAndExternalListingId(Integer listingExternalServiceId, String externalListingId) {
         return marketplaceListingMapper.findByListingExternalServiceIdAndExternalListingId(listingExternalServiceId, externalListingId);
+    }
+
+    public Set<PricingHydrationGap> findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(
+            Integer listingExternalServiceId,
+            String listingStatusCode,
+            int limit
+    ) {
+        return marketplaceListingMapper.findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(
+                listingExternalServiceId,
+                listingStatusCode,
+                Math.max(1, limit)
+        );
     }
 
     public MarketplaceListing insert(MarketplaceListing marketplaceListing) {

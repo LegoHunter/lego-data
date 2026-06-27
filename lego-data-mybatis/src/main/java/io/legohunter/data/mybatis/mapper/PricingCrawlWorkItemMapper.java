@@ -1,6 +1,8 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
+import io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
@@ -81,6 +83,59 @@ public interface PricingCrawlWorkItemMapper {
     long countStaleClaimed(
             @Param("claimedStatusCode") String claimedStatusCode,
             @Param("claimedBefore") ZonedDateTime claimedBefore
+    );
+
+    @Select("""
+            SELECT COUNT(*) AS work_item_count,
+                   COUNT(DISTINCT marketplace_listing_id) AS distinct_marketplace_listing_count,
+                   COUNT(*) - COUNT(DISTINCT marketplace_listing_id) AS duplicate_work_item_count,
+                   COALESCE(SUM(CASE WHEN work_status_code = #{pendingStatusCode} THEN 1 ELSE 0 END), 0) AS pending_work_item_count,
+                   COUNT(DISTINCT CASE WHEN work_status_code = #{pendingStatusCode} THEN marketplace_listing_id END) AS distinct_pending_marketplace_listing_count,
+                   COALESCE(SUM(CASE WHEN work_status_code = #{pendingStatusCode} THEN 1 ELSE 0 END), 0)
+                       - COUNT(DISTINCT CASE WHEN work_status_code = #{pendingStatusCode} THEN marketplace_listing_id END) AS duplicate_pending_work_item_count,
+                   COALESCE(SUM(CASE WHEN work_status_code = #{pendingStatusCode} AND next_attempt_at <= #{dueAt} THEN 1 ELSE 0 END), 0) AS due_pending_work_item_count,
+                   COALESCE(SUM(CASE
+                       WHEN work_status_code = #{pendingStatusCode}
+                        AND COALESCE(attempt_count, 0) > 0
+                        AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+                       THEN 1 ELSE 0 END), 0) AS retryable_pending_work_item_count,
+                   COALESCE(SUM(CASE WHEN work_status_code = #{claimedStatusCode} THEN 1 ELSE 0 END), 0) AS claimed_work_item_count,
+                   COALESCE(SUM(CASE
+                       WHEN work_status_code = #{claimedStatusCode}
+                        AND claimed_at <= #{claimedBefore}
+                        AND COALESCE(attempt_count, 0) < COALESCE(max_attempts, 3)
+                       THEN 1 ELSE 0 END), 0) AS stale_claimed_work_item_count,
+                   COALESCE(SUM(CASE WHEN work_status_code = #{succeededStatusCode} THEN 1 ELSE 0 END), 0) AS succeeded_work_item_count,
+                   COALESCE(SUM(CASE WHEN work_status_code LIKE 'SKIPPED%' THEN 1 ELSE 0 END), 0) AS skipped_work_item_count,
+                   COALESCE(SUM(CASE WHEN work_status_code LIKE 'FAILED%' THEN 1 ELSE 0 END), 0) AS failed_work_item_count
+            FROM pricing_crawl_work_item
+            """)
+    @ResultMap("pricingCrawlWorkItemMaintenanceSummaryResultMap")
+    PricingCrawlWorkItemMaintenanceSummary summarizeMaintenance(
+            @Param("pendingStatusCode") String pendingStatusCode,
+            @Param("claimedStatusCode") String claimedStatusCode,
+            @Param("succeededStatusCode") String succeededStatusCode,
+            @Param("dueAt") ZonedDateTime dueAt,
+            @Param("claimedBefore") ZonedDateTime claimedBefore
+    );
+
+    @Select("""
+            SELECT marketplace_listing_id,
+                   COUNT(*) AS work_item_count,
+                   SUM(CASE WHEN work_status_code = #{pendingStatusCode} THEN 1 ELSE 0 END) AS pending_count,
+                   GROUP_CONCAT(work_status_code ORDER BY pricing_crawl_work_item_id SEPARATOR ',') AS work_status_codes,
+                   GROUP_CONCAT(pricing_crawl_work_item_id ORDER BY pricing_crawl_work_item_id SEPARATOR ',') AS pricing_crawl_work_item_ids
+            FROM pricing_crawl_work_item
+            GROUP BY marketplace_listing_id
+            HAVING COUNT(*) > 1
+            ORDER BY work_item_count DESC,
+                     marketplace_listing_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingCrawlWorkItemDuplicateResultMap")
+    Set<PricingCrawlWorkItemDuplicate> findDuplicateMarketplaceListingWorkItems(
+            @Param("pendingStatusCode") String pendingStatusCode,
+            @Param("limit") int limit
     );
 
     @Select("""

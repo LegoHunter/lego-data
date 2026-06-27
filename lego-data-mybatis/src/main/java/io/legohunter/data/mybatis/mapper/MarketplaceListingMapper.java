@@ -1,6 +1,7 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingHydrationGap;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
@@ -162,6 +163,34 @@ public interface MarketplaceListingMapper {
     );
 
     Set<MarketplaceListing> findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCode") String listingStatusCode,
+            @Param("limit") int limit
+    );
+
+    @Select("""
+            SELECT ml.marketplace_listing_id,
+                   ml.external_listing_id,
+                   eci.external_catalog_item_id,
+                   eci.external_item_key,
+                   eci.external_unique_key,
+                   ii.item_inventory_id,
+                   ii.uuid AS item_inventory_uuid,
+                   ii.new_or_used,
+                   ii.completeness
+            FROM marketplace_listing ml
+            JOIN external_catalog_item eci
+              ON eci.external_catalog_item_id = ml.external_catalog_item_id
+            JOIN item_inventory ii
+              ON ii.item_inventory_id = ml.item_inventory_id
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code = #{listingStatusCode}
+              AND (eci.external_unique_key IS NULL OR eci.external_unique_key = '')
+            ORDER BY ml.marketplace_listing_id
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingHydrationGapResultMap")
+    Set<PricingHydrationGap> findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,
             @Param("limit") int limit

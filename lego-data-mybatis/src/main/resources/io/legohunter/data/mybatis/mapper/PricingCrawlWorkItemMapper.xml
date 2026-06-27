@@ -17,4 +17,28 @@
     <result column="created_at"                 property="createdAt"/>
     <result column="updated_at"                 property="updatedAt"/>
   </resultMap>
+
+  <resultMap type="io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary" id="pricingCrawlWorkItemMaintenanceSummaryResultMap">
+    <result column="work_item_count"                              property="workItemCount"/>
+    <result column="distinct_marketplace_listing_count"           property="distinctMarketplaceListingCount"/>
+    <result column="duplicate_work_item_count"                    property="duplicateWorkItemCount"/>
+    <result column="pending_work_item_count"                      property="pendingWorkItemCount"/>
+    <result column="distinct_pending_marketplace_listing_count"   property="distinctPendingMarketplaceListingCount"/>
+    <result column="duplicate_pending_work_item_count"            property="duplicatePendingWorkItemCount"/>
+    <result column="due_pending_work_item_count"                  property="duePendingWorkItemCount"/>
+    <result column="retryable_pending_work_item_count"            property="retryablePendingWorkItemCount"/>
+    <result column="claimed_work_item_count"                      property="claimedWorkItemCount"/>
+    <result column="stale_claimed_work_item_count"                property="staleClaimedWorkItemCount"/>
+    <result column="succeeded_work_item_count"                    property="succeededWorkItemCount"/>
+    <result column="skipped_work_item_count"                      property="skippedWorkItemCount"/>
+    <result column="failed_work_item_count"                       property="failedWorkItemCount"/>
+  </resultMap>
+
+  <resultMap type="io.legohunter.data.dto.PricingCrawlWorkItemDuplicate" id="pricingCrawlWorkItemDuplicateResultMap">
+    <result column="marketplace_listing_id"        property="marketplaceListingId"/>
+    <result column="work_item_count"               property="workItemCount"/>
+    <result column="pending_count"                 property="pendingCount"/>
+    <result column="work_status_codes"             property="workStatusCodes"/>
+    <result column="pricing_crawl_work_item_ids"   property="pricingCrawlWorkItemIds"/>
+  </resultMap>
 </mapper>
