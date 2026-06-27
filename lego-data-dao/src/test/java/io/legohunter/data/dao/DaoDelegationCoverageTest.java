@@ -332,13 +332,15 @@ class DaoDelegationCoverageTest {
         dao.countRetryableByWorkStatusCode("PENDING");
         dao.countStaleClaimed("CLAIMED", now.minusHours(2));
         dao.summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
-        dao.findDuplicateMarketplaceListingWorkItems("PENDING", 0);
+        dao.findDuplicateMarketplaceListingWorkItems("PENDING", "CLAIMED", 0);
+        dao.findRecentFailures(0);
 
         verify(mapper).countByWorkStatusCode("PENDING");
         verify(mapper).countDueByWorkStatusCode("PENDING", now);
         verify(mapper).countRetryableByWorkStatusCode("PENDING");
         verify(mapper).countStaleClaimed("CLAIMED", now.minusHours(2));
         verify(mapper).summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
-        verify(mapper).findDuplicateMarketplaceListingWorkItems("PENDING", 1);
+        verify(mapper).findDuplicateMarketplaceListingWorkItems("PENDING", "CLAIMED", 1);
+        verify(mapper).findRecentFailures(1);
     }
 }
