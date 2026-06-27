@@ -5,6 +5,7 @@ import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
+import io.legohunter.data.dto.PricingCrawlWorkItemFailure;
 import io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingDecisionReview;
@@ -201,7 +202,16 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         assertThat(summary.getSkippedWorkItemCount()).isOne();
         assertThat(summary.getFailedWorkItemCount()).isOne();
 
-        Set<PricingCrawlWorkItemDuplicate> duplicates = pricingCrawlWorkItemMapper.findDuplicateMarketplaceListingWorkItems("PENDING", 10);
+        PricingCrawlWorkItem historicalTerminal = pricingCrawlWorkItem(
+                terminalFixture.listing().getMarketplaceListingId(),
+                terminalFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusDays(8)
+        );
+        historicalTerminal.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.insert(historicalTerminal);
+
+        Set<PricingCrawlWorkItemDuplicate> duplicates = pricingCrawlWorkItemMapper.findDuplicateMarketplaceListingWorkItems("PENDING", "CLAIMED", 10);
 
         assertThat(duplicates)
                 .filteredOn(duplicate -> duplicate.getMarketplaceListingId().equals(duplicateFixture.listing().getMarketplaceListingId()))
@@ -211,6 +221,42 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                     assertThat(duplicate.getPendingCount()).isEqualTo(2);
                     assertThat(duplicate.getWorkStatusCodes()).contains("PENDING", "CLAIMED");
                     assertThat(duplicate.getPricingCrawlWorkItemIds()).contains(String.valueOf(pendingDue.getPricingCrawlWorkItemId()));
+                });
+        assertThat(duplicates)
+                .extracting(PricingCrawlWorkItemDuplicate::getMarketplaceListingId)
+                .doesNotContain(terminalFixture.listing().getMarketplaceListingId());
+    }
+
+    @Test
+    void pricingCrawlWorkItemMapperReportsRecentFailuresWithListingContext() {
+        PricingFixture fixture = pricingFixture("pricing-work-failure-context");
+        PricingCrawlWorkItem failed = insertedWorkItem(fixture, CRAWL_AT);
+        failed.setWorkStatusCode("FAILED_PRICING_HTTP_ERROR");
+        failed.setAttemptCount(3);
+        failed.setMaxAttempts(3);
+        failed.setSourceRequestUrl("/ajax/clone/catalogifs.ajax");
+        failed.setSourceRequestParameters("{\"itemid\":4997,\"cond\":\"U\"}");
+        failed.setLastErrorMessage("GET https://www.bricklink.com/ajax/clone/catalogifs.ajax returned []");
+        pricingCrawlWorkItemMapper.update(failed);
+
+        Set<PricingCrawlWorkItemFailure> failures = pricingCrawlWorkItemMapper.findRecentFailures(10);
+
+        assertThat(failures)
+                .filteredOn(failure -> failure.getPricingCrawlWorkItemId().equals(failed.getPricingCrawlWorkItemId()))
+                .singleElement()
+                .satisfies(failure -> {
+                    assertThat(failure.getMarketplaceListingId()).isEqualTo(fixture.listing().getMarketplaceListingId());
+                    assertThat(failure.getExternalListingId()).isEqualTo(fixture.listing().getExternalListingId());
+                    assertThat(failure.getExternalItemKey()).isEqualTo("pricing-work-failure-context");
+                    assertThat(failure.getExternalUniqueKey()).isEqualTo("unique-pricing-work-failure-context");
+                    assertThat(failure.getItemInventoryUuid()).isEqualTo(fixture.inventory().getUuid());
+                    assertThat(failure.getNewOrUsed()).isEqualTo("USED");
+                    assertThat(failure.getCompleteness()).isEqualTo("COMPLETE");
+                    assertThat(failure.getWorkStatusCode()).isEqualTo("FAILED_PRICING_HTTP_ERROR");
+                    assertThat(failure.getAttemptCount()).isEqualTo(3);
+                    assertThat(failure.getLastErrorMessage()).contains("returned []");
+                    assertThat(failure.getSourceRequestUrl()).isEqualTo("/ajax/clone/catalogifs.ajax");
+                    assertThat(failure.getSourceRequestParameters()).contains("\"itemid\":4997");
                 });
     }
 

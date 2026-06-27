@@ -2,6 +2,7 @@ package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
+import io.legohunter.data.dto.PricingCrawlWorkItemFailure;
 import io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary;
 import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import lombok.RequiredArgsConstructor;
@@ -67,8 +68,16 @@ public class PricingCrawlWorkItemDao {
         );
     }
 
-    public Set<PricingCrawlWorkItemDuplicate> findDuplicateMarketplaceListingWorkItems(String pendingStatusCode, int limit) {
-        return pricingCrawlWorkItemMapper.findDuplicateMarketplaceListingWorkItems(pendingStatusCode, Math.max(1, limit));
+    public Set<PricingCrawlWorkItemDuplicate> findDuplicateMarketplaceListingWorkItems(
+            String pendingStatusCode,
+            String claimedStatusCode,
+            int limit
+    ) {
+        return pricingCrawlWorkItemMapper.findDuplicateMarketplaceListingWorkItems(pendingStatusCode, claimedStatusCode, Math.max(1, limit));
+    }
+
+    public Set<PricingCrawlWorkItemFailure> findRecentFailures(int limit) {
+        return pricingCrawlWorkItemMapper.findRecentFailures(Math.max(1, limit));
     }
 
     public Set<PricingCrawlWorkItem> findDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {

@@ -2,6 +2,7 @@ package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
+import io.legohunter.data.dto.PricingCrawlWorkItemFailure;
 import io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
@@ -126,6 +127,7 @@ public interface PricingCrawlWorkItemMapper {
                    GROUP_CONCAT(work_status_code ORDER BY pricing_crawl_work_item_id SEPARATOR ',') AS work_status_codes,
                    GROUP_CONCAT(pricing_crawl_work_item_id ORDER BY pricing_crawl_work_item_id SEPARATOR ',') AS pricing_crawl_work_item_ids
             FROM pricing_crawl_work_item
+            WHERE work_status_code IN (#{pendingStatusCode}, #{claimedStatusCode})
             GROUP BY marketplace_listing_id
             HAVING COUNT(*) > 1
             ORDER BY work_item_count DESC,
@@ -135,8 +137,44 @@ public interface PricingCrawlWorkItemMapper {
     @ResultMap("pricingCrawlWorkItemDuplicateResultMap")
     Set<PricingCrawlWorkItemDuplicate> findDuplicateMarketplaceListingWorkItems(
             @Param("pendingStatusCode") String pendingStatusCode,
+            @Param("claimedStatusCode") String claimedStatusCode,
             @Param("limit") int limit
     );
+
+    @Select("""
+            SELECT pcwi.pricing_crawl_work_item_id,
+                   pcwi.marketplace_listing_id,
+                   ml.external_listing_id,
+                   pcwi.external_catalog_item_id,
+                   eci.external_item_key,
+                   eci.external_unique_key,
+                   ii.item_inventory_id,
+                   ii.uuid AS item_inventory_uuid,
+                   ii.new_or_used,
+                   ii.completeness,
+                   pcwi.work_status_code,
+                   pcwi.attempt_count,
+                   pcwi.max_attempts,
+                   pcwi.next_attempt_at,
+                   pcwi.source_request_url,
+                   pcwi.source_request_parameters,
+                   pcwi.last_error_message,
+                   pcwi.updated_at
+            FROM pricing_crawl_work_item pcwi
+            LEFT JOIN marketplace_listing ml
+              ON ml.marketplace_listing_id = pcwi.marketplace_listing_id
+            LEFT JOIN external_catalog_item eci
+              ON eci.external_catalog_item_id = pcwi.external_catalog_item_id
+            LEFT JOIN item_inventory ii
+              ON ii.item_inventory_id = ml.item_inventory_id
+            WHERE pcwi.last_error_message IS NOT NULL
+               OR pcwi.work_status_code LIKE 'FAILED%'
+            ORDER BY pcwi.updated_at DESC,
+                     pcwi.pricing_crawl_work_item_id DESC
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingCrawlWorkItemFailureResultMap")
+    Set<PricingCrawlWorkItemFailure> findRecentFailures(int limit);
 
     @Select("""
             SELECT ${columns}
