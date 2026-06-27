@@ -1,6 +1,8 @@
 package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
+import io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary;
 import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -47,6 +49,26 @@ public class PricingCrawlWorkItemDao {
 
     public long countStaleClaimed(String claimedStatusCode, ZonedDateTime claimedBefore) {
         return pricingCrawlWorkItemMapper.countStaleClaimed(claimedStatusCode, claimedBefore);
+    }
+
+    public PricingCrawlWorkItemMaintenanceSummary summarizeMaintenance(
+            String pendingStatusCode,
+            String claimedStatusCode,
+            String succeededStatusCode,
+            ZonedDateTime dueAt,
+            ZonedDateTime claimedBefore
+    ) {
+        return pricingCrawlWorkItemMapper.summarizeMaintenance(
+                pendingStatusCode,
+                claimedStatusCode,
+                succeededStatusCode,
+                dueAt,
+                claimedBefore
+        );
+    }
+
+    public Set<PricingCrawlWorkItemDuplicate> findDuplicateMarketplaceListingWorkItems(String pendingStatusCode, int limit) {
+        return pricingCrawlWorkItemMapper.findDuplicateMarketplaceListingWorkItems(pendingStatusCode, Math.max(1, limit));
     }
 
     public Set<PricingCrawlWorkItem> findDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt, int limit) {

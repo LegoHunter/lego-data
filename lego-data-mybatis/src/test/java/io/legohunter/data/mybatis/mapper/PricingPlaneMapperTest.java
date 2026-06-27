@@ -4,8 +4,11 @@ import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
+import io.legohunter.data.dto.PricingCrawlWorkItemMaintenanceSummary;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingDecisionReview;
+import io.legohunter.data.dto.PricingHydrationGap;
 import io.legohunter.data.dto.PricingSnapshot;
 import io.legohunter.data.dto.PricingSnapshotListing;
 import org.junit.jupiter.api.Test;
@@ -123,6 +126,120 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                     assertThat(found.getClaimedAt()).isNull();
                     assertThat(found.getNextAttemptAt()).isEqualTo(CRAWL_AT.plusHours(1));
                     assertThat(found.getLastErrorMessage()).isEqualTo("Recovered stale claim");
+                });
+    }
+
+    @Test
+    void pricingCrawlWorkItemMaintenanceSummaryAndDuplicateReportExposeQueueHygiene() {
+        PricingFixture duplicateFixture = pricingFixture("pricing-work-maintenance-duplicate");
+        PricingCrawlWorkItem pendingDue = insertedWorkItem(duplicateFixture, CRAWL_AT.minusMinutes(1));
+
+        PricingCrawlWorkItem pendingRetryable = pricingCrawlWorkItem(
+                duplicateFixture.listing().getMarketplaceListingId(),
+                duplicateFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.minusMinutes(2)
+        );
+        pendingRetryable.setAttemptCount(1);
+        pendingRetryable.setMaxAttempts(3);
+        pricingCrawlWorkItemMapper.insert(pendingRetryable);
+
+        PricingCrawlWorkItem staleClaimed = pricingCrawlWorkItem(
+                duplicateFixture.listing().getMarketplaceListingId(),
+                duplicateFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.minusHours(2)
+        );
+        staleClaimed.setWorkStatusCode("CLAIMED");
+        staleClaimed.setAttemptCount(1);
+        staleClaimed.setMaxAttempts(3);
+        staleClaimed.setClaimedAt(CRAWL_AT.minusHours(3));
+        pricingCrawlWorkItemMapper.insert(staleClaimed);
+
+        PricingFixture terminalFixture = pricingFixture("pricing-work-maintenance-terminal");
+        PricingCrawlWorkItem succeeded = insertedWorkItem(terminalFixture, CRAWL_AT.plusDays(7));
+        succeeded.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.update(succeeded);
+
+        PricingCrawlWorkItem skipped = pricingCrawlWorkItem(
+                terminalFixture.listing().getMarketplaceListingId(),
+                terminalFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusDays(7)
+        );
+        skipped.setWorkStatusCode("SKIPPED_MISSING_CONDITION");
+        pricingCrawlWorkItemMapper.insert(skipped);
+
+        PricingCrawlWorkItem failed = pricingCrawlWorkItem(
+                terminalFixture.listing().getMarketplaceListingId(),
+                terminalFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusDays(7)
+        );
+        failed.setWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
+        pricingCrawlWorkItemMapper.insert(failed);
+
+        PricingCrawlWorkItemMaintenanceSummary summary = pricingCrawlWorkItemMapper.summarizeMaintenance(
+                "PENDING",
+                "CLAIMED",
+                "SUCCEEDED",
+                CRAWL_AT,
+                CRAWL_AT.minusHours(1)
+        );
+
+        assertThat(summary.getWorkItemCount()).isEqualTo(6);
+        assertThat(summary.getDistinctMarketplaceListingCount()).isEqualTo(2);
+        assertThat(summary.getDuplicateWorkItemCount()).isEqualTo(4);
+        assertThat(summary.getPendingWorkItemCount()).isEqualTo(2);
+        assertThat(summary.getDistinctPendingMarketplaceListingCount()).isOne();
+        assertThat(summary.getDuplicatePendingWorkItemCount()).isOne();
+        assertThat(summary.getDuePendingWorkItemCount()).isEqualTo(2);
+        assertThat(summary.getRetryablePendingWorkItemCount()).isOne();
+        assertThat(summary.getClaimedWorkItemCount()).isOne();
+        assertThat(summary.getStaleClaimedWorkItemCount()).isOne();
+        assertThat(summary.getSucceededWorkItemCount()).isOne();
+        assertThat(summary.getSkippedWorkItemCount()).isOne();
+        assertThat(summary.getFailedWorkItemCount()).isOne();
+
+        Set<PricingCrawlWorkItemDuplicate> duplicates = pricingCrawlWorkItemMapper.findDuplicateMarketplaceListingWorkItems("PENDING", 10);
+
+        assertThat(duplicates)
+                .filteredOn(duplicate -> duplicate.getMarketplaceListingId().equals(duplicateFixture.listing().getMarketplaceListingId()))
+                .singleElement()
+                .satisfies(duplicate -> {
+                    assertThat(duplicate.getWorkItemCount()).isEqualTo(3);
+                    assertThat(duplicate.getPendingCount()).isEqualTo(2);
+                    assertThat(duplicate.getWorkStatusCodes()).contains("PENDING", "CLAIMED");
+                    assertThat(duplicate.getPricingCrawlWorkItemIds()).contains(String.valueOf(pendingDue.getPricingCrawlWorkItemId()));
+                });
+    }
+
+    @Test
+    void marketplaceListingMapperReportsActivePricingHydrationGaps() {
+        PricingFixture missingHydration = pricingFixture("pricing-hydration-gap");
+        missingHydration.catalogItem().setExternalUniqueKey(null);
+        externalCatalogItemMapper.update(missingHydration.catalogItem());
+
+        PricingFixture hydrated = pricingFixture("pricing-hydration-complete");
+
+        Set<PricingHydrationGap> gaps = marketplaceListingMapper.findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(
+                2,
+                "ACTIVE",
+                10
+        );
+
+        assertThat(gaps)
+                .extracting(PricingHydrationGap::getMarketplaceListingId)
+                .contains(missingHydration.listing().getMarketplaceListingId())
+                .doesNotContain(hydrated.listing().getMarketplaceListingId());
+        assertThat(gaps)
+                .filteredOn(gap -> gap.getMarketplaceListingId().equals(missingHydration.listing().getMarketplaceListingId()))
+                .singleElement()
+                .satisfies(gap -> {
+                    assertThat(gap.getExternalItemKey()).isEqualTo("pricing-hydration-gap");
+                    assertThat(gap.getExternalUniqueKey()).isNull();
+                    assertThat(gap.getNewOrUsed()).isEqualTo("USED");
+                    assertThat(gap.getCompleteness()).isEqualTo("COMPLETE");
                 });
     }
 

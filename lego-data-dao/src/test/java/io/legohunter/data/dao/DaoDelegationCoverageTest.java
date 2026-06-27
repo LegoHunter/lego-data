@@ -276,6 +276,9 @@ class DaoDelegationCoverageTest {
                 1, "ACTIVE", "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
         )).containsExactly(listing);
 
+        dao.findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 0);
+        verify(mapper).findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 1);
+
         MarketplaceListing missingIdListing = MarketplaceListing.builder()
                 .listingExternalServiceId(1)
                 .externalListingId("remote-2")
@@ -328,10 +331,14 @@ class DaoDelegationCoverageTest {
         dao.countDueByWorkStatusCode("PENDING", now);
         dao.countRetryableByWorkStatusCode("PENDING");
         dao.countStaleClaimed("CLAIMED", now.minusHours(2));
+        dao.summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
+        dao.findDuplicateMarketplaceListingWorkItems("PENDING", 0);
 
         verify(mapper).countByWorkStatusCode("PENDING");
         verify(mapper).countDueByWorkStatusCode("PENDING", now);
         verify(mapper).countRetryableByWorkStatusCode("PENDING");
         verify(mapper).countStaleClaimed("CLAIMED", now.minusHours(2));
+        verify(mapper).summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
+        verify(mapper).findDuplicateMarketplaceListingWorkItems("PENDING", 1);
     }
 }
