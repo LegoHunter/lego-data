@@ -7,9 +7,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
-import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -112,21 +110,7 @@ public interface PricingCrawlWorkItemMapper {
                    COALESCE(SUM(CASE WHEN work_status_code LIKE 'FAILED%' THEN 1 ELSE 0 END), 0) AS failed_work_item_count
             FROM pricing_crawl_work_item
             """)
-    @Results(id = "pricingCrawlWorkItemMaintenanceSummaryResultMap", value = {
-            @Result(property = "workItemCount", column = "work_item_count"),
-            @Result(property = "distinctMarketplaceListingCount", column = "distinct_marketplace_listing_count"),
-            @Result(property = "duplicateWorkItemCount", column = "duplicate_work_item_count"),
-            @Result(property = "pendingWorkItemCount", column = "pending_work_item_count"),
-            @Result(property = "distinctPendingMarketplaceListingCount", column = "distinct_pending_marketplace_listing_count"),
-            @Result(property = "duplicatePendingWorkItemCount", column = "duplicate_pending_work_item_count"),
-            @Result(property = "duePendingWorkItemCount", column = "due_pending_work_item_count"),
-            @Result(property = "retryablePendingWorkItemCount", column = "retryable_pending_work_item_count"),
-            @Result(property = "claimedWorkItemCount", column = "claimed_work_item_count"),
-            @Result(property = "staleClaimedWorkItemCount", column = "stale_claimed_work_item_count"),
-            @Result(property = "succeededWorkItemCount", column = "succeeded_work_item_count"),
-            @Result(property = "skippedWorkItemCount", column = "skipped_work_item_count"),
-            @Result(property = "failedWorkItemCount", column = "failed_work_item_count")
-    })
+    @ResultMap("pricingCrawlWorkItemMaintenanceSummaryResultMap")
     PricingCrawlWorkItemMaintenanceSummary summarizeMaintenance(
             @Param("pendingStatusCode") String pendingStatusCode,
             @Param("claimedStatusCode") String claimedStatusCode,
@@ -148,13 +132,7 @@ public interface PricingCrawlWorkItemMapper {
                      marketplace_listing_id
             LIMIT #{limit}
             """)
-    @Results(id = "pricingCrawlWorkItemDuplicateResultMap", value = {
-            @Result(property = "marketplaceListingId", column = "marketplace_listing_id"),
-            @Result(property = "workItemCount", column = "work_item_count"),
-            @Result(property = "pendingCount", column = "pending_count"),
-            @Result(property = "workStatusCodes", column = "work_status_codes"),
-            @Result(property = "pricingCrawlWorkItemIds", column = "pricing_crawl_work_item_ids")
-    })
+    @ResultMap("pricingCrawlWorkItemDuplicateResultMap")
     Set<PricingCrawlWorkItemDuplicate> findDuplicateMarketplaceListingWorkItems(
             @Param("pendingStatusCode") String pendingStatusCode,
             @Param("limit") int limit

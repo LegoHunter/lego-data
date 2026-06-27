@@ -7,8 +7,6 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.ResultMap;
-import org.apache.ibatis.annotations.Results;
-import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -191,17 +189,7 @@ public interface MarketplaceListingMapper {
             ORDER BY ml.marketplace_listing_id
             LIMIT #{limit}
             """)
-    @Results(id = "pricingHydrationGapResultMap", value = {
-            @Result(property = "marketplaceListingId", column = "marketplace_listing_id"),
-            @Result(property = "externalListingId", column = "external_listing_id"),
-            @Result(property = "externalCatalogItemId", column = "external_catalog_item_id"),
-            @Result(property = "externalItemKey", column = "external_item_key"),
-            @Result(property = "externalUniqueKey", column = "external_unique_key"),
-            @Result(property = "itemInventoryId", column = "item_inventory_id"),
-            @Result(property = "itemInventoryUuid", column = "item_inventory_uuid"),
-            @Result(property = "newOrUsed", column = "new_or_used"),
-            @Result(property = "completeness", column = "completeness")
-    })
+    @ResultMap("pricingHydrationGapResultMap")
     Set<PricingHydrationGap> findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,

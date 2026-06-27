@@ -26,6 +26,18 @@
                  javaType="io.legohunter.data.dto.ExternalCatalogItem"/>
   </resultMap>
 
+  <resultMap type="io.legohunter.data.dto.PricingHydrationGap" id="pricingHydrationGapResultMap">
+    <result column="marketplace_listing_id"     property="marketplaceListingId"/>
+    <result column="external_listing_id"        property="externalListingId"/>
+    <result column="external_catalog_item_id"   property="externalCatalogItemId"/>
+    <result column="external_item_key"          property="externalItemKey"/>
+    <result column="external_unique_key"        property="externalUniqueKey"/>
+    <result column="item_inventory_id"          property="itemInventoryId"/>
+    <result column="item_inventory_uuid"        property="itemInventoryUuid"/>
+    <result column="new_or_used"                property="newOrUsed"/>
+    <result column="completeness"               property="completeness"/>
+  </resultMap>
+
   <sql id="marketplaceListingColumns">
     ml.marketplace_listing_id,
     ml.item_inventory_id,
