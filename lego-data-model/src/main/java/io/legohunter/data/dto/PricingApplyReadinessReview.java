@@ -12,19 +12,14 @@ import java.time.ZonedDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PricingDecisionReview {
+public class PricingApplyReadinessReview {
+    private Long pricingApplyReadinessId;
     private Integer marketplaceListingId;
     private String externalListingId;
     private String listingStatusCode;
-    private BigDecimal currentUnitPrice;
-    private String currentCurrencyCode;
-    private String currencyCode;
-    private String decisionCurrencyCode;
     private Boolean fixedPrice;
     private Integer itemInventoryId;
     private String itemInventoryUuid;
-    private String newOrUsed;
-    private String completeness;
     private Integer externalCatalogItemId;
     private String externalItemKey;
     private String externalUniqueKey;
@@ -32,17 +27,19 @@ public class PricingDecisionReview {
     private Long pricingSnapshotId;
     private String algorithmVersion;
     private String decisionStatusCode;
-    private String reasonCode;
+    private String decisionReasonCode;
     private String strategyCode;
-    private BigDecimal computedPrice;
-    private BigDecimal finalPrice;
-    private BigDecimal previousPrice;
-    private Integer comparableCount;
+    private String readinessStatusCode;
+    private String blockReasonCode;
+    private BigDecimal currentPrice;
+    private BigDecimal proposedPrice;
+    private BigDecimal deltaAmount;
+    private BigDecimal deltaPercent;
+    private BigDecimal minimumRequiredDelta;
+    private String currencyCode;
     private BigDecimal confidence;
-    private String notes;
+    private Integer comparableCount;
     private ZonedDateTime decisionCreatedAt;
-    private ZonedDateTime appliedAt;
     private ZonedDateTime snapshotCapturedAt;
-    private Integer snapshotComparableCount;
-    private Boolean newerSnapshotAvailable;
+    private ZonedDateTime evaluatedAt;
 }

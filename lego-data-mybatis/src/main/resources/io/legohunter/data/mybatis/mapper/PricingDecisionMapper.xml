@@ -52,5 +52,6 @@
     <result column="applied_at"              property="appliedAt"/>
     <result column="snapshot_captured_at"    property="snapshotCapturedAt"/>
     <result column="snapshot_comparable_count" property="snapshotComparableCount"/>
+    <result column="newer_snapshot_available" property="newerSnapshotAvailable"/>
   </resultMap>
 </mapper>
