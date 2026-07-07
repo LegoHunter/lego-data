@@ -65,7 +65,26 @@ public interface PricingDecisionMapper {
             pd.created_at AS decision_created_at,
             pd.applied_at,
             ps.captured_at AS snapshot_captured_at,
-            ps.comparable_count AS snapshot_comparable_count
+            ps.comparable_count AS snapshot_comparable_count,
+            CASE
+                WHEN EXISTS (
+                    SELECT 1
+                    FROM pricing_snapshot newer_ps
+                    WHERE newer_ps.marketplace_listing_id = ml.marketplace_listing_id
+                      AND (
+                            newer_ps.captured_at > ps.captured_at
+                            OR (
+                                ps.captured_at IS NULL
+                                AND (
+                                    pd.pricing_snapshot_id IS NULL
+                                    OR newer_ps.pricing_snapshot_id <> pd.pricing_snapshot_id
+                                )
+                            )
+                          )
+                )
+                THEN TRUE
+                ELSE FALSE
+            END AS newer_snapshot_available
             """;
 
     @Select("SELECT " + ALL_COLUMNS + " FROM pricing_decision")

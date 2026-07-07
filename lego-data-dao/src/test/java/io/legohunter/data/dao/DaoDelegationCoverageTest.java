@@ -6,6 +6,7 @@ import io.legohunter.data.dto.CostType;
 import io.legohunter.data.dto.InventoryIndex;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PaymentPlatform;
+import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.TransactionCost;
 import io.legohunter.data.dto.TransactionItem;
@@ -22,6 +23,7 @@ import io.legohunter.data.mybatis.mapper.InventoryIndexMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import io.legohunter.data.mybatis.mapper.PartyMapper;
 import io.legohunter.data.mybatis.mapper.PaymentPlatformMapper;
+import io.legohunter.data.mybatis.mapper.PricingApplyReadinessMapper;
 import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import io.legohunter.data.mybatis.mapper.PricingDecisionMapper;
 import io.legohunter.data.mybatis.mapper.TransactionCostMapper;
@@ -319,6 +321,61 @@ class DaoDelegationCoverageTest {
                 "PROPOSED",
                 25
         );
+    }
+
+    @Test
+    void pricingApplyReadinessDaoDelegatesAllOperations() {
+        PricingApplyReadinessMapper mapper = mock(PricingApplyReadinessMapper.class);
+        PricingApplyReadinessDao dao = new PricingApplyReadinessDao(mapper);
+        PricingApplyReadiness readiness = PricingApplyReadiness.builder()
+                .pricingApplyReadinessId(100L)
+                .pricingDecisionId(200L)
+                .marketplaceListingId(300)
+                .readinessStatusCode("READY_TO_APPLY")
+                .build();
+
+        when(mapper.findAll()).thenReturn(Set.of(readiness));
+        when(mapper.findByPricingApplyReadinessId(100L)).thenReturn(Optional.of(readiness));
+        when(mapper.findByPricingDecisionId(200L)).thenReturn(Optional.of(readiness));
+        when(mapper.findByMarketplaceListingId(300)).thenReturn(Set.of(readiness));
+        when(mapper.findByReadinessStatusCode("READY_TO_APPLY")).thenReturn(Set.of(readiness));
+        when(mapper.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).thenReturn(Set.of(readiness));
+        when(mapper.findLatestByMarketplaceListingId(300)).thenReturn(Optional.of(readiness));
+        when(mapper.countByReadinessStatusCode("READY_TO_APPLY")).thenReturn(1L);
+        when(mapper.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).thenReturn(1L);
+        when(mapper.countLatestByReadinessStatusCode("READY_TO_APPLY")).thenReturn(1L);
+        when(mapper.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).thenReturn(1L);
+
+        assertThat(dao.findAll()).containsExactly(readiness);
+        assertThat(dao.findByPricingApplyReadinessId(100L)).contains(readiness);
+        assertThat(dao.findByPricingDecisionId(200L)).contains(readiness);
+        assertThat(dao.findByMarketplaceListingId(300)).containsExactly(readiness);
+        assertThat(dao.findByReadinessStatusCode("READY_TO_APPLY")).containsExactly(readiness);
+        assertThat(dao.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).containsExactly(readiness);
+        assertThat(dao.findLatestByMarketplaceListingId(300)).contains(readiness);
+        assertThat(dao.findLatestReviews(null, null, 0)).isEmpty();
+        assertThat(dao.findLatestReadyToApplyReviews(0)).isEmpty();
+        assertThat(dao.countByReadinessStatusCode("READY_TO_APPLY")).isOne();
+        assertThat(dao.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+        assertThat(dao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isOne();
+        assertThat(dao.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+
+        dao.update(readiness);
+        dao.upsert(readiness);
+        dao.delete(100L);
+
+        verify(mapper).update(readiness);
+        verify(mapper).upsert(readiness);
+        verify(mapper).delete(100L);
+        verify(mapper).findLatestReviews(null, null, 1);
+        verify(mapper).findLatestReadyToApplyReviews(1);
+
+        PricingApplyReadiness generatedByDecision = PricingApplyReadiness.builder()
+                .pricingDecisionId(201L)
+                .build();
+        when(mapper.findByPricingDecisionId(201L)).thenReturn(Optional.of(generatedByDecision));
+        assertThat(dao.upsert(generatedByDecision)).isSameAs(generatedByDecision);
+        verify(mapper).upsert(generatedByDecision);
     }
 
     @Test

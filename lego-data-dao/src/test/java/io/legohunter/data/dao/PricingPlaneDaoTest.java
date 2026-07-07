@@ -7,6 +7,8 @@ import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ExternalService;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingApplyReadiness;
+import io.legohunter.data.dto.PricingApplyReadinessReview;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingSnapshot;
@@ -45,6 +47,7 @@ class PricingPlaneDaoTest {
     @Autowired PricingSnapshotDao pricingSnapshotDao;
     @Autowired PricingSnapshotListingDao pricingSnapshotListingDao;
     @Autowired PricingDecisionDao pricingDecisionDao;
+    @Autowired PricingApplyReadinessDao pricingApplyReadinessDao;
 
     @Test
     void pricingDaosSupportPhaseOneCrudAndLookups() {
@@ -112,14 +115,78 @@ class PricingPlaneDaoTest {
         decision.setReasonCode("FIXED_PRICE_OVERRIDE");
         assertThat(pricingDecisionDao.upsert(decision).getReasonCode()).isEqualTo("FIXED_PRICE_OVERRIDE");
 
+        PricingApplyReadiness applyReadiness = pricingApplyReadiness(decision, snapshot, fixture);
+        applyReadiness = pricingApplyReadinessDao.insert(applyReadiness);
+        applyReadiness.setReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT");
+        applyReadiness.setBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT");
+        applyReadiness.setMinimumRequiredDelta(new BigDecimal("4.50"));
+        applyReadiness = pricingApplyReadinessDao.update(applyReadiness);
+        assertThat(applyReadiness.getBlockReasonCode()).isEqualTo("BELOW_MINIMUM_DELTA_PERCENT");
+        assertThat(pricingApplyReadinessDao.findByPricingApplyReadinessId(applyReadiness.getPricingApplyReadinessId())).isPresent();
+        assertThat(pricingApplyReadinessDao.findByPricingDecisionId(decision.getPricingDecisionId()))
+                .map(PricingApplyReadiness::getReadinessStatusCode)
+                .contains("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT");
+        assertThat(pricingApplyReadinessDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
+        assertThat(pricingApplyReadinessDao.findByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).hasSize(1);
+        assertThat(pricingApplyReadinessDao.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).hasSize(1);
+        assertThat(pricingApplyReadinessDao.countByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+        assertThat(pricingApplyReadinessDao.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+        assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+        assertThat(pricingApplyReadinessDao.findLatestByMarketplaceListingId(fixture.listing().getMarketplaceListingId()))
+                .map(PricingApplyReadiness::getPricingApplyReadinessId)
+                .contains(applyReadiness.getPricingApplyReadinessId());
+        assertThat(pricingApplyReadinessDao.findAll()).hasSize(1);
+        applyReadiness.setReadinessStatusCode("READY_TO_APPLY");
+        applyReadiness.setBlockReasonCode(null);
+        assertThat(pricingApplyReadinessDao.upsert(applyReadiness).getReadinessStatusCode()).isEqualTo("READY_TO_APPLY");
+        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10))
+                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
+                .containsExactly(applyReadiness.getPricingApplyReadinessId());
+        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10))
+                .extracting(PricingApplyReadinessReview::getExternalListingId)
+                .containsExactly("BL-PRICING-1");
+
+        pricingApplyReadinessDao.delete(applyReadiness.getPricingApplyReadinessId());
         pricingDecisionDao.delete(decision.getPricingDecisionId());
         pricingSnapshotListingDao.delete(snapshotListing.getPricingSnapshotListingId());
         pricingSnapshotDao.delete(snapshot.getPricingSnapshotId());
         pricingCrawlWorkItemDao.delete(workItem.getPricingCrawlWorkItemId());
         assertThat(pricingDecisionDao.findAll()).isEmpty();
+        assertThat(pricingApplyReadinessDao.findAll()).isEmpty();
         assertThat(pricingSnapshotListingDao.findAll()).isEmpty();
         assertThat(pricingSnapshotDao.findAll()).isEmpty();
         assertThat(pricingCrawlWorkItemDao.findAll()).isEmpty();
+    }
+
+    @Test
+    void pricingApplyReadinessDaoReportsOnlyLatestReadinessPerListing() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
+        PricingDecision oldDecision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
+        PricingApplyReadiness oldReadiness = pricingApplyReadiness(oldDecision, snapshot, fixture);
+        oldReadiness.setReadinessStatusCode("BLOCKED_STALE_DECISION");
+        oldReadiness.setBlockReasonCode("STALE_DECISION");
+        oldReadiness.setEvaluatedAt(SNAPSHOT_AT.plusMinutes(1));
+        pricingApplyReadinessDao.insert(oldReadiness);
+
+        PricingDecision latestDecision = pricingDecision(snapshot, fixture);
+        latestDecision.setFinalPrice(new BigDecimal("218.00"));
+        latestDecision = pricingDecisionDao.insert(latestDecision);
+        PricingApplyReadiness latestReadiness = pricingApplyReadiness(latestDecision, snapshot, fixture);
+        latestReadiness.setEvaluatedAt(SNAPSHOT_AT.plusMinutes(2));
+        latestReadiness = pricingApplyReadinessDao.insert(latestReadiness);
+
+        assertThat(pricingApplyReadinessDao.findLatestReviews(null, null, 10))
+                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
+                .containsExactly(latestReadiness.getPricingApplyReadinessId());
+        assertThat(pricingApplyReadinessDao.findLatestReviews("BLOCKED_STALE_DECISION", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10))
+                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
+                .containsExactly(latestReadiness.getPricingApplyReadinessId());
+        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isOne();
+        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("BLOCKED_STALE_DECISION")).isZero();
     }
 
     @Test
@@ -305,6 +372,24 @@ class PricingPlaneDaoTest {
                 .confidence(new BigDecimal("0.7500"))
                 .sourceSummaryJson("{\"snapshot\":true}")
                 .notes("Initial recommendation")
+                .build();
+    }
+
+    private PricingApplyReadiness pricingApplyReadiness(PricingDecision decision, PricingSnapshot snapshot, PricingFixture fixture) {
+        return PricingApplyReadiness.builder()
+                .marketplaceListingId(fixture.listing().getMarketplaceListingId())
+                .pricingDecisionId(decision.getPricingDecisionId())
+                .pricingSnapshotId(snapshot.getPricingSnapshotId())
+                .readinessStatusCode("READY_TO_APPLY")
+                .currentPrice(new BigDecimal("225.00"))
+                .proposedPrice(new BigDecimal("219.00"))
+                .deltaAmount(new BigDecimal("6.00"))
+                .deltaPercent(new BigDecimal("0.026667"))
+                .minimumRequiredDelta(new BigDecimal("0.01"))
+                .currencyCode("USD")
+                .confidence(new BigDecimal("0.7500"))
+                .comparableCount(2)
+                .evaluatedAt(SNAPSHOT_AT.plusMinutes(1))
                 .build();
     }
 

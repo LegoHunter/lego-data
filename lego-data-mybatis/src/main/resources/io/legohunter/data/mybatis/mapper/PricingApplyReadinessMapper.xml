@@ -1,0 +1,54 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.PricingApplyReadinessMapper">
+  <resultMap type="io.legohunter.data.dto.PricingApplyReadiness" id="pricingApplyReadinessResultMap">
+    <id     column="pricing_apply_readiness_id" property="pricingApplyReadinessId"/>
+    <result column="marketplace_listing_id"     property="marketplaceListingId"/>
+    <result column="pricing_decision_id"        property="pricingDecisionId"/>
+    <result column="pricing_snapshot_id"        property="pricingSnapshotId"/>
+    <result column="readiness_status_code"      property="readinessStatusCode"/>
+    <result column="block_reason_code"          property="blockReasonCode"/>
+    <result column="current_price"              property="currentPrice"/>
+    <result column="proposed_price"             property="proposedPrice"/>
+    <result column="delta_amount"               property="deltaAmount"/>
+    <result column="delta_percent"              property="deltaPercent"/>
+    <result column="minimum_required_delta"     property="minimumRequiredDelta"/>
+    <result column="currency_code"              property="currencyCode"/>
+    <result column="confidence"                 property="confidence"/>
+    <result column="comparable_count"           property="comparableCount"/>
+    <result column="evaluated_at"               property="evaluatedAt"/>
+    <result column="created_at"                 property="createdAt"/>
+    <result column="updated_at"                 property="updatedAt"/>
+  </resultMap>
+
+  <resultMap type="io.legohunter.data.dto.PricingApplyReadinessReview" id="pricingApplyReadinessReviewResultMap">
+    <id     column="pricing_apply_readiness_id" property="pricingApplyReadinessId"/>
+    <result column="marketplace_listing_id"     property="marketplaceListingId"/>
+    <result column="external_listing_id"        property="externalListingId"/>
+    <result column="listing_status_code"        property="listingStatusCode"/>
+    <result column="fixed_price"                property="fixedPrice"/>
+    <result column="item_inventory_id"          property="itemInventoryId"/>
+    <result column="item_inventory_uuid"        property="itemInventoryUuid"/>
+    <result column="external_catalog_item_id"   property="externalCatalogItemId"/>
+    <result column="external_item_key"          property="externalItemKey"/>
+    <result column="external_unique_key"        property="externalUniqueKey"/>
+    <result column="pricing_decision_id"        property="pricingDecisionId"/>
+    <result column="pricing_snapshot_id"        property="pricingSnapshotId"/>
+    <result column="algorithm_version"          property="algorithmVersion"/>
+    <result column="decision_status_code"       property="decisionStatusCode"/>
+    <result column="decision_reason_code"       property="decisionReasonCode"/>
+    <result column="strategy_code"              property="strategyCode"/>
+    <result column="readiness_status_code"      property="readinessStatusCode"/>
+    <result column="block_reason_code"          property="blockReasonCode"/>
+    <result column="current_price"              property="currentPrice"/>
+    <result column="proposed_price"             property="proposedPrice"/>
+    <result column="delta_amount"               property="deltaAmount"/>
+    <result column="delta_percent"              property="deltaPercent"/>
+    <result column="minimum_required_delta"     property="minimumRequiredDelta"/>
+    <result column="currency_code"              property="currencyCode"/>
+    <result column="confidence"                 property="confidence"/>
+    <result column="comparable_count"           property="comparableCount"/>
+    <result column="decision_created_at"        property="decisionCreatedAt"/>
+    <result column="snapshot_captured_at"       property="snapshotCapturedAt"/>
+    <result column="evaluated_at"               property="evaluatedAt"/>
+  </resultMap>
+</mapper>
