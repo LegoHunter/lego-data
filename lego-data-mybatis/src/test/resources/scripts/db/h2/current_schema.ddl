@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS marketplace_order_payload;
 DROP TABLE IF EXISTS marketplace_order_item;
 DROP TABLE IF EXISTS marketplace_order;
 DROP TABLE IF EXISTS marketplace_order_sync_run;
+DROP TABLE IF EXISTS pricing_apply_readiness;
 DROP TABLE IF EXISTS pricing_decision;
 DROP TABLE IF EXISTS pricing_snapshot_listing;
 DROP TABLE IF EXISTS pricing_snapshot;
@@ -269,6 +270,27 @@ CREATE TABLE pricing_decision (
     notes CLOB,
     applied_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE pricing_apply_readiness (
+    pricing_apply_readiness_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    marketplace_listing_id INT NOT NULL,
+    pricing_decision_id BIGINT NOT NULL,
+    pricing_snapshot_id BIGINT,
+    readiness_status_code VARCHAR(64) NOT NULL,
+    block_reason_code VARCHAR(64),
+    current_price DECIMAL(12,2),
+    proposed_price DECIMAL(12,2),
+    delta_amount DECIMAL(12,2),
+    delta_percent DECIMAL(9,6),
+    minimum_required_delta DECIMAL(12,2),
+    currency_code VARCHAR(8),
+    confidence DECIMAL(5,4),
+    comparable_count INT,
+    evaluated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (pricing_decision_id)
 );
 
 CREATE TABLE bricklink_marketplace_listing (
@@ -559,6 +581,12 @@ CREATE INDEX idx_pricing_decision_status
     ON pricing_decision (decision_status_code);
 CREATE INDEX idx_pricing_decision_reason
     ON pricing_decision (reason_code);
+CREATE INDEX idx_pricing_apply_readiness_listing
+    ON pricing_apply_readiness (marketplace_listing_id, evaluated_at);
+CREATE INDEX idx_pricing_apply_readiness_status
+    ON pricing_apply_readiness (readiness_status_code);
+CREATE INDEX idx_pricing_apply_readiness_block_reason
+    ON pricing_apply_readiness (block_reason_code);
 
 CREATE TABLE party (
     party_id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -736,6 +764,21 @@ ALTER TABLE pricing_decision
 
 ALTER TABLE pricing_decision
     ADD CONSTRAINT fk_pricing_decision_snapshot1
+    FOREIGN KEY (pricing_snapshot_id) REFERENCES pricing_snapshot (pricing_snapshot_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE pricing_apply_readiness
+    ADD CONSTRAINT fk_pricing_apply_readiness_marketplace_listing1
+    FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE pricing_apply_readiness
+    ADD CONSTRAINT fk_pricing_apply_readiness_decision1
+    FOREIGN KEY (pricing_decision_id) REFERENCES pricing_decision (pricing_decision_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE pricing_apply_readiness
+    ADD CONSTRAINT fk_pricing_apply_readiness_snapshot1
     FOREIGN KEY (pricing_snapshot_id) REFERENCES pricing_snapshot (pricing_snapshot_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 

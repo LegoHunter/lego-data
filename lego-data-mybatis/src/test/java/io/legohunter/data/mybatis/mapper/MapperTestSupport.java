@@ -61,6 +61,7 @@ abstract class MapperTestSupport {
     @Autowired PricingSnapshotMapper pricingSnapshotMapper;
     @Autowired PricingSnapshotListingMapper pricingSnapshotListingMapper;
     @Autowired PricingDecisionMapper pricingDecisionMapper;
+    @Autowired PricingApplyReadinessMapper pricingApplyReadinessMapper;
     @Autowired PartyMapper partyMapper;
     @Autowired PaymentPlatformMapper paymentPlatformMapper;
     @Autowired TransactionCostMapper transactionCostMapper;

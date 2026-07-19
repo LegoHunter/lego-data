@@ -190,6 +190,28 @@ class PricingPlaneDaoTest {
     }
 
     @Test
+    void pricingApplyReadinessDaoExcludesReadinessForSupersededDecisionFromCurrentReports() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
+        PricingDecision readyDecision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
+        PricingApplyReadiness readyReadiness = pricingApplyReadiness(readyDecision, snapshot, fixture);
+        readyReadiness = pricingApplyReadinessDao.insert(readyReadiness);
+
+        PricingDecision failedDecision = pricingDecision(snapshot, fixture);
+        failedDecision.setDecisionStatusCode("FAILED");
+        failedDecision.setReasonCode("NO_CURRENT_COMPARABLES");
+        failedDecision.setFinalPrice(null);
+        pricingDecisionDao.insert(failedDecision);
+
+        assertThat(pricingApplyReadinessDao.findByPricingApplyReadinessId(readyReadiness.getPricingApplyReadinessId())).isPresent();
+        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
+        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
+        assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("STALE_DECISION")).isZero();
+    }
+
+    @Test
     void pricingCrawlDaoClaimsDueWorkAndRequeuesStaleClaims() {
         PricingFixture fixture = pricingFixture();
         PricingCrawlWorkItem workItem = pricingCrawlWorkItem(fixture);

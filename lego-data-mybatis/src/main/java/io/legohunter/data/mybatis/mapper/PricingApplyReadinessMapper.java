@@ -112,11 +112,12 @@ public interface PricingApplyReadinessMapper {
             FROM pricing_apply_readiness par
             JOIN (
                 SELECT marketplace_listing_id,
-                       MAX(pricing_apply_readiness_id) AS pricing_apply_readiness_id
-                FROM pricing_apply_readiness
+                       MAX(pricing_decision_id) AS pricing_decision_id
+                FROM pricing_decision
                 GROUP BY marketplace_listing_id
-            ) latest
-              ON latest.pricing_apply_readiness_id = par.pricing_apply_readiness_id
+            ) latest_decision
+              ON latest_decision.marketplace_listing_id = par.marketplace_listing_id
+             AND latest_decision.pricing_decision_id = par.pricing_decision_id
             JOIN marketplace_listing ml
               ON ml.marketplace_listing_id = par.marketplace_listing_id
             JOIN item_inventory ii
@@ -160,11 +161,12 @@ public interface PricingApplyReadinessMapper {
             FROM pricing_apply_readiness par
             JOIN (
                 SELECT marketplace_listing_id,
-                       MAX(pricing_apply_readiness_id) AS pricing_apply_readiness_id
-                FROM pricing_apply_readiness
+                       MAX(pricing_decision_id) AS pricing_decision_id
+                FROM pricing_decision
                 GROUP BY marketplace_listing_id
-            ) latest
-              ON latest.pricing_apply_readiness_id = par.pricing_apply_readiness_id
+            ) latest_decision
+              ON latest_decision.marketplace_listing_id = par.marketplace_listing_id
+             AND latest_decision.pricing_decision_id = par.pricing_decision_id
             WHERE par.readiness_status_code = #{readinessStatusCode}
             """)
     long countLatestByReadinessStatusCode(String readinessStatusCode);
@@ -174,11 +176,12 @@ public interface PricingApplyReadinessMapper {
             FROM pricing_apply_readiness par
             JOIN (
                 SELECT marketplace_listing_id,
-                       MAX(pricing_apply_readiness_id) AS pricing_apply_readiness_id
-                FROM pricing_apply_readiness
+                       MAX(pricing_decision_id) AS pricing_decision_id
+                FROM pricing_decision
                 GROUP BY marketplace_listing_id
-            ) latest
-              ON latest.pricing_apply_readiness_id = par.pricing_apply_readiness_id
+            ) latest_decision
+              ON latest_decision.marketplace_listing_id = par.marketplace_listing_id
+             AND latest_decision.pricing_decision_id = par.pricing_decision_id
             WHERE par.block_reason_code = #{blockReasonCode}
             """)
     long countLatestByBlockReasonCode(String blockReasonCode);
