@@ -3,6 +3,7 @@ package io.legohunter.data.mybatis.mapper;
 import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
 import io.legohunter.data.dto.PricingCrawlWorkItemFailure;
@@ -575,6 +576,29 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                 });
     }
 
+    @Test
+    void pricingApplyReadinessCurrentReviewsIgnoreReadinessForSupersededDecision() {
+        PricingFixture fixture = pricingFixture("pricing-readiness-superseded");
+        PricingSnapshot snapshot = insertedSnapshot(fixture);
+        PricingDecision readyDecision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        readyDecision.setDecisionStatusCode("PROPOSED");
+        readyDecision.setReasonCode("MEAN_PLUS_STDDEV");
+        readyDecision.setFinalPrice(new BigDecimal("212.25"));
+        pricingDecisionMapper.insert(readyDecision);
+        PricingApplyReadiness readyReadiness = pricingApplyReadiness(readyDecision, snapshot, fixture);
+        pricingApplyReadinessMapper.insert(readyReadiness);
+
+        PricingDecision failedDecision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        failedDecision.setDecisionStatusCode("FAILED");
+        failedDecision.setReasonCode("NO_CURRENT_COMPARABLES");
+        failedDecision.setFinalPrice(null);
+        pricingDecisionMapper.insert(failedDecision);
+
+        assertThat(pricingApplyReadinessMapper.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10)).isEmpty();
+        assertThat(pricingApplyReadinessMapper.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
+    }
+
     private PricingSnapshot insertedSnapshot(PricingFixture fixture) {
         PricingCrawlWorkItem workItem = insertedWorkItem(fixture, CRAWL_AT);
         PricingSnapshot snapshot = pricingSnapshot(
@@ -597,6 +621,24 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         );
         pricingCrawlWorkItemMapper.insert(workItem);
         return workItem;
+    }
+
+    private PricingApplyReadiness pricingApplyReadiness(PricingDecision decision, PricingSnapshot snapshot, PricingFixture fixture) {
+        return PricingApplyReadiness.builder()
+                .marketplaceListingId(fixture.listing().getMarketplaceListingId())
+                .pricingDecisionId(decision.getPricingDecisionId())
+                .pricingSnapshotId(snapshot.getPricingSnapshotId())
+                .readinessStatusCode("READY_TO_APPLY")
+                .currentPrice(new BigDecimal("225.00"))
+                .proposedPrice(decision.getFinalPrice())
+                .deltaAmount(new BigDecimal("12.75"))
+                .deltaPercent(new BigDecimal("0.056667"))
+                .minimumRequiredDelta(new BigDecimal("0.01"))
+                .currencyCode("USD")
+                .confidence(new BigDecimal("0.9000"))
+                .comparableCount(5)
+                .evaluatedAt(SNAPSHOT_AT.plusMinutes(1))
+                .build();
     }
 
     private PricingFixture pricingFixture(String key) {
