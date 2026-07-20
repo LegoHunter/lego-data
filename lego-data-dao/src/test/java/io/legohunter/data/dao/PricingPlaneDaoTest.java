@@ -248,6 +248,45 @@ class PricingPlaneDaoTest {
     }
 
     @Test
+    void pricingCrawlDaoLatestCountsIgnoreSupersededHistoricalRows() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem historicalFailed = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        historicalFailed.setWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
+        pricingCrawlWorkItemDao.update(historicalFailed);
+
+        PricingCrawlWorkItem latestPending = pricingCrawlWorkItem(fixture);
+        latestPending.setNextAttemptAt(CRAWL_AT.minusMinutes(5));
+        latestPending.setAttemptCount(1);
+        latestPending.setMaxAttempts(3);
+        pricingCrawlWorkItemDao.insert(latestPending);
+
+        assertThat(pricingCrawlWorkItemDao.countByWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH")).isOne();
+        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH")).isZero();
+        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusPattern("FAILED%")).isZero();
+        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("PENDING")).isOne();
+        assertThat(pricingCrawlWorkItemDao.countLatestDueByWorkStatusCode("PENDING", CRAWL_AT)).isOne();
+        assertThat(pricingCrawlWorkItemDao.countLatestRetryableByWorkStatusCode("PENDING")).isOne();
+
+        PricingCrawlWorkItem latestClaimed = pricingCrawlWorkItem(fixture);
+        latestClaimed.setWorkStatusCode("CLAIMED");
+        latestClaimed.setAttemptCount(1);
+        latestClaimed.setMaxAttempts(3);
+        latestClaimed.setClaimedAt(CRAWL_AT.minusHours(3));
+        pricingCrawlWorkItemDao.insert(latestClaimed);
+
+        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("PENDING")).isZero();
+        assertThat(pricingCrawlWorkItemDao.countLatestStaleClaimed("CLAIMED", CRAWL_AT.minusHours(1))).isOne();
+
+        PricingCrawlWorkItem latestSucceeded = pricingCrawlWorkItem(fixture);
+        latestSucceeded.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemDao.insert(latestSucceeded);
+
+        assertThat(pricingCrawlWorkItemDao.countLatestStaleClaimed("CLAIMED", CRAWL_AT.minusHours(1))).isZero();
+        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("SUCCEEDED")).isOne();
+        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusPattern("SKIPPED%")).isZero();
+    }
+
+    @Test
     void pricingDaosExposeExactConditionAndCompletenessComparables() {
         PricingFixture fixture = pricingFixture();
         PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));

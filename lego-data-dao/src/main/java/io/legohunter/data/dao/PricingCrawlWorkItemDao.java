@@ -40,16 +40,36 @@ public class PricingCrawlWorkItemDao {
         return pricingCrawlWorkItemMapper.countByWorkStatusCode(workStatusCode);
     }
 
+    public long countLatestByWorkStatusCode(String workStatusCode) {
+        return pricingCrawlWorkItemMapper.countLatestByWorkStatusCode(workStatusCode);
+    }
+
     public long countDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt) {
         return pricingCrawlWorkItemMapper.countDueByWorkStatusCode(workStatusCode, dueAt);
+    }
+
+    public long countLatestDueByWorkStatusCode(String workStatusCode, ZonedDateTime dueAt) {
+        return pricingCrawlWorkItemMapper.countLatestDueByWorkStatusCode(workStatusCode, dueAt);
     }
 
     public long countRetryableByWorkStatusCode(String workStatusCode) {
         return pricingCrawlWorkItemMapper.countRetryableByWorkStatusCode(workStatusCode);
     }
 
+    public long countLatestRetryableByWorkStatusCode(String workStatusCode) {
+        return pricingCrawlWorkItemMapper.countLatestRetryableByWorkStatusCode(workStatusCode);
+    }
+
     public long countStaleClaimed(String claimedStatusCode, ZonedDateTime claimedBefore) {
         return pricingCrawlWorkItemMapper.countStaleClaimed(claimedStatusCode, claimedBefore);
+    }
+
+    public long countLatestStaleClaimed(String claimedStatusCode, ZonedDateTime claimedBefore) {
+        return pricingCrawlWorkItemMapper.countLatestStaleClaimed(claimedStatusCode, claimedBefore);
+    }
+
+    public long countLatestByWorkStatusPattern(String workStatusPattern) {
+        return pricingCrawlWorkItemMapper.countLatestByWorkStatusPattern(workStatusPattern);
     }
 
     public PricingCrawlWorkItemMaintenanceSummary summarizeMaintenance(

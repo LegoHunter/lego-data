@@ -56,11 +56,43 @@ public interface PricingCrawlWorkItemMapper {
 
     @Select("""
             SELECT COUNT(*)
+            FROM pricing_crawl_work_item pcwi
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_crawl_work_item_id) AS pricing_crawl_work_item_id
+                FROM pricing_crawl_work_item
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_crawl_work_item_id = pcwi.pricing_crawl_work_item_id
+            WHERE pcwi.work_status_code = #{workStatusCode}
+            """)
+    long countLatestByWorkStatusCode(String workStatusCode);
+
+    @Select("""
+            SELECT COUNT(*)
             FROM pricing_crawl_work_item
             WHERE work_status_code = #{workStatusCode}
               AND next_attempt_at <= #{dueAt}
             """)
     long countDueByWorkStatusCode(
+            @Param("workStatusCode") String workStatusCode,
+            @Param("dueAt") ZonedDateTime dueAt
+    );
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_crawl_work_item pcwi
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_crawl_work_item_id) AS pricing_crawl_work_item_id
+                FROM pricing_crawl_work_item
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_crawl_work_item_id = pcwi.pricing_crawl_work_item_id
+            WHERE pcwi.work_status_code = #{workStatusCode}
+              AND pcwi.next_attempt_at <= #{dueAt}
+            """)
+    long countLatestDueByWorkStatusCode(
             @Param("workStatusCode") String workStatusCode,
             @Param("dueAt") ZonedDateTime dueAt
     );
@@ -76,6 +108,22 @@ public interface PricingCrawlWorkItemMapper {
 
     @Select("""
             SELECT COUNT(*)
+            FROM pricing_crawl_work_item pcwi
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_crawl_work_item_id) AS pricing_crawl_work_item_id
+                FROM pricing_crawl_work_item
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_crawl_work_item_id = pcwi.pricing_crawl_work_item_id
+            WHERE pcwi.work_status_code = #{workStatusCode}
+              AND COALESCE(pcwi.attempt_count, 0) > 0
+              AND COALESCE(pcwi.attempt_count, 0) < COALESCE(pcwi.max_attempts, 3)
+            """)
+    long countLatestRetryableByWorkStatusCode(String workStatusCode);
+
+    @Select("""
+            SELECT COUNT(*)
             FROM pricing_crawl_work_item
             WHERE work_status_code = #{claimedStatusCode}
               AND claimed_at <= #{claimedBefore}
@@ -85,6 +133,39 @@ public interface PricingCrawlWorkItemMapper {
             @Param("claimedStatusCode") String claimedStatusCode,
             @Param("claimedBefore") ZonedDateTime claimedBefore
     );
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_crawl_work_item pcwi
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_crawl_work_item_id) AS pricing_crawl_work_item_id
+                FROM pricing_crawl_work_item
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_crawl_work_item_id = pcwi.pricing_crawl_work_item_id
+            WHERE pcwi.work_status_code = #{claimedStatusCode}
+              AND pcwi.claimed_at <= #{claimedBefore}
+              AND COALESCE(pcwi.attempt_count, 0) < COALESCE(pcwi.max_attempts, 3)
+            """)
+    long countLatestStaleClaimed(
+            @Param("claimedStatusCode") String claimedStatusCode,
+            @Param("claimedBefore") ZonedDateTime claimedBefore
+    );
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM pricing_crawl_work_item pcwi
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_crawl_work_item_id) AS pricing_crawl_work_item_id
+                FROM pricing_crawl_work_item
+                GROUP BY marketplace_listing_id
+            ) latest
+              ON latest.pricing_crawl_work_item_id = pcwi.pricing_crawl_work_item_id
+            WHERE pcwi.work_status_code LIKE #{workStatusPattern}
+            """)
+    long countLatestByWorkStatusPattern(String workStatusPattern);
 
     @Select("""
             SELECT COUNT(*) AS work_item_count,

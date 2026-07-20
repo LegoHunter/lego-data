@@ -132,6 +132,59 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingCrawlWorkItemLatestCountsIgnoreSupersededHistoricalRows() {
+        PricingFixture recoveredFixture = pricingFixture("pricing-work-latest-recovered");
+        PricingCrawlWorkItem historicalFailed = insertedWorkItem(recoveredFixture, CRAWL_AT.minusDays(1));
+        historicalFailed.setWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
+        pricingCrawlWorkItemMapper.update(historicalFailed);
+        PricingCrawlWorkItem latestSucceeded = pricingCrawlWorkItem(
+                recoveredFixture.listing().getMarketplaceListingId(),
+                recoveredFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.plusDays(1)
+        );
+        latestSucceeded.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.insert(latestSucceeded);
+
+        PricingFixture pendingFixture = pricingFixture("pricing-work-latest-pending");
+        PricingCrawlWorkItem historicalSucceeded = insertedWorkItem(pendingFixture, CRAWL_AT.minusDays(1));
+        historicalSucceeded.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.update(historicalSucceeded);
+        PricingCrawlWorkItem latestPending = pricingCrawlWorkItem(
+                pendingFixture.listing().getMarketplaceListingId(),
+                pendingFixture.catalogItem().getExternalCatalogItemId(),
+                2,
+                CRAWL_AT.minusMinutes(5)
+        );
+        latestPending.setAttemptCount(1);
+        latestPending.setMaxAttempts(3);
+        pricingCrawlWorkItemMapper.insert(latestPending);
+
+        PricingFixture claimedFixture = pricingFixture("pricing-work-latest-claimed");
+        PricingCrawlWorkItem latestClaimed = insertedWorkItem(claimedFixture, CRAWL_AT.minusHours(4));
+        latestClaimed.setWorkStatusCode("CLAIMED");
+        latestClaimed.setAttemptCount(1);
+        latestClaimed.setMaxAttempts(3);
+        latestClaimed.setClaimedAt(CRAWL_AT.minusHours(3));
+        pricingCrawlWorkItemMapper.update(latestClaimed);
+
+        PricingFixture skippedFixture = pricingFixture("pricing-work-latest-skipped");
+        PricingCrawlWorkItem latestSkipped = insertedWorkItem(skippedFixture, CRAWL_AT);
+        latestSkipped.setWorkStatusCode("SKIPPED_MISSING_CONDITION");
+        pricingCrawlWorkItemMapper.update(latestSkipped);
+
+        assertThat(pricingCrawlWorkItemMapper.countByWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH")).isOne();
+        assertThat(pricingCrawlWorkItemMapper.countLatestByWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH")).isZero();
+        assertThat(pricingCrawlWorkItemMapper.countLatestByWorkStatusPattern("FAILED%")).isZero();
+        assertThat(pricingCrawlWorkItemMapper.countLatestByWorkStatusCode("SUCCEEDED")).isOne();
+        assertThat(pricingCrawlWorkItemMapper.countLatestByWorkStatusCode("PENDING")).isOne();
+        assertThat(pricingCrawlWorkItemMapper.countLatestDueByWorkStatusCode("PENDING", CRAWL_AT)).isOne();
+        assertThat(pricingCrawlWorkItemMapper.countLatestRetryableByWorkStatusCode("PENDING")).isOne();
+        assertThat(pricingCrawlWorkItemMapper.countLatestStaleClaimed("CLAIMED", CRAWL_AT.minusHours(1))).isOne();
+        assertThat(pricingCrawlWorkItemMapper.countLatestByWorkStatusPattern("SKIPPED%")).isOne();
+    }
+
+    @Test
     void pricingCrawlWorkItemMaintenanceSummaryAndDuplicateReportExposeQueueHygiene() {
         PricingFixture duplicateFixture = pricingFixture("pricing-work-maintenance-duplicate");
         PricingCrawlWorkItem pendingDue = insertedWorkItem(duplicateFixture, CRAWL_AT.minusMinutes(1));
