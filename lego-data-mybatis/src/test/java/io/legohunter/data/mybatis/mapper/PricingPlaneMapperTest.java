@@ -3,6 +3,7 @@ package io.legohunter.data.mybatis.mapper;
 import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
@@ -650,6 +651,79 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         assertThat(pricingApplyReadinessMapper.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
         assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10)).isEmpty();
         assertThat(pricingApplyReadinessMapper.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
+    }
+
+    @Test
+    void marketplaceListingSyncRequestSupportsCrudClaimAndIdempotentUpsert() {
+        PricingFixture fixture = pricingFixture("pricing-sync-request");
+        PricingSnapshot snapshot = insertedSnapshot(fixture);
+        PricingDecision decision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        pricingDecisionMapper.insert(decision);
+        MarketplaceListingSyncRequest syncRequest = marketplaceListingSyncRequest(
+                fixture.listing().getMarketplaceListingId(),
+                2,
+                decision.getPricingDecisionId()
+        );
+
+        marketplaceListingSyncRequestMapper.insert(syncRequest);
+        syncRequest.setSyncRequestStatusCode("PENDING");
+        syncRequest.setLastErrorMessage("Waiting for sync");
+        assertThat(marketplaceListingSyncRequestMapper.update(syncRequest)).isOne();
+
+        assertThat(marketplaceListingSyncRequestMapper.findByMarketplaceListingSyncRequestId(syncRequest.getMarketplaceListingSyncRequestId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getMarketplaceListingId()).isEqualTo(fixture.listing().getMarketplaceListingId());
+                    assertThat(found.getPricingDecisionId()).isEqualTo(decision.getPricingDecisionId());
+                    assertThat(found.getSyncRequestTypeCode()).isEqualTo("PRICE_UPDATE");
+                    assertThat(found.getSyncRequestStatusCode()).isEqualTo("PENDING");
+                    assertThat(found.getRemoteVisibilityScopeCode()).isEqualTo("STOCKROOM");
+                    assertThat(found.getRemoteIsPubliclyAvailable()).isFalse();
+                    assertThat(found.getLastErrorMessage()).isEqualTo("Waiting for sync");
+                });
+        assertThat(marketplaceListingSyncRequestMapper.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
+        assertThat(marketplaceListingSyncRequestMapper.findBySyncRequestStatusCode("PENDING")).hasSize(1);
+        assertThat(marketplaceListingSyncRequestMapper.countBySyncRequestStatusCode("PENDING")).isOne();
+        assertThat(marketplaceListingSyncRequestMapper.countDueBySyncRequestStatusCode("PENDING", SNAPSHOT_AT)).isZero();
+        assertThat(marketplaceListingSyncRequestMapper.countDueBySyncRequestStatusCode("PENDING", SNAPSHOT_AT.plusHours(2))).isOne();
+        assertThat(marketplaceListingSyncRequestMapper.findClaimableByStatusCode("PENDING", SNAPSHOT_AT.plusHours(2), 10))
+                .extracting(MarketplaceListingSyncRequest::getMarketplaceListingSyncRequestId)
+                .containsExactly(syncRequest.getMarketplaceListingSyncRequestId());
+
+        assertThat(marketplaceListingSyncRequestMapper.claim(
+                syncRequest.getMarketplaceListingSyncRequestId(),
+                "PENDING",
+                "CLAIMED",
+                SNAPSHOT_AT.plusHours(2)
+        )).isOne();
+        assertThat(marketplaceListingSyncRequestMapper.claim(
+                syncRequest.getMarketplaceListingSyncRequestId(),
+                "PENDING",
+                "CLAIMED",
+                SNAPSHOT_AT.plusHours(2)
+        )).isZero();
+        assertThat(marketplaceListingSyncRequestMapper.findByMarketplaceListingSyncRequestId(syncRequest.getMarketplaceListingSyncRequestId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getSyncRequestStatusCode()).isEqualTo("CLAIMED");
+                    assertThat(found.getAttemptCount()).isOne();
+                    assertThat(found.getClaimedAt()).isEqualTo(SNAPSHOT_AT.plusHours(2));
+                });
+
+        syncRequest.setSyncRequestStatusCode("PENDING");
+        syncRequest.setRequestedUnitPrice(new BigDecimal("218.00"));
+        syncRequest.setNextAttemptAt(SNAPSHOT_AT.plusHours(3));
+        marketplaceListingSyncRequestMapper.upsert(syncRequest);
+        assertThat(marketplaceListingSyncRequestMapper.findByMarketplaceListingIdAndPricingDecisionIdAndSyncRequestTypeCode(
+                fixture.listing().getMarketplaceListingId(),
+                decision.getPricingDecisionId(),
+                "PRICE_UPDATE"
+        )).hasValueSatisfying(found -> {
+            assertThat(found.getMarketplaceListingSyncRequestId()).isEqualTo(syncRequest.getMarketplaceListingSyncRequestId());
+            assertThat(found.getRequestedUnitPrice()).isEqualByComparingTo("218.00");
+        });
+
+        assertThat(marketplaceListingSyncRequestMapper.findAll()).hasSize(1);
+        assertThat(marketplaceListingSyncRequestMapper.delete(syncRequest.getMarketplaceListingSyncRequestId())).isOne();
+        assertThat(marketplaceListingSyncRequestMapper.findAll()).isEmpty();
     }
 
     private PricingSnapshot insertedSnapshot(PricingFixture fixture) {

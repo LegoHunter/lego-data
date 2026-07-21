@@ -6,6 +6,7 @@ import io.legohunter.data.mybatis.mapper.PricingDecisionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -80,6 +81,14 @@ public class PricingDecisionDao {
     public PricingDecision update(PricingDecision pricingDecision) {
         pricingDecisionMapper.update(pricingDecision);
         return findByPricingDecisionId(pricingDecision.getPricingDecisionId()).orElseThrow();
+    }
+
+    public Optional<PricingDecision> markApplied(Long pricingDecisionId, ZonedDateTime appliedAt) {
+        int updated = pricingDecisionMapper.markApplied(pricingDecisionId, appliedAt);
+        if (updated == 0) {
+            return Optional.empty();
+        }
+        return findByPricingDecisionId(pricingDecisionId);
     }
 
     public void delete(Long pricingDecisionId) {

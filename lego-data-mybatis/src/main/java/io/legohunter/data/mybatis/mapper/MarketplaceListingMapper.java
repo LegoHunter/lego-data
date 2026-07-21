@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
@@ -286,6 +287,18 @@ public interface MarketplaceListingMapper {
             WHERE marketplace_listing_id = #{marketplaceListingId}
             """)
     int update(MarketplaceListing marketplaceListing);
+
+    @Update("""
+            UPDATE marketplace_listing
+            SET unit_price = #{unitPrice},
+                updated_at = COALESCE(#{updatedAt}, CURRENT_TIMESTAMP)
+            WHERE marketplace_listing_id = #{marketplaceListingId}
+            """)
+    int updateUnitPrice(
+            @Param("marketplaceListingId") Integer marketplaceListingId,
+            @Param("unitPrice") BigDecimal unitPrice,
+            @Param("updatedAt") ZonedDateTime updatedAt
+    );
 
     @Delete("DELETE FROM marketplace_listing WHERE marketplace_listing_id = #{marketplaceListingId}")
     int delete(Integer marketplaceListingId);

@@ -17,6 +17,7 @@ import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventoryPhoto;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Party;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDecision;
@@ -62,6 +63,7 @@ abstract class MapperTestSupport {
     @Autowired PricingSnapshotListingMapper pricingSnapshotListingMapper;
     @Autowired PricingDecisionMapper pricingDecisionMapper;
     @Autowired PricingApplyReadinessMapper pricingApplyReadinessMapper;
+    @Autowired MarketplaceListingSyncRequestMapper marketplaceListingSyncRequestMapper;
     @Autowired PartyMapper partyMapper;
     @Autowired PaymentPlatformMapper paymentPlatformMapper;
     @Autowired TransactionCostMapper transactionCostMapper;
@@ -271,6 +273,35 @@ abstract class MapperTestSupport {
                 .myWeight(new BigDecimal("1.2500"))
                 .remarks("Remarks")
                 .lastRemoteQuantity(1)
+                .environmentCode("sandbox")
+                .systemRemarksHash("hash-1")
+                .lastRemoteVerifiedAt(ZonedDateTime.parse("2026-01-02T00:00:00Z"))
+                .lastRemoteSafetyStatusCode("VERIFIED")
+                .lastRemoteSafetyMessage("Verified stockroom safety")
+                .build();
+    }
+
+    MarketplaceListingSyncRequest marketplaceListingSyncRequest(Integer marketplaceListingId, Integer listingExternalServiceId, Long pricingDecisionId) {
+        return MarketplaceListingSyncRequest.builder()
+                .marketplaceListingId(marketplaceListingId)
+                .listingExternalServiceId(listingExternalServiceId)
+                .pricingDecisionId(pricingDecisionId)
+                .syncRequestTypeCode("PRICE_UPDATE")
+                .syncRequestStatusCode("PENDING")
+                .syncReasonCode("PRICING_DECISION_APPLIED")
+                .previousUnitPrice(new BigDecimal("225.00"))
+                .requestedUnitPrice(new BigDecimal("219.00"))
+                .currencyCode("USD")
+                .remoteInventoryId("123456")
+                .remoteVisibilityScopeCode("STOCKROOM")
+                .remoteVisibilityContainerId("A")
+                .remoteIsPubliclyAvailable(false)
+                .environmentCode("sandbox")
+                .createdByJobName("BricklinkPricingApplyJob")
+                .attemptCount(0)
+                .maxAttempts(3)
+                .nextAttemptAt(ZonedDateTime.parse("2026-06-18T16:00:00Z"))
+                .appliedLocalAt(ZonedDateTime.parse("2026-06-18T15:30:00Z"))
                 .build();
     }
 

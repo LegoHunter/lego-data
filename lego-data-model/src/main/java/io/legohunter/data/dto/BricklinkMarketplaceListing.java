@@ -34,6 +34,11 @@ public class BricklinkMarketplaceListing {
     private BigDecimal myWeight;
     private String remarks;
     private Integer lastRemoteQuantity;
+    private String environmentCode;
+    private String systemRemarksHash;
+    private ZonedDateTime lastRemoteVerifiedAt;
+    private String lastRemoteSafetyStatusCode;
+    private String lastRemoteSafetyMessage;
 }
 
 

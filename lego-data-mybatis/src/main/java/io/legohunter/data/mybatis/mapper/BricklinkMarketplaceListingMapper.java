@@ -32,7 +32,12 @@ public interface BricklinkMarketplaceListingMapper {
             tier_price3,
             my_weight,
             remarks,
-            last_remote_quantity
+            last_remote_quantity,
+            environment_code,
+            system_remarks_hash,
+            last_remote_verified_at,
+            last_remote_safety_status_code,
+            last_remote_safety_message
             """;
 
     @Select("SELECT " + ALL_COLUMNS + " FROM bricklink_marketplace_listing")
@@ -69,7 +74,12 @@ public interface BricklinkMarketplaceListingMapper {
                 tier_price3,
                 my_weight,
                 remarks,
-                last_remote_quantity
+                last_remote_quantity,
+                environment_code,
+                system_remarks_hash,
+                last_remote_verified_at,
+                last_remote_safety_status_code,
+                last_remote_safety_message
             )
             VALUES (
                 #{marketplaceListingId},
@@ -92,7 +102,12 @@ public interface BricklinkMarketplaceListingMapper {
                 #{tierPrice3},
                 #{myWeight},
                 #{remarks},
-                #{lastRemoteQuantity}
+                #{lastRemoteQuantity},
+                #{environmentCode},
+                #{systemRemarksHash},
+                #{lastRemoteVerifiedAt},
+                #{lastRemoteSafetyStatusCode},
+                #{lastRemoteSafetyMessage}
             )
             """)
     int insert(BricklinkMarketplaceListing bricklinkMarketplaceListing);
@@ -118,7 +133,12 @@ public interface BricklinkMarketplaceListingMapper {
                 tier_price3 = #{tierPrice3},
                 my_weight = #{myWeight},
                 remarks = #{remarks},
-                last_remote_quantity = #{lastRemoteQuantity}
+                last_remote_quantity = #{lastRemoteQuantity},
+                environment_code = #{environmentCode},
+                system_remarks_hash = #{systemRemarksHash},
+                last_remote_verified_at = #{lastRemoteVerifiedAt},
+                last_remote_safety_status_code = #{lastRemoteSafetyStatusCode},
+                last_remote_safety_message = #{lastRemoteSafetyMessage}
             WHERE marketplace_listing_id = #{marketplaceListingId}
             """)
     int update(BricklinkMarketplaceListing bricklinkMarketplaceListing);
@@ -148,7 +168,12 @@ public interface BricklinkMarketplaceListingMapper {
                 tier_price3,
                 my_weight,
                 remarks,
-                last_remote_quantity
+                last_remote_quantity,
+                environment_code,
+                system_remarks_hash,
+                last_remote_verified_at,
+                last_remote_safety_status_code,
+                last_remote_safety_message
             )
             VALUES (
                 #{marketplaceListingId},
@@ -171,7 +196,12 @@ public interface BricklinkMarketplaceListingMapper {
                 #{tierPrice3},
                 #{myWeight},
                 #{remarks},
-                #{lastRemoteQuantity}
+                #{lastRemoteQuantity},
+                #{environmentCode},
+                #{systemRemarksHash},
+                #{lastRemoteVerifiedAt},
+                #{lastRemoteSafetyStatusCode},
+                #{lastRemoteSafetyMessage}
             )
             ON DUPLICATE KEY UPDATE
                 bricklink_inventory_id = VALUES(bricklink_inventory_id),
@@ -193,7 +223,12 @@ public interface BricklinkMarketplaceListingMapper {
                 tier_price3 = VALUES(tier_price3),
                 my_weight = VALUES(my_weight),
                 remarks = VALUES(remarks),
-                last_remote_quantity = VALUES(last_remote_quantity)
+                last_remote_quantity = VALUES(last_remote_quantity),
+                environment_code = VALUES(environment_code),
+                system_remarks_hash = VALUES(system_remarks_hash),
+                last_remote_verified_at = VALUES(last_remote_verified_at),
+                last_remote_safety_status_code = VALUES(last_remote_safety_status_code),
+                last_remote_safety_message = VALUES(last_remote_safety_message)
             """)
     int upsert(BricklinkMarketplaceListing bricklinkMarketplaceListing);
 }

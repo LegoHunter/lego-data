@@ -22,5 +22,10 @@
     <result column="my_weight"                        property="myWeight"/>
     <result column="remarks"                          property="remarks"/>
     <result column="last_remote_quantity"             property="lastRemoteQuantity"/>
+    <result column="environment_code"                  property="environmentCode"/>
+    <result column="system_remarks_hash"               property="systemRemarksHash"/>
+    <result column="last_remote_verified_at"           property="lastRemoteVerifiedAt"/>
+    <result column="last_remote_safety_status_code"    property="lastRemoteSafetyStatusCode"/>
+    <result column="last_remote_safety_message"        property="lastRemoteSafetyMessage"/>
   </resultMap>
 </mapper>
