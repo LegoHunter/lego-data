@@ -3,6 +3,7 @@ DROP TABLE IF EXISTS marketplace_order_payload;
 DROP TABLE IF EXISTS marketplace_order_item;
 DROP TABLE IF EXISTS marketplace_order;
 DROP TABLE IF EXISTS marketplace_order_sync_run;
+DROP TABLE IF EXISTS marketplace_listing_sync_request;
 DROP TABLE IF EXISTS pricing_apply_readiness;
 DROP TABLE IF EXISTS pricing_decision;
 DROP TABLE IF EXISTS pricing_snapshot_listing;
@@ -314,7 +315,42 @@ CREATE TABLE bricklink_marketplace_listing (
     tier_price3 DECIMAL(12,2),
     my_weight DECIMAL(10,4),
     remarks CLOB,
-    last_remote_quantity INT
+    last_remote_quantity INT,
+    environment_code VARCHAR(32),
+    system_remarks_hash VARCHAR(64),
+    last_remote_verified_at TIMESTAMP,
+    last_remote_safety_status_code VARCHAR(64),
+    last_remote_safety_message CLOB
+);
+
+CREATE TABLE marketplace_listing_sync_request (
+    marketplace_listing_sync_request_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    marketplace_listing_id INT NOT NULL,
+    listing_external_service_id INT NOT NULL,
+    pricing_decision_id BIGINT,
+    pricing_apply_readiness_id BIGINT,
+    sync_request_type_code VARCHAR(64) NOT NULL,
+    sync_request_status_code VARCHAR(64) NOT NULL,
+    sync_reason_code VARCHAR(64) NOT NULL,
+    previous_unit_price DECIMAL(12,2),
+    requested_unit_price DECIMAL(12,2),
+    currency_code VARCHAR(8),
+    remote_inventory_id VARCHAR(100),
+    remote_visibility_scope_code VARCHAR(64),
+    remote_visibility_container_id VARCHAR(100),
+    remote_is_publicly_available BOOLEAN,
+    environment_code VARCHAR(32),
+    created_by_job_name VARCHAR(100),
+    last_error_message CLOB,
+    attempt_count INT NOT NULL DEFAULT 0,
+    max_attempts INT NOT NULL DEFAULT 3,
+    next_attempt_at TIMESTAMP NOT NULL,
+    claimed_at TIMESTAMP,
+    applied_local_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (marketplace_listing_id, pricing_decision_id, sync_request_type_code)
 );
 
 CREATE TABLE ebay_marketplace_listing (

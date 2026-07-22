@@ -6,6 +6,7 @@ import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
@@ -113,6 +114,14 @@ public class MarketplaceListingDao {
     public MarketplaceListing update(MarketplaceListing marketplaceListing) {
         marketplaceListingMapper.update(marketplaceListing);
         return findByMarketplaceListingId(marketplaceListing.getMarketplaceListingId()).orElseThrow();
+    }
+
+    public Optional<MarketplaceListing> updateUnitPrice(Integer marketplaceListingId, BigDecimal unitPrice, ZonedDateTime updatedAt) {
+        int updated = marketplaceListingMapper.updateUnitPrice(marketplaceListingId, unitPrice, updatedAt);
+        if (updated == 0) {
+            return Optional.empty();
+        }
+        return findByMarketplaceListingId(marketplaceListingId);
     }
 
     public void delete(Integer marketplaceListingId) {

@@ -7,6 +7,7 @@ import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ExternalService;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingApplyReadinessReview;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
@@ -48,6 +49,7 @@ class PricingPlaneDaoTest {
     @Autowired PricingSnapshotListingDao pricingSnapshotListingDao;
     @Autowired PricingDecisionDao pricingDecisionDao;
     @Autowired PricingApplyReadinessDao pricingApplyReadinessDao;
+    @Autowired MarketplaceListingSyncRequestDao marketplaceListingSyncRequestDao;
 
     @Test
     void pricingDaosSupportPhaseOneCrudAndLookups() {
@@ -157,6 +159,52 @@ class PricingPlaneDaoTest {
         assertThat(pricingSnapshotListingDao.findAll()).isEmpty();
         assertThat(pricingSnapshotDao.findAll()).isEmpty();
         assertThat(pricingCrawlWorkItemDao.findAll()).isEmpty();
+    }
+
+    @Test
+    void marketplaceListingSyncRequestDaoSupportsCrudClaimAndMetricsCounts() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
+        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
+        MarketplaceListingSyncRequest syncRequest = marketplaceListingSyncRequest(fixture, decision);
+
+        syncRequest = marketplaceListingSyncRequestDao.insert(syncRequest);
+        syncRequest.setLastErrorMessage("Waiting for remote worker");
+        syncRequest = marketplaceListingSyncRequestDao.update(syncRequest);
+
+        assertThat(syncRequest.getLastErrorMessage()).isEqualTo("Waiting for remote worker");
+        assertThat(marketplaceListingSyncRequestDao.findByMarketplaceListingSyncRequestId(syncRequest.getMarketplaceListingSyncRequestId())).isPresent();
+        assertThat(marketplaceListingSyncRequestDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
+        assertThat(marketplaceListingSyncRequestDao.findBySyncRequestStatusCode("PENDING")).hasSize(1);
+        assertThat(marketplaceListingSyncRequestDao.countBySyncRequestStatusCode("PENDING")).isOne();
+        assertThat(marketplaceListingSyncRequestDao.countDueBySyncRequestStatusCode("PENDING", SNAPSHOT_AT.plusHours(2))).isOne();
+        assertThat(marketplaceListingSyncRequestDao.findClaimableByStatusCode("PENDING", SNAPSHOT_AT.plusHours(2), 10)).hasSize(1);
+
+        assertThat(marketplaceListingSyncRequestDao.claim(
+                syncRequest.getMarketplaceListingSyncRequestId(),
+                "PENDING",
+                "CLAIMED",
+                SNAPSHOT_AT.plusHours(2)
+        )).hasValueSatisfying(claimed -> {
+            assertThat(claimed.getSyncRequestStatusCode()).isEqualTo("CLAIMED");
+            assertThat(claimed.getAttemptCount()).isOne();
+        });
+        assertThat(marketplaceListingSyncRequestDao.claim(
+                syncRequest.getMarketplaceListingSyncRequestId(),
+                "PENDING",
+                "CLAIMED",
+                SNAPSHOT_AT.plusHours(2)
+        )).isEmpty();
+
+        syncRequest.setSyncRequestStatusCode("PENDING");
+        syncRequest.setRequestedUnitPrice(new BigDecimal("218.00"));
+        syncRequest = marketplaceListingSyncRequestDao.upsert(syncRequest);
+        assertThat(syncRequest.getRequestedUnitPrice()).isEqualByComparingTo("218.00");
+        assertThat(marketplaceListingSyncRequestDao.findAll()).hasSize(1);
+
+        marketplaceListingSyncRequestDao.delete(syncRequest.getMarketplaceListingSyncRequestId());
+        assertThat(marketplaceListingSyncRequestDao.findAll()).isEmpty();
     }
 
     @Test
@@ -451,6 +499,30 @@ class PricingPlaneDaoTest {
                 .confidence(new BigDecimal("0.7500"))
                 .comparableCount(2)
                 .evaluatedAt(SNAPSHOT_AT.plusMinutes(1))
+                .build();
+    }
+
+    private MarketplaceListingSyncRequest marketplaceListingSyncRequest(PricingFixture fixture, PricingDecision decision) {
+        return MarketplaceListingSyncRequest.builder()
+                .marketplaceListingId(fixture.listing().getMarketplaceListingId())
+                .listingExternalServiceId(fixture.bricklink().getExternalServiceId())
+                .pricingDecisionId(decision.getPricingDecisionId())
+                .syncRequestTypeCode("PRICE_UPDATE")
+                .syncRequestStatusCode("PENDING")
+                .syncReasonCode("PRICING_DECISION_APPLIED")
+                .previousUnitPrice(new BigDecimal("225.00"))
+                .requestedUnitPrice(new BigDecimal("219.00"))
+                .currencyCode("USD")
+                .remoteInventoryId("123456")
+                .remoteVisibilityScopeCode("STOCKROOM")
+                .remoteVisibilityContainerId("A")
+                .remoteIsPubliclyAvailable(false)
+                .environmentCode("sandbox")
+                .createdByJobName("BricklinkPricingApplyJob")
+                .attemptCount(0)
+                .maxAttempts(3)
+                .nextAttemptAt(SNAPSHOT_AT.plusHours(1))
+                .appliedLocalAt(SNAPSHOT_AT.plusMinutes(30))
                 .build();
     }
 

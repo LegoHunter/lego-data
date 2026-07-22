@@ -309,14 +309,25 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         bricklinkMarketplaceListingMapper.update(bricklink);
 
         assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()))
-                .hasValueSatisfying(found -> assertThat(found.getColorName()).isEqualTo("Red"));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getColorName()).isEqualTo("Red");
+                    assertThat(found.getEnvironmentCode()).isEqualTo("sandbox");
+                    assertThat(found.getSystemRemarksHash()).isEqualTo("hash-1");
+                    assertThat(found.getLastRemoteSafetyStatusCode()).isEqualTo("VERIFIED");
+                });
         assertThat(bricklinkMarketplaceListingMapper.findByBricklinkInventoryId(2001)).isPresent();
         assertThat(bricklinkMarketplaceListingMapper.findAll()).hasSize(1);
 
         bricklink.setLastRemoteQuantity(7);
+        bricklink.setLastRemoteSafetyStatusCode("BLOCKED");
+        bricklink.setLastRemoteSafetyMessage("Missing system block");
         bricklinkMarketplaceListingMapper.upsert(bricklink);
         assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()))
-                .hasValueSatisfying(found -> assertThat(found.getLastRemoteQuantity()).isEqualTo(7));
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getLastRemoteQuantity()).isEqualTo(7);
+                    assertThat(found.getLastRemoteSafetyStatusCode()).isEqualTo("BLOCKED");
+                    assertThat(found.getLastRemoteSafetyMessage()).isEqualTo("Missing system block");
+                });
 
         assertThat(bricklinkMarketplaceListingMapper.delete(listing.getMarketplaceListingId())).isOne();
     }

@@ -1,0 +1,31 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketplaceListingSyncRequestMapper">
+  <resultMap type="io.legohunter.data.dto.MarketplaceListingSyncRequest" id="marketplaceListingSyncRequestResultMap">
+    <id     column="marketplace_listing_sync_request_id" property="marketplaceListingSyncRequestId"/>
+    <result column="marketplace_listing_id"              property="marketplaceListingId"/>
+    <result column="listing_external_service_id"         property="listingExternalServiceId"/>
+    <result column="pricing_decision_id"                 property="pricingDecisionId"/>
+    <result column="pricing_apply_readiness_id"          property="pricingApplyReadinessId"/>
+    <result column="sync_request_type_code"              property="syncRequestTypeCode"/>
+    <result column="sync_request_status_code"            property="syncRequestStatusCode"/>
+    <result column="sync_reason_code"                    property="syncReasonCode"/>
+    <result column="previous_unit_price"                 property="previousUnitPrice"/>
+    <result column="requested_unit_price"                property="requestedUnitPrice"/>
+    <result column="currency_code"                       property="currencyCode"/>
+    <result column="remote_inventory_id"                 property="remoteInventoryId"/>
+    <result column="remote_visibility_scope_code"        property="remoteVisibilityScopeCode"/>
+    <result column="remote_visibility_container_id"      property="remoteVisibilityContainerId"/>
+    <result column="remote_is_publicly_available"        property="remoteIsPubliclyAvailable"/>
+    <result column="environment_code"                    property="environmentCode"/>
+    <result column="created_by_job_name"                 property="createdByJobName"/>
+    <result column="last_error_message"                  property="lastErrorMessage"/>
+    <result column="attempt_count"                       property="attemptCount"/>
+    <result column="max_attempts"                        property="maxAttempts"/>
+    <result column="next_attempt_at"                     property="nextAttemptAt"/>
+    <result column="claimed_at"                          property="claimedAt"/>
+    <result column="applied_local_at"                    property="appliedLocalAt"/>
+    <result column="completed_at"                        property="completedAt"/>
+    <result column="created_at"                          property="createdAt"/>
+    <result column="updated_at"                          property="updatedAt"/>
+  </resultMap>
+</mapper>

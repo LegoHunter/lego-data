@@ -10,6 +10,7 @@ import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.Set;
 
@@ -314,6 +315,14 @@ public interface PricingDecisionMapper {
             WHERE pricing_decision_id = #{pricingDecisionId}
             """)
     int update(PricingDecision pricingDecision);
+
+    @Update("""
+            UPDATE pricing_decision
+            SET applied_at = COALESCE(#{appliedAt}, CURRENT_TIMESTAMP)
+            WHERE pricing_decision_id = #{pricingDecisionId}
+              AND applied_at IS NULL
+            """)
+    int markApplied(@Param("pricingDecisionId") Long pricingDecisionId, @Param("appliedAt") ZonedDateTime appliedAt);
 
     @Delete("DELETE FROM pricing_decision WHERE pricing_decision_id = #{pricingDecisionId}")
     int delete(Long pricingDecisionId);
