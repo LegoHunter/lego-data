@@ -645,7 +645,7 @@ CREATE TABLE party (
 
 CREATE TABLE transactions (
     transaction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    transaction_date TIMESTAMP,
+    transaction_date DATE,
     notes VARCHAR(2048),
     from_party_id BIGINT,
     to_party_id BIGINT,
@@ -655,7 +655,7 @@ CREATE TABLE transactions (
 
 CREATE TABLE payment (
     payment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    payment_date TIMESTAMP NOT NULL,
+    payment_date DATE NOT NULL,
     transaction_id BIGINT NOT NULL,
     currency_code VARCHAR(8) NOT NULL,
     seller_currency_code VARCHAR(8) NOT NULL,

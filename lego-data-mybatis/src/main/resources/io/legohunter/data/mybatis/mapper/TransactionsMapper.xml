@@ -2,7 +2,7 @@
 <mapper namespace="io.legohunter.data.mybatis.mapper.TransactionsMapper">
   <resultMap type="io.legohunter.data.dto.Transactions" id="transactionResultMap">
     <result column="transaction_id" property="transactionId"/>
-    <result column="transaction_date" property="transactionDateTime"/>
+    <result column="transaction_date" property="transactionDate" jdbcType="DATE"/>
     <result column="notes" property="notes"/>
     <result column="from_party_id" property="fromPartyId"/>
     <result column="to_party_id" property="toPartyId"/>

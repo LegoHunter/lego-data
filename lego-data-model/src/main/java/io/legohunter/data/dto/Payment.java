@@ -4,13 +4,13 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 @Data
 @Builder
 public class Payment {
     private Long paymentId;
-    private ZonedDateTime paymentDate;
+    private LocalDate paymentDate;
     private Long transactionId;
     private String currencyCode;
     private String sellerCurrencyCode;

@@ -489,7 +489,7 @@ abstract class MapperTestSupport {
                 .transactionPlatformName("BrickLink")
                 .build());
         Transactions transaction = Transactions.builder()
-                .transactionDateTime(ZonedDateTime.parse("2026-01-01T00:00:00Z"))
+                .transactionDate(java.time.LocalDate.parse("2026-01-01"))
                 .notes("Transaction")
                 .fromPartyId(fromParty.getPartyId())
                 .toPartyId(toParty.getPartyId())
@@ -512,7 +512,7 @@ abstract class MapperTestSupport {
                     return paymentPlatform;
                 });
         return Payment.builder()
-                .paymentDate(ZonedDateTime.parse("2026-01-01T12:00:00Z"))
+                .paymentDate(java.time.LocalDate.parse("2026-01-01"))
                 .transactionId(transactionId)
                 .currencyCode("USD")
                 .sellerCurrencyCode("USD")

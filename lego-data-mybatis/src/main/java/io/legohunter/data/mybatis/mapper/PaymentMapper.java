@@ -25,7 +25,7 @@ public interface PaymentMapper {
                 payment_platform_transaction_id
             )
             VALUES (
-                #{paymentDate},
+                #{paymentDate,jdbcType=DATE},
                 #{transactionId},
                 #{currencyCode},
                 #{sellerCurrencyCode},
@@ -52,7 +52,7 @@ public interface PaymentMapper {
             )
             VALUES (
                 #{paymentId},
-                #{paymentDate},
+                #{paymentDate,jdbcType=DATE},
                 #{transactionId},
                 #{currencyCode},
                 #{sellerCurrencyCode},
@@ -66,7 +66,7 @@ public interface PaymentMapper {
 
     @Update("""
             UPDATE payment
-            SET payment_date = #{paymentDate},
+            SET payment_date = #{paymentDate,jdbcType=DATE},
                 transaction_id = #{transactionId},
                 currency_code = #{currencyCode},
                 seller_currency_code = #{sellerCurrencyCode},

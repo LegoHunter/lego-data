@@ -4,7 +4,7 @@ import io.legohunter.data.dto.Payment;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,7 +34,7 @@ class PaymentMapperTest extends MapperTestSupport {
 
         Payment migratedPayment = Payment.builder()
                 .paymentId(10L)
-                .paymentDate(ZonedDateTime.parse("2026-01-02T12:00:00Z"))
+                .paymentDate(LocalDate.parse("2026-01-02"))
                 .transactionId(payment.getTransactionId())
                 .currencyCode("USD")
                 .sellerCurrencyCode("EUR")

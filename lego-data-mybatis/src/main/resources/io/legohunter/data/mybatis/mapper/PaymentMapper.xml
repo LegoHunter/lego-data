@@ -2,7 +2,7 @@
 <mapper namespace="io.legohunter.data.mybatis.mapper.PaymentMapper">
   <resultMap type="io.legohunter.data.dto.Payment" id="paymentResultMap">
     <id     column="payment_id"                      property="paymentId"/>
-    <result column="payment_date"                    property="paymentDate"/>
+    <result column="payment_date"                    property="paymentDate" jdbcType="DATE"/>
     <result column="transaction_id"                  property="transactionId"/>
     <result column="currency_code"                   property="currencyCode"/>
     <result column="seller_currency_code"            property="sellerCurrencyCode"/>

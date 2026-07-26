@@ -3,7 +3,7 @@ package io.legohunter.data.mybatis.mapper;
 import io.legohunter.data.dto.Transactions;
 import org.junit.jupiter.api.Test;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,7 +22,7 @@ class TransactionsMapperTest extends MapperTestSupport {
 
         Transactions migratedTransaction = Transactions.builder()
                 .transactionId(10L)
-                .transactionDateTime(ZonedDateTime.parse("2026-01-02T00:00:00Z"))
+                .transactionDate(LocalDate.parse("2026-01-02"))
                 .notes("Migrated")
                 .transactionPlatformId(1)
                 .transactionOrderId("ORDER-2")
