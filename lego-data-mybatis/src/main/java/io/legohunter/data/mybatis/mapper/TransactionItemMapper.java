@@ -51,6 +51,19 @@ public interface TransactionItemMapper {
                    item_inventory_id,
                    notes
             from transaction_item
+            where transaction_id = #{transactionId}
+            order by transaction_item_id
+            """)
+    @ResultMap("transactionItemResultMap")
+    List<TransactionItem> findByTransactionId(Long transactionId);
+
+    @Select("""
+            select transaction_item_id,
+                   transaction_id,
+                   transaction_type_code,
+                   item_inventory_id,
+                   notes
+            from transaction_item
             where transaction_item_id = #{transactionItemId}
             """)
     @ResultMap("transactionItemResultMap")

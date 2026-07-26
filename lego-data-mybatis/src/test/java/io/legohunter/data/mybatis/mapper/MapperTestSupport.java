@@ -19,6 +19,8 @@ import io.legohunter.data.dto.ItemInventoryPhoto;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Party;
+import io.legohunter.data.dto.Payment;
+import io.legohunter.data.dto.PaymentPlatform;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingSnapshot;
@@ -65,6 +67,7 @@ abstract class MapperTestSupport {
     @Autowired PricingApplyReadinessMapper pricingApplyReadinessMapper;
     @Autowired MarketplaceListingSyncRequestMapper marketplaceListingSyncRequestMapper;
     @Autowired PartyMapper partyMapper;
+    @Autowired PaymentMapper paymentMapper;
     @Autowired PaymentPlatformMapper paymentPlatformMapper;
     @Autowired TransactionCostMapper transactionCostMapper;
     @Autowired TransactionItemCostMapper transactionItemCostMapper;
@@ -495,6 +498,29 @@ abstract class MapperTestSupport {
                 .build();
         transactionsMapper.insert(transaction);
         return transaction;
+    }
+
+    Payment payment(Long transactionId, String platformTransactionId) {
+        paymentPlatformMapper.findPaymentPlatformById(1)
+                .orElseGet(() -> {
+                    PaymentPlatform paymentPlatform = PaymentPlatform.builder()
+                            .paymentPlatformId(1)
+                            .paymentPlatformName("PayPal")
+                            .paymentPlatformUrl("https://paypal.example")
+                            .build();
+                    paymentPlatformMapper.insert(paymentPlatform);
+                    return paymentPlatform;
+                });
+        return Payment.builder()
+                .paymentDate(ZonedDateTime.parse("2026-01-01T12:00:00Z"))
+                .transactionId(transactionId)
+                .currencyCode("USD")
+                .sellerCurrencyCode("USD")
+                .exchangeRate(new BigDecimal("1.00000"))
+                .amount(new BigDecimal("123.45000"))
+                .paymentPlatformId(1)
+                .paymentPlatformTransactionId(platformTransactionId)
+                .build();
     }
 
     void insertTransactionType() {

@@ -74,9 +74,17 @@ public class TransactionCostDao {
         return transactionCostMapper.findById(transactionCostId);
     }
 
+    public List<TransactionCost> findByTransactionId(Long transactionId) {
+        return transactionCostMapper.findByTransactionId(transactionId);
+    }
+
     public Optional<TransactionCost> findByTransactionIdAndCostTypeCode(Long transactionId, String costTypeCode) {
         return transactionCostMapper.findByTransactionIdAndCostTypeCode(transactionId, costTypeCode)
                 .stream()
                 .findFirst();
+    }
+
+    public List<TransactionItemCost> findByTransactionItemId(Long transactionItemId) {
+        return transactionItemCostMapper.findByTransactionItemId(transactionItemId);
     }
 }

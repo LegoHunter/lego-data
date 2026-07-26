@@ -4,12 +4,16 @@ import io.legohunter.data.dao.ConditionDao;
 import io.legohunter.data.dao.CostTypeDao;
 import io.legohunter.data.dao.ExternalCatalogItemDao;
 import io.legohunter.data.dao.ExternalServiceDao;
+import io.legohunter.data.dao.PartyDao;
+import io.legohunter.data.dao.PaymentPlatformDao;
 import io.legohunter.data.dao.TransactionPlatformDao;
 import io.legohunter.data.dao.TransactionTypeDao;
 import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.CostType;
 import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ExternalService;
+import io.legohunter.data.dto.Party;
+import io.legohunter.data.dto.PaymentPlatform;
 import io.legohunter.data.dto.TransactionPlatform;
 import io.legohunter.data.dto.TransactionType;
 import jakarta.validation.ConstraintValidatorContext;
@@ -83,6 +87,8 @@ class ValidatorCoverageTest {
         when(dao.findAll()).thenReturn(List.of(shipping));
         validator.initialize(mock(CostTypeExists.class));
 
+        assertThat(validator.isValid(null, context)).isTrue();
+
         when(dao.findCostTypeByCode("SHIP")).thenReturn(Optional.of(shipping));
         assertThat(validator.isValid("SHIP", context)).isTrue();
 
@@ -127,6 +133,42 @@ class ValidatorCoverageTest {
         when(dao.findTransactionTypeByCode("BAD")).thenReturn(Optional.empty());
         assertThat(validator.isValid("BAD", context)).isFalse();
         verify(context).buildConstraintViolationWithTemplate("Transaction Type [BAD] is invalid. Must be one of [SALE]");
+    }
+
+    @Test
+    void partyValidatorAcceptsNullExistingIdsAndRejectsMissingIds() {
+        PartyDao dao = mock(PartyDao.class);
+        ConstraintValidatorContext context = mockContext();
+        Party party = Party.builder().partyId(10L).build();
+        PartyValidator validator = new PartyValidator(dao);
+
+        assertThat(validator.isValid(null, context)).isTrue();
+
+        when(dao.findPartyById(10L)).thenReturn(Optional.of(party));
+        assertThat(validator.isValid(10L, context)).isTrue();
+
+        when(dao.findPartyById(11L)).thenReturn(Optional.empty());
+        assertThat(validator.isValid(11L, context)).isFalse();
+        verify(context).buildConstraintViolationWithTemplate("Party [11] was not found");
+    }
+
+    @Test
+    void paymentPlatformValidatorAcceptsNullExistingNamesAndRejectsMissingNames() {
+        PaymentPlatformDao dao = mock(PaymentPlatformDao.class);
+        ConstraintValidatorContext context = mockContext();
+        PaymentPlatform payPal = PaymentPlatform.builder().paymentPlatformName("PayPal").build();
+        PaymentPlatformValidator validator = new PaymentPlatformValidator(dao);
+
+        when(dao.findAll()).thenReturn(List.of(payPal));
+        validator.initialize(mock(PaymentPlatformExists.class));
+        assertThat(validator.isValid(null, context)).isTrue();
+
+        when(dao.findPaymentPlatformByName("PayPal")).thenReturn(Optional.of(payPal));
+        assertThat(validator.isValid("PayPal", context)).isTrue();
+
+        when(dao.findPaymentPlatformByName("Bad")).thenReturn(Optional.empty());
+        assertThat(validator.isValid("Bad", context)).isFalse();
+        verify(context).buildConstraintViolationWithTemplate("Payment Platform [Bad] is invalid. Must be one of [PayPal]");
     }
 
     private ConstraintValidatorContext mockContext() {

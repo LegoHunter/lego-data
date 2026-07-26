@@ -5,6 +5,7 @@ import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.CostType;
 import io.legohunter.data.dto.InventoryIndex;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.Payment;
 import io.legohunter.data.dto.PaymentPlatform;
 import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingDecision;
@@ -22,6 +23,7 @@ import io.legohunter.data.mybatis.mapper.CostTypeMapper;
 import io.legohunter.data.mybatis.mapper.InventoryIndexMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import io.legohunter.data.mybatis.mapper.PartyMapper;
+import io.legohunter.data.mybatis.mapper.PaymentMapper;
 import io.legohunter.data.mybatis.mapper.PaymentPlatformMapper;
 import io.legohunter.data.mybatis.mapper.PricingApplyReadinessMapper;
 import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
@@ -77,7 +79,9 @@ class DaoDelegationCoverageTest {
 
         when(transactionCostMapper.findAll()).thenReturn(List.of(transactionCost));
         when(transactionCostMapper.findById(30L)).thenReturn(Optional.of(transactionCost));
+        when(transactionCostMapper.findByTransactionId(10L)).thenReturn(List.of(transactionCost));
         when(transactionCostMapper.findByTransactionIdAndCostTypeCode(10L, "SHIP")).thenReturn(List.of(transactionCost));
+        when(transactionItemCostMapper.findByTransactionItemId(20L)).thenReturn(List.of(transactionItemCost));
 
         dao.deleteTransactionCosts(10L);
         dao.deleteTransactionItemCosts(20L);
@@ -89,7 +93,9 @@ class DaoDelegationCoverageTest {
 
         assertThat(dao.findAll()).containsExactly(transactionCost);
         assertThat(dao.findById(30L)).contains(transactionCost);
+        assertThat(dao.findByTransactionId(10L)).containsExactly(transactionCost);
         assertThat(dao.findByTransactionIdAndCostTypeCode(10L, "SHIP")).contains(transactionCost);
+        assertThat(dao.findByTransactionItemId(20L)).containsExactly(transactionItemCost);
 
         verify(transactionCostMapper, times(2)).deleteTransactionCosts(10L);
         verify(transactionItemCostMapper, times(2)).deleteTransactionCosts(20L);
@@ -198,11 +204,13 @@ class DaoDelegationCoverageTest {
 
         when(transactionItemMapper.findAll()).thenReturn(List.of(transactionItem));
         when(transactionItemMapper.findById(50L)).thenReturn(Optional.of(transactionItem));
+        when(transactionItemMapper.findByTransactionId(40L)).thenReturn(List.of(transactionItem));
         TransactionItemDao transactionItemDao = new TransactionItemDao(transactionItemMapper);
         transactionItemDao.insert(transactionItem);
         transactionItemDao.migrate(transactionItem);
         transactionItemDao.update(transactionItem);
         assertThat(transactionItemDao.findAll()).containsExactly(transactionItem);
+        assertThat(transactionItemDao.findByTransactionId(40L)).containsExactly(transactionItem);
         assertThat(transactionItemDao.findById(50L)).contains(transactionItem);
         verify(transactionItemMapper).insert(transactionItem);
         verify(transactionItemMapper).migrate(transactionItem);
