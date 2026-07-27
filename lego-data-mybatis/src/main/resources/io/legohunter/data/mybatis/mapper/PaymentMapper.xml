@@ -1,0 +1,14 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.PaymentMapper">
+  <resultMap type="io.legohunter.data.dto.Payment" id="paymentResultMap">
+    <id     column="payment_id"                      property="paymentId"/>
+    <result column="payment_date"                    property="paymentDate" jdbcType="DATE"/>
+    <result column="transaction_id"                  property="transactionId"/>
+    <result column="currency_code"                   property="currencyCode"/>
+    <result column="seller_currency_code"            property="sellerCurrencyCode"/>
+    <result column="exchange_rate"                   property="exchangeRate"/>
+    <result column="amount"                          property="amount"/>
+    <result column="payment_platform_id"             property="paymentPlatformId"/>
+    <result column="payment_platform_transaction_id" property="paymentPlatformTransactionId"/>
+  </resultMap>
+</mapper>

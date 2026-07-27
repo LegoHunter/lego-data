@@ -25,6 +25,7 @@ DROP TABLE IF EXISTS external_image_album;
 DROP TABLE IF EXISTS item_inventory_photo;
 DROP TABLE IF EXISTS transaction_item_cost;
 DROP TABLE IF EXISTS transaction_cost;
+DROP TABLE IF EXISTS payment;
 DROP TABLE IF EXISTS transaction_item;
 DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS party;
@@ -644,12 +645,24 @@ CREATE TABLE party (
 
 CREATE TABLE transactions (
     transaction_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    transaction_date TIMESTAMP,
+    transaction_date DATE,
     notes VARCHAR(2048),
     from_party_id BIGINT,
     to_party_id BIGINT,
     transaction_platform_id INT,
     transaction_order_id VARCHAR(255)
+);
+
+CREATE TABLE payment (
+    payment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payment_date DATE NOT NULL,
+    transaction_id BIGINT NOT NULL,
+    currency_code VARCHAR(8) NOT NULL,
+    seller_currency_code VARCHAR(8) NOT NULL,
+    exchange_rate DECIMAL(12,5) NOT NULL,
+    amount DECIMAL(12,5) NOT NULL,
+    payment_platform_id INT NOT NULL,
+    payment_platform_transaction_id VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE transaction_item (

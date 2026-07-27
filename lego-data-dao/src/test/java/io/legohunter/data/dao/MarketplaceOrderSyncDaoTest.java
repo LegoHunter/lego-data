@@ -237,7 +237,7 @@ class MarketplaceOrderSyncDaoTest {
                 .conversionFactor(1)
                 .build());
         Transactions transaction = Transactions.builder()
-                .transactionDateTime(STARTED_AT)
+                .transactionDate(STARTED_AT.toLocalDate())
                 .notes("DAO transaction")
                 .fromPartyId(fromParty.getPartyId())
                 .toPartyId(toParty.getPartyId())

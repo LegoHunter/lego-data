@@ -29,6 +29,10 @@ public class TransactionItemDao {
         return transactionItemMapper.findAll();
     }
 
+    public List<TransactionItem> findByTransactionId(Long transactionId) {
+        return transactionItemMapper.findByTransactionId(transactionId);
+    }
+
     public Optional<TransactionItem> findById(Long transactionItemId) {
         return transactionItemMapper.findById(transactionItemId);
     }

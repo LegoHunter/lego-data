@@ -28,6 +28,9 @@ class TransactionItemMapperTest extends MapperTestSupport {
 
         assertThat(transactionItemMapper.findById(transactionItem.getTransactionItemId()))
                 .hasValueSatisfying(found -> assertThat(found.getNotes()).isEqualTo("Updated item"));
+        assertThat(transactionItemMapper.findByTransactionId(transaction.getTransactionId()))
+                .extracting(TransactionItem::getTransactionItemId)
+                .containsExactly(transactionItem.getTransactionItemId());
         assertThat(transactionItemMapper.findAll()).hasSize(1);
 
         TransactionItem migratedItem = TransactionItem.builder()

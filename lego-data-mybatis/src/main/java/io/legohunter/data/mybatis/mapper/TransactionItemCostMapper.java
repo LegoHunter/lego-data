@@ -54,6 +54,15 @@ public interface TransactionItemCostMapper {
             select transaction_item_cost_id, transaction_item_id, cost_type_code, currency_code, amount, notes
             from transaction_item_cost
             where transaction_item_id = #{transactionItemId}
+            order by transaction_item_cost_id
+            """)
+    @ResultMap("transactionItemCostResultMap")
+    List<TransactionItemCost> findByTransactionItemId(Long transactionItemId);
+
+    @Select("""
+            select transaction_item_cost_id, transaction_item_id, cost_type_code, currency_code, amount, notes
+            from transaction_item_cost
+            where transaction_item_id = #{transactionItemId}
             and cost_type_code = #{costTypeCode}
             """)
     @ResultMap("transactionItemCostResultMap")

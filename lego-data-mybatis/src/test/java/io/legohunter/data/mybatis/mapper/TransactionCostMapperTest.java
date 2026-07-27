@@ -33,6 +33,9 @@ class TransactionCostMapperTest extends MapperTestSupport {
 
         assertThat(transactionCostMapper.findById(transactionCost.getTransactionCostId()))
                 .hasValueSatisfying(found -> assertThat(found.getAmount()).isEqualTo(6.50));
+        assertThat(transactionCostMapper.findByTransactionId(transaction.getTransactionId()))
+                .extracting(TransactionCost::getTransactionCostId)
+                .containsExactly(transactionCost.getTransactionCostId());
         assertThat(transactionCostMapper.findByTransactionIdAndCostTypeCode(transaction.getTransactionId(), "SHIP")).hasSize(1);
         assertThat(transactionCostMapper.findAll()).hasSize(1);
 

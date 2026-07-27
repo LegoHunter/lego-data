@@ -29,6 +29,15 @@
         </dependency>
 
         <dependency>
+            <groupId>io-legohunter</groupId>
+            <artifactId>lego-data-mybatis</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
