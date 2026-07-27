@@ -20,3 +20,15 @@ Money-bearing payment fields use `BigDecimal`. Existing transaction cost and tra
 `transactions.transaction_date` and `payment.payment_date` are date-only fields. The DTOs use `LocalDate`, the mappers bind them with `jdbcType=DATE`, and H2 test schemas define both columns as `DATE`.
 
 `current_schema.ddl` is single-sourced from `lego-data-mybatis/src/test/resources`. The MyBatis module publishes its test resources through a Maven `tests` classifier artifact, and the DAO module consumes that artifact as a test-scoped `test-jar` dependency so DAO and mapper integration tests run against the same H2 schema file.
+
+## Inventory Read And Correction Data Support
+
+Phase 2 Inventory Read, Search, and Correction workflows add reusable data-layer support for `lego-data-service`:
+
+- `ItemInventorySearchCriteria` models optional search filters for owned inventory.
+- `ItemInventoryDao.search(...)` and `ItemInventoryDao.countSearch(...)` delegate to dynamic MyBatis search queries.
+- `ItemInventoryMapper.search(...)` supports filters for catalog item number, description, box number, inventory state, sale intent, active flag, physical item facts, condition codes, and transaction date range.
+- `TransactionCostDao` now exposes row-scoped transaction-item cost operations: find by id, find by transaction item and cost type, update, and delete.
+- Transaction and transaction-item cost replacement helpers delete existing rows even when the replacement list is empty, which keeps explicit empty replacement semantics deterministic.
+
+Business rules remain in `lego-data-service`; DAOs and mappers stay focused on persistence operations.

@@ -3,6 +3,7 @@ package io.legohunter.data.dao;
 import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
+import io.legohunter.data.dto.ItemInventorySearchCriteria;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.mybatis.mapper.ItemInventoryMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,6 +94,19 @@ class ItemInventoryDaoUnitTest {
         assertThat(itemInventoryDao.findMarketplaceListings(inventory)).containsExactly(marketplaceListing);
 
         verify(marketplaceListingDao).findByItemInventoryId(200);
+    }
+
+    @Test
+    void searchDelegatesToMapper() {
+        ItemInventorySearchCriteria criteria = ItemInventorySearchCriteria.builder()
+                .itemNumber("6390-1")
+                .build();
+        ItemInventory inventory = new ItemInventory();
+        when(itemInventoryMapper.search(criteria)).thenReturn(Set.of(inventory));
+        when(itemInventoryMapper.countSearch(criteria)).thenReturn(1);
+
+        assertThat(itemInventoryDao.search(criteria)).containsExactly(inventory);
+        assertThat(itemInventoryDao.countSearch(criteria)).isOne();
     }
 
     @Test

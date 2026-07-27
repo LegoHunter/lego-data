@@ -3,6 +3,7 @@ package io.legohunter.data.dao;
 import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
+import io.legohunter.data.dto.ItemInventorySearchCriteria;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.mybatis.mapper.ItemInventoryMapper;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,14 @@ public class ItemInventoryDao {
 
     public Optional<ItemInventory> findByUuid(String uuid) {
         return itemInventoryMapper.findByUuid(uuid);
+    }
+
+    public Set<ItemInventory> search(ItemInventorySearchCriteria criteria) {
+        return itemInventoryMapper.search(criteria);
+    }
+
+    public int countSearch(ItemInventorySearchCriteria criteria) {
+        return itemInventoryMapper.countSearch(criteria);
     }
 
     public Optional<ExternalCatalogItem> getPrimaryExternalCatalogItem(ItemInventory itemInventory) {

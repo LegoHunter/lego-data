@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
 class DaoDelegationCoverageTest {
 
     @Test
-    void transactionCostDaoDelegatesAllMapperOperationsAndSkipsEmptyCostLists() {
+    void transactionCostDaoDelegatesAllMapperOperationsAndSupportsEmptyReplacementLists() {
         TransactionCostMapper transactionCostMapper = mock(TransactionCostMapper.class);
         TransactionItemCostMapper transactionItemCostMapper = mock(TransactionItemCostMapper.class);
         TransactionCostDao dao = new TransactionCostDao(transactionCostMapper, transactionItemCostMapper);
@@ -65,16 +65,13 @@ class DaoDelegationCoverageTest {
 
         dao.setTransactionCosts(10L, null);
         dao.setTransactionItemCosts(20L, List.of());
-        verifyNoInteractions(transactionCostMapper, transactionItemCostMapper);
 
         dao.setTransactionCosts(10L, List.of(transactionCost));
         assertThat(transactionCost.getTransactionId()).isEqualTo(10L);
-        verify(transactionCostMapper).deleteTransactionCosts(10L);
         verify(transactionCostMapper).insert(transactionCost);
 
         dao.setTransactionItemCosts(20L, List.of(transactionItemCost));
         assertThat(transactionItemCost.getTransactionItemId()).isEqualTo(20L);
-        verify(transactionItemCostMapper).deleteTransactionCosts(20L);
         verify(transactionItemCostMapper).insert(transactionItemCost);
 
         when(transactionCostMapper.findAll()).thenReturn(List.of(transactionCost));
@@ -82,6 +79,8 @@ class DaoDelegationCoverageTest {
         when(transactionCostMapper.findByTransactionId(10L)).thenReturn(List.of(transactionCost));
         when(transactionCostMapper.findByTransactionIdAndCostTypeCode(10L, "SHIP")).thenReturn(List.of(transactionCost));
         when(transactionItemCostMapper.findByTransactionItemId(20L)).thenReturn(List.of(transactionItemCost));
+        when(transactionItemCostMapper.findById(40L)).thenReturn(Optional.of(transactionItemCost));
+        when(transactionItemCostMapper.findByTransactionItemIdAndCostTypeCode(20L, "PRICE")).thenReturn(List.of(transactionItemCost));
 
         dao.deleteTransactionCosts(10L);
         dao.deleteTransactionItemCosts(20L);
@@ -90,18 +89,24 @@ class DaoDelegationCoverageTest {
         dao.insert(transactionItemCost);
         dao.migrate(transactionCost);
         dao.update(transactionCost);
+        dao.update(transactionItemCost);
+        dao.deleteTransactionItemCost(40L);
 
         assertThat(dao.findAll()).containsExactly(transactionCost);
         assertThat(dao.findById(30L)).contains(transactionCost);
         assertThat(dao.findByTransactionId(10L)).containsExactly(transactionCost);
         assertThat(dao.findByTransactionIdAndCostTypeCode(10L, "SHIP")).contains(transactionCost);
         assertThat(dao.findByTransactionItemId(20L)).containsExactly(transactionItemCost);
+        assertThat(dao.findTransactionItemCostById(40L)).contains(transactionItemCost);
+        assertThat(dao.findByTransactionItemIdAndCostTypeCode(20L, "PRICE")).contains(transactionItemCost);
 
-        verify(transactionCostMapper, times(2)).deleteTransactionCosts(10L);
-        verify(transactionItemCostMapper, times(2)).deleteTransactionCosts(20L);
+        verify(transactionCostMapper, times(3)).deleteTransactionCosts(10L);
+        verify(transactionItemCostMapper, times(3)).deleteTransactionCosts(20L);
         verify(transactionCostMapper).delete(30L);
+        verify(transactionItemCostMapper).delete(40L);
         verify(transactionCostMapper).migrate(transactionCost);
         verify(transactionCostMapper).update(transactionCost);
+        verify(transactionItemCostMapper).update(transactionItemCost);
     }
 
     @Test

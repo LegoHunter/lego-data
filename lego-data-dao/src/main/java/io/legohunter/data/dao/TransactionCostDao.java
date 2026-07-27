@@ -18,8 +18,8 @@ public class TransactionCostDao {
     private final TransactionItemCostMapper transactionItemCostMapper;
 
     public void setTransactionCosts(Long transactionId, List<TransactionCost> transactionCosts) {
+        deleteTransactionCosts(transactionId);
         if (!CollectionUtils.isEmpty(transactionCosts)) {
-            deleteTransactionCosts(transactionId);
             transactionCosts.forEach(transactionCost -> {
                 transactionCost.setTransactionId(transactionId);
                 insert(transactionCost);
@@ -28,8 +28,8 @@ public class TransactionCostDao {
     }
 
     public void setTransactionItemCosts(Long transactionItemId, List<TransactionItemCost> transactionItemCosts) {
+        deleteTransactionItemCosts(transactionItemId);
         if (!CollectionUtils.isEmpty(transactionItemCosts)) {
-            deleteTransactionItemCosts(transactionItemId);
             transactionItemCosts.forEach(transactionItemCost -> {
                 transactionItemCost.setTransactionItemId(transactionItemId);
                 insert(transactionItemCost);
@@ -49,6 +49,10 @@ public class TransactionCostDao {
         transactionCostMapper.delete(transactionCostId);
     }
 
+    public void deleteTransactionItemCost(Long transactionItemCostId) {
+        transactionItemCostMapper.delete(transactionItemCostId);
+    }
+
     public void insert(TransactionCost transactionCost) {
         transactionCostMapper.insert(transactionCost);
     }
@@ -64,6 +68,10 @@ public class TransactionCostDao {
 
     public void update(TransactionCost transactionCost) {
         transactionCostMapper.update(transactionCost);
+    }
+
+    public void update(TransactionItemCost transactionItemCost) {
+        transactionItemCostMapper.update(transactionItemCost);
     }
 
     public List<TransactionCost> findAll() {
@@ -86,5 +94,15 @@ public class TransactionCostDao {
 
     public List<TransactionItemCost> findByTransactionItemId(Long transactionItemId) {
         return transactionItemCostMapper.findByTransactionItemId(transactionItemId);
+    }
+
+    public Optional<TransactionItemCost> findTransactionItemCostById(Long transactionItemCostId) {
+        return transactionItemCostMapper.findById(transactionItemCostId);
+    }
+
+    public Optional<TransactionItemCost> findByTransactionItemIdAndCostTypeCode(Long transactionItemId, String costTypeCode) {
+        return transactionItemCostMapper.findByTransactionItemIdAndCostTypeCode(transactionItemId, costTypeCode)
+                .stream()
+                .findFirst();
     }
 }
