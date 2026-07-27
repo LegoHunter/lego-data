@@ -74,7 +74,7 @@ class ValidatorCoverageTest {
 
         when(dao.findByConditionCode("BAD")).thenReturn(Optional.empty());
         assertThat(validator.isValid("BAD", context)).isFalse();
-        verify(context).buildConstraintViolationWithTemplate("Must be one of [G]");
+        verify(context).buildConstraintViolationWithTemplate("Condition Code [BAD] is invalid. Must be one of [G]");
     }
 
     @Test
