@@ -69,14 +69,7 @@ public interface ItemInventoryMapper {
                 ON est.external_service_type_id = es.external_service_type_id
             """;
 
-    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)
-    @ResultMap("itemInventoryResultMap")
-    Set<ItemInventory> findAll();
-
-    @Select("""
-            <script>
-            SELECT ${columns}
-            ${fromClause}
+    String SEARCH_WHERE_CLAUSE = """
             <where>
                 <if test="criteria.itemNumber != null and criteria.itemNumber != ''">
                     AND eci.external_item_key = #{criteria.itemNumber}
@@ -130,6 +123,17 @@ public interface ItemInventoryMapper {
                     )
                 </if>
             </where>
+            """;
+
+    @Select("SELECT " + ALL_COLUMNS + " " + FROM_CLAUSE)
+    @ResultMap("itemInventoryResultMap")
+    Set<ItemInventory> findAll();
+
+    @Select("""
+            <script>
+            SELECT ${columns}
+            ${fromClause}
+            """ + SEARCH_WHERE_CLAUSE + """
             ORDER BY ii.item_inventory_id
             LIMIT #{criteria.limit} OFFSET #{criteria.offset}
             </script>
@@ -149,59 +153,7 @@ public interface ItemInventoryMapper {
             <script>
             SELECT COUNT(DISTINCT ii.item_inventory_id)
             ${fromClause}
-            <where>
-                <if test="criteria.itemNumber != null and criteria.itemNumber != ''">
-                    AND eci.external_item_key = #{criteria.itemNumber}
-                </if>
-                <if test="criteria.description != null and criteria.description != ''">
-                    AND LOWER(ii.description) LIKE LOWER(CONCAT('%', #{criteria.description}, '%'))
-                </if>
-                <if test="criteria.boxNumber != null">
-                    AND ii.box_number = #{criteria.boxNumber}
-                </if>
-                <if test="criteria.inventoryStateCode != null and criteria.inventoryStateCode != ''">
-                    AND ii.inventory_state_code = #{criteria.inventoryStateCode}
-                </if>
-                <if test="criteria.saleIntentCode != null and criteria.saleIntentCode != ''">
-                    AND ii.sale_intent_code = #{criteria.saleIntentCode}
-                </if>
-                <if test="criteria.active != null">
-                    AND ii.active = #{criteria.active}
-                </if>
-                <if test="criteria.newOrUsed != null and criteria.newOrUsed != ''">
-                    AND ii.new_or_used = #{criteria.newOrUsed}
-                </if>
-                <if test="criteria.completeness != null and criteria.completeness != ''">
-                    AND ii.completeness = #{criteria.completeness}
-                </if>
-                <if test="criteria.itemConditionCode != null and criteria.itemConditionCode != ''">
-                    AND ii.item_condition_id IN (SELECT condition_id FROM `condition` WHERE condition_code = #{criteria.itemConditionCode})
-                </if>
-                <if test="criteria.boxConditionCode != null and criteria.boxConditionCode != ''">
-                    AND ii.box_condition_id IN (SELECT condition_id FROM `condition` WHERE condition_code = #{criteria.boxConditionCode})
-                </if>
-                <if test="criteria.instructionsConditionCode != null and criteria.instructionsConditionCode != ''">
-                    AND ii.instructions_condition_id IN (SELECT condition_id FROM `condition` WHERE condition_code = #{criteria.instructionsConditionCode})
-                </if>
-                <if test="criteria.transactionDateFrom != null">
-                    AND EXISTS (
-                        SELECT 1
-                        FROM transaction_item ti
-                        JOIN transactions t ON t.transaction_id = ti.transaction_id
-                        WHERE ti.item_inventory_id = ii.item_inventory_id
-                        AND t.transaction_date &gt;= #{criteria.transactionDateFrom,jdbcType=DATE}
-                    )
-                </if>
-                <if test="criteria.transactionDateTo != null">
-                    AND EXISTS (
-                        SELECT 1
-                        FROM transaction_item ti
-                        JOIN transactions t ON t.transaction_id = ti.transaction_id
-                        WHERE ti.item_inventory_id = ii.item_inventory_id
-                        AND t.transaction_date &lt;= #{criteria.transactionDateTo,jdbcType=DATE}
-                    )
-                </if>
-            </where>
+            """ + SEARCH_WHERE_CLAUSE + """
             </script>
             """)
     int countSearch(

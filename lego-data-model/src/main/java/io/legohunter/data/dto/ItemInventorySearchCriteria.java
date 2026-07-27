@@ -5,6 +5,10 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
+/**
+ * Search filters plus offset pagination controls for owned inventory queries.
+ * Service callers should validate the supported limit range before invoking DAO search.
+ */
 @Data
 @Builder
 public class ItemInventorySearchCriteria {
