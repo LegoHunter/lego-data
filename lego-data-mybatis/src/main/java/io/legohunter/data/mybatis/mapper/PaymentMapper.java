@@ -78,6 +78,42 @@ public interface PaymentMapper {
             """)
     void update(Payment payment);
 
+    @Insert("""
+            INSERT INTO payment (
+                payment_id,
+                payment_date,
+                transaction_id,
+                currency_code,
+                seller_currency_code,
+                exchange_rate,
+                amount,
+                payment_platform_id,
+                payment_platform_transaction_id
+            )
+            VALUES (
+                #{paymentId},
+                #{paymentDate,jdbcType=DATE},
+                #{transactionId},
+                #{currencyCode},
+                #{sellerCurrencyCode},
+                #{exchangeRate},
+                #{amount},
+                #{paymentPlatformId},
+                #{paymentPlatformTransactionId}
+            )
+            ON DUPLICATE KEY UPDATE
+                payment_date = VALUES(payment_date),
+                transaction_id = VALUES(transaction_id),
+                currency_code = VALUES(currency_code),
+                seller_currency_code = VALUES(seller_currency_code),
+                exchange_rate = VALUES(exchange_rate),
+                amount = VALUES(amount),
+                payment_platform_id = VALUES(payment_platform_id),
+                payment_platform_transaction_id = VALUES(payment_platform_transaction_id)
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "paymentId")
+    void upsert(Payment payment);
+
     @Delete("""
             DELETE FROM payment
             WHERE payment_id = #{paymentId}

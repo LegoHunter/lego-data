@@ -64,4 +64,21 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <excludes>
+                    <exclude>scripts/db/h2/current_schema.ddl</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>../lego-data-mybatis/src/test/resources</directory>
+                <includes>
+                    <include>scripts/db/h2/current_schema.ddl</include>
+                </includes>
+            </testResource>
+        </testResources>
+    </build>
 </project>

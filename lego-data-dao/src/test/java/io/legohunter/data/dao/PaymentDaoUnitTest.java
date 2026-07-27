@@ -49,6 +49,7 @@ class PaymentDaoUnitTest {
         paymentDao.insert(payment);
         paymentDao.migrate(payment);
         paymentDao.update(payment);
+        assertThat(paymentDao.upsert(payment)).isSameAs(payment);
         paymentDao.delete(1L);
         paymentDao.deleteByTransactionId(10L);
 
@@ -59,6 +60,7 @@ class PaymentDaoUnitTest {
         verify(paymentMapper).insert(payment);
         verify(paymentMapper).migrate(payment);
         verify(paymentMapper).update(payment);
+        verify(paymentMapper).upsert(payment);
         verify(paymentMapper).delete(1L);
         verify(paymentMapper).deleteByTransactionId(10L);
         verify(paymentMapper, never()).deleteByTransactionId(99L);

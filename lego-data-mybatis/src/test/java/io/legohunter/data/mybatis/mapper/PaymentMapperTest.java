@@ -46,6 +46,15 @@ class PaymentMapperTest extends MapperTestSupport {
         paymentMapper.migrate(migratedPayment);
         assertThat(paymentMapper.findById(10L)).isPresent();
 
+        migratedPayment.setAmount(new BigDecimal("50.00000"));
+        migratedPayment.setPaymentPlatformTransactionId("PAYPAL-UPSERTED");
+        paymentMapper.upsert(migratedPayment);
+        assertThat(paymentMapper.findById(10L))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getAmount()).isEqualByComparingTo("50.00000");
+                    assertThat(found.getPaymentPlatformTransactionId()).isEqualTo("PAYPAL-UPSERTED");
+                });
+
         paymentMapper.delete(10L);
         assertThat(paymentMapper.findById(10L)).isEmpty();
 

@@ -36,6 +36,11 @@ public class PaymentDao {
         paymentMapper.update(payment);
     }
 
+    public Payment upsert(Payment payment) {
+        paymentMapper.upsert(payment);
+        return payment;
+    }
+
     public void delete(Long paymentId) {
         paymentMapper.delete(paymentId);
     }
