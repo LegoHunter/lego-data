@@ -210,12 +210,14 @@ class DaoDelegationCoverageTest {
         when(transactionItemMapper.findAll()).thenReturn(List.of(transactionItem));
         when(transactionItemMapper.findById(50L)).thenReturn(Optional.of(transactionItem));
         when(transactionItemMapper.findByTransactionId(40L)).thenReturn(List.of(transactionItem));
+        when(transactionItemMapper.findByItemInventoryId(70)).thenReturn(List.of(transactionItem));
         TransactionItemDao transactionItemDao = new TransactionItemDao(transactionItemMapper);
         transactionItemDao.insert(transactionItem);
         transactionItemDao.migrate(transactionItem);
         transactionItemDao.update(transactionItem);
         assertThat(transactionItemDao.findAll()).containsExactly(transactionItem);
         assertThat(transactionItemDao.findByTransactionId(40L)).containsExactly(transactionItem);
+        assertThat(transactionItemDao.findByItemInventoryId(70)).containsExactly(transactionItem);
         assertThat(transactionItemDao.findById(50L)).contains(transactionItem);
         verify(transactionItemMapper).insert(transactionItem);
         verify(transactionItemMapper).migrate(transactionItem);
