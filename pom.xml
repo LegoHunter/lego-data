@@ -19,6 +19,7 @@
         <mysql-connector-j.version>8.0.33</mysql-connector-j.version>
         <lombok.version>1.18.42</lombok.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
         <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
         <github.organization>LegoHunter</github.organization>
         <github.repo.url>https://github.com/${github.organization}/lego-data.git</github.repo.url>

@@ -29,6 +29,15 @@
         </dependency>
 
         <dependency>
+            <groupId>io-legohunter</groupId>
+            <artifactId>lego-data-mybatis</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
@@ -64,21 +73,4 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-                <excludes>
-                    <exclude>scripts/db/h2/current_schema.ddl</exclude>
-                </excludes>
-            </testResource>
-            <testResource>
-                <directory>../lego-data-mybatis/src/test/resources</directory>
-                <includes>
-                    <include>scripts/db/h2/current_schema.ddl</include>
-                </includes>
-            </testResource>
-        </testResources>
-    </build>
 </project>
