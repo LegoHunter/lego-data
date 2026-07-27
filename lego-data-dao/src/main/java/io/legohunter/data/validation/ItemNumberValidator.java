@@ -33,7 +33,7 @@ public class ItemNumberValidator implements ConstraintValidator<ItemNumberExists
                 .map(externalCatalogItem -> true)
                 .orElseGet(() -> {
                     context.disableDefaultConstraintViolation();
-                    context.buildConstraintViolationWithTemplate(String.format("Item Number was not found in external service %s", externalServiceCode))
+                    context.buildConstraintViolationWithTemplate(String.format("Item Number [%s] was not found in external service %s", value, externalServiceCode))
                             .addConstraintViolation();
                     return false;
                 });
