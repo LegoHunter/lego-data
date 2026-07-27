@@ -31,6 +31,9 @@ class TransactionItemMapperTest extends MapperTestSupport {
         assertThat(transactionItemMapper.findByTransactionId(transaction.getTransactionId()))
                 .extracting(TransactionItem::getTransactionItemId)
                 .containsExactly(transactionItem.getTransactionItemId());
+        assertThat(transactionItemMapper.findByItemInventoryId(itemInventory.getItemInventoryId()))
+                .extracting(TransactionItem::getTransactionItemId)
+                .containsExactly(transactionItem.getTransactionItemId());
         assertThat(transactionItemMapper.findAll()).hasSize(1);
 
         TransactionItem migratedItem = TransactionItem.builder()

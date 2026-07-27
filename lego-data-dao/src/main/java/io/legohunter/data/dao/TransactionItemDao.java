@@ -33,6 +33,10 @@ public class TransactionItemDao {
         return transactionItemMapper.findByTransactionId(transactionId);
     }
 
+    public List<TransactionItem> findByItemInventoryId(Integer itemInventoryId) {
+        return transactionItemMapper.findByItemInventoryId(itemInventoryId);
+    }
+
     public Optional<TransactionItem> findById(Long transactionItemId) {
         return transactionItemMapper.findById(transactionItemId);
     }
