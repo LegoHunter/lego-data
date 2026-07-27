@@ -55,7 +55,7 @@ class ValidatorCoverageTest {
 
         when(catalogItemDao.findByExternalServiceIdAndExternalItemKey(1, "missing")).thenReturn(Optional.empty());
         assertThat(validator.isValid("missing", context)).isFalse();
-        verify(context).buildConstraintViolationWithTemplate("Item Number was not found in external service BRICKLINK");
+        verify(context).buildConstraintViolationWithTemplate("Item Number [missing] was not found in external service BRICKLINK");
     }
 
     @Test
@@ -74,7 +74,7 @@ class ValidatorCoverageTest {
 
         when(dao.findByConditionCode("BAD")).thenReturn(Optional.empty());
         assertThat(validator.isValid("BAD", context)).isFalse();
-        verify(context).buildConstraintViolationWithTemplate("Must be one of [G]");
+        verify(context).buildConstraintViolationWithTemplate("Condition Code [BAD] is invalid. Must be one of [G]");
     }
 
     @Test
