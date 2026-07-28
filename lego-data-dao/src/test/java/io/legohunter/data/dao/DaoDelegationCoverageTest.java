@@ -5,6 +5,7 @@ import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.CostType;
 import io.legohunter.data.dto.InventoryIndex;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Payment;
 import io.legohunter.data.dto.PaymentPlatform;
 import io.legohunter.data.dto.PricingApplyReadiness;
@@ -22,6 +23,7 @@ import io.legohunter.data.mybatis.mapper.ConditionMapper;
 import io.legohunter.data.mybatis.mapper.CostTypeMapper;
 import io.legohunter.data.mybatis.mapper.InventoryIndexMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
+import io.legohunter.data.mybatis.mapper.MarketplaceListingSyncRequestMapper;
 import io.legohunter.data.mybatis.mapper.PartyMapper;
 import io.legohunter.data.mybatis.mapper.PaymentMapper;
 import io.legohunter.data.mybatis.mapper.PaymentPlatformMapper;
@@ -281,17 +283,22 @@ class DaoDelegationCoverageTest {
                 .externalListingId("remote-1")
                 .build();
 
-        when(mapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 5))
+        when(mapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCodes(1, Set.of("ACTIVE"), 5))
                 .thenReturn(Set.of(listing));
         assertThat(dao.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 5, true))
                 .containsExactly(listing);
+        assertThat(dao.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(1, Set.of(), 5, true))
+                .isEmpty();
 
-        when(mapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
-                1, "ACTIVE", "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
+        when(mapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                1, Set.of("ACTIVE"), "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
         )).thenReturn(Set.of(listing));
         assertThat(dao.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
                 1, "ACTIVE", "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
         )).containsExactly(listing);
+        assertThat(dao.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                1, Set.of(), "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
+        )).isEmpty();
 
         dao.findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 0);
         verify(mapper).findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 1);
@@ -310,6 +317,47 @@ class DaoDelegationCoverageTest {
 
         assertThat(dao.upsert(missingIdListing)).isSameAs(hydratedListing);
         verify(mapper).upsert(missingIdListing);
+    }
+
+    @Test
+    void marketplaceListingSyncRequestDaoCoversFilteredLookupBranches() {
+        MarketplaceListingSyncRequestMapper mapper = mock(MarketplaceListingSyncRequestMapper.class);
+        MarketplaceListingSyncRequestDao dao = new MarketplaceListingSyncRequestDao(mapper);
+        MarketplaceListingSyncRequest syncRequest = MarketplaceListingSyncRequest.builder()
+                .marketplaceListingSyncRequestId(100L)
+                .marketplaceListingId(200)
+                .syncRequestTypeCode("LISTING_CREATE")
+                .syncRequestStatusCode("PENDING")
+                .build();
+        ZonedDateTime dueAt = ZonedDateTime.parse("2026-06-24T10:00:00Z");
+
+        when(mapper.findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+                200,
+                "LISTING_CREATE",
+                Set.of("PENDING", "CLAIMED")
+        )).thenReturn(Set.of(syncRequest));
+        when(mapper.findClaimableByStatusCodeAndSyncRequestTypeCodes(
+                "PENDING",
+                Set.of("PRICE_UPDATE"),
+                dueAt,
+                5
+        )).thenReturn(Set.of(syncRequest));
+
+        assertThat(dao.findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+                200,
+                "LISTING_CREATE",
+                Set.of("PENDING", "CLAIMED")
+        )).containsExactly(syncRequest);
+        assertThat(dao.findClaimableByStatusCodeAndSyncRequestTypeCodes(
+                "PENDING",
+                Set.of("PRICE_UPDATE"),
+                dueAt,
+                5
+        )).containsExactly(syncRequest);
+        assertThat(dao.findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(200, "LISTING_CREATE", Set.of()))
+                .isEmpty();
+        assertThat(dao.findClaimableByStatusCodeAndSyncRequestTypeCodes("PENDING", Set.of(), dueAt, 5))
+                .isEmpty();
     }
 
     @Test

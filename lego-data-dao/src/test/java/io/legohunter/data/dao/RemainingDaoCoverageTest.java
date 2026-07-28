@@ -32,7 +32,7 @@ class RemainingDaoCoverageTest {
                 .externalListingId("remote-1")
                 .build();
 
-        when(mapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 5))
+        when(mapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(1, Set.of("ACTIVE"), 5))
                 .thenReturn(Set.of(listing));
         when(mapper.findByListingExternalServiceIdAndExternalListingId(1, "remote-1"))
                 .thenReturn(Optional.of(listing));

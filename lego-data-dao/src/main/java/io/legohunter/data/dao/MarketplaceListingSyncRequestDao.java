@@ -30,8 +30,40 @@ public class MarketplaceListingSyncRequestDao {
         return marketplaceListingSyncRequestMapper.findBySyncRequestStatusCode(syncRequestStatusCode);
     }
 
+    public Set<MarketplaceListingSyncRequest> findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+            Integer marketplaceListingId,
+            String syncRequestTypeCode,
+            Set<String> syncRequestStatusCodes
+    ) {
+        if (syncRequestStatusCodes == null || syncRequestStatusCodes.isEmpty()) {
+            return Set.of();
+        }
+        return marketplaceListingSyncRequestMapper.findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+                marketplaceListingId,
+                syncRequestTypeCode,
+                syncRequestStatusCodes
+        );
+    }
+
     public Set<MarketplaceListingSyncRequest> findClaimableByStatusCode(String syncRequestStatusCode, ZonedDateTime asOf, int limit) {
         return marketplaceListingSyncRequestMapper.findClaimableByStatusCode(syncRequestStatusCode, asOf, Math.max(1, limit));
+    }
+
+    public Set<MarketplaceListingSyncRequest> findClaimableByStatusCodeAndSyncRequestTypeCodes(
+            String syncRequestStatusCode,
+            Set<String> syncRequestTypeCodes,
+            ZonedDateTime asOf,
+            int limit
+    ) {
+        if (syncRequestTypeCodes == null || syncRequestTypeCodes.isEmpty()) {
+            return Set.of();
+        }
+        return marketplaceListingSyncRequestMapper.findClaimableByStatusCodeAndSyncRequestTypeCodes(
+                syncRequestStatusCode,
+                syncRequestTypeCodes,
+                asOf,
+                Math.max(1, limit)
+        );
     }
 
     public long countBySyncRequestStatusCode(String syncRequestStatusCode) {

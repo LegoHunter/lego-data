@@ -108,10 +108,51 @@ public interface MarketplaceListingMapper {
     }
 
     @Select("""
+            <script>
             SELECT ${columns}
             ${fromClause}
             WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code = #{listingStatusCode}
+              AND ml.listing_status_code IN
+              <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+                #{listingStatusCode}
+              </foreach>
+              AND ml.external_catalog_item_id IS NOT NULL
+            ORDER BY ml.marketplace_listing_id
+            LIMIT #{limit}
+            </script>
+            """)
+    @ResultMap("marketplaceListingResultMap")
+    Set<MarketplaceListing> findByListingExternalServiceIdAndListingStatusCodes(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes,
+            @Param("limit") int limit,
+            @Param("columns") String columns,
+            @Param("fromClause") String fromClause
+    );
+
+    default Set<MarketplaceListing> findByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            int limit
+    ) {
+        return findByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes,
+                limit,
+                ALL_COLUMNS,
+                FROM_CLAUSE
+        );
+    }
+
+    @Select("""
+            <script>
+            SELECT ${columns}
+            ${fromClause}
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code IN
+              <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+                #{listingStatusCode}
+              </foreach>
               AND ml.external_catalog_item_id IS NOT NULL
               AND NOT EXISTS (
                   SELECT 1
@@ -124,11 +165,12 @@ public interface MarketplaceListingMapper {
               )
             ORDER BY ml.marketplace_listing_id
             LIMIT #{limit}
+            </script>
             """)
     @ResultMap("marketplaceListingResultMap")
-    Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+    Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
-            @Param("listingStatusCode") String listingStatusCode,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes,
             @Param("pendingStatusCode") String pendingStatusCode,
             @Param("claimedStatusCode") String claimedStatusCode,
             @Param("asOf") ZonedDateTime asOf,
@@ -145,9 +187,29 @@ public interface MarketplaceListingMapper {
             ZonedDateTime asOf,
             int limit
     ) {
-        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
                 listingExternalServiceId,
-                listingStatusCode,
+                Set.of(listingStatusCode),
+                pendingStatusCode,
+                claimedStatusCode,
+                asOf,
+                limit,
+                ALL_COLUMNS,
+                FROM_CLAUSE
+        );
+    }
+
+    default Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            String pendingStatusCode,
+            String claimedStatusCode,
+            ZonedDateTime asOf,
+            int limit
+    ) {
+        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes,
                 pendingStatusCode,
                 claimedStatusCode,
                 asOf,
@@ -163,9 +225,21 @@ public interface MarketplaceListingMapper {
             @Param("limit") int limit
     );
 
+    Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes,
+            @Param("limit") int limit
+    );
+
     Set<MarketplaceListing> findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,
+            @Param("limit") int limit
+    );
+
+    Set<MarketplaceListing> findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCodes(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes,
             @Param("limit") int limit
     );
 
