@@ -689,6 +689,29 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                 .extracting(MarketplaceListingSyncRequest::getMarketplaceListingSyncRequestId)
                 .containsExactly(syncRequest.getMarketplaceListingSyncRequestId());
 
+        MarketplaceListingSyncRequest listingCreateRequest = marketplaceListingSyncRequest(
+                fixture.listing().getMarketplaceListingId(),
+                2,
+                null
+        );
+        listingCreateRequest.setSyncRequestTypeCode("LISTING_CREATE");
+        listingCreateRequest.setSyncReasonCode("MANUAL_LISTING_CREATE");
+        listingCreateRequest.setRemoteInventoryId(null);
+        marketplaceListingSyncRequestMapper.insert(listingCreateRequest);
+        assertThat(marketplaceListingSyncRequestMapper.findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+                fixture.listing().getMarketplaceListingId(),
+                "LISTING_CREATE",
+                Set.of("PENDING", "CLAIMED")
+        )).extracting(MarketplaceListingSyncRequest::getMarketplaceListingSyncRequestId)
+                .containsExactly(listingCreateRequest.getMarketplaceListingSyncRequestId());
+        assertThat(marketplaceListingSyncRequestMapper.findClaimableByStatusCodeAndSyncRequestTypeCodes(
+                "PENDING",
+                Set.of("PRICE_UPDATE"),
+                SNAPSHOT_AT.plusHours(2),
+                10
+        )).extracting(MarketplaceListingSyncRequest::getMarketplaceListingSyncRequestId)
+                .containsExactly(syncRequest.getMarketplaceListingSyncRequestId());
+
         assertThat(marketplaceListingSyncRequestMapper.claim(
                 syncRequest.getMarketplaceListingSyncRequestId(),
                 "PENDING",
@@ -721,7 +744,8 @@ class PricingPlaneMapperTest extends MapperTestSupport {
             assertThat(found.getRequestedUnitPrice()).isEqualByComparingTo("218.00");
         });
 
-        assertThat(marketplaceListingSyncRequestMapper.findAll()).hasSize(1);
+        assertThat(marketplaceListingSyncRequestMapper.findAll()).hasSize(2);
+        assertThat(marketplaceListingSyncRequestMapper.delete(listingCreateRequest.getMarketplaceListingSyncRequestId())).isOne();
         assertThat(marketplaceListingSyncRequestMapper.delete(syncRequest.getMarketplaceListingSyncRequestId())).isOne();
         assertThat(marketplaceListingSyncRequestMapper.findAll()).isEmpty();
     }

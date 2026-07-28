@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,12 +84,24 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         fixedPriceListing.setFixedPrice(true);
         marketplaceListingMapper.insert(fixedPriceListing);
 
+        ListingFixture draftFixture = listingFixture("listing-draft-priceable");
+        MarketplaceListing draftListing = marketplaceListing(draftFixture.inventory().getItemInventoryId(), draftFixture.item().getExternalCatalogItemId(), 2, "BL-DRAFT-PRICEABLE");
+        draftListing.setListingStatusCode("DRAFT");
+        draftListing.setFixedPrice(false);
+        marketplaceListingMapper.insert(draftListing);
+
         assertThat(marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactlyInAnyOrder("BL-UNPRICEABLE", "BL-PRICEABLE", "BL-FIXED");
+        assertThat(marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCodes(2, Set.of("ACTIVE", "DRAFT"), 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-UNPRICEABLE", "BL-PRICEABLE", "BL-FIXED", "BL-DRAFT-PRICEABLE");
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactlyInAnyOrder("BL-PRICEABLE", "BL-FIXED");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(2, Set.of("ACTIVE", "DRAFT"), 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-PRICEABLE", "BL-FIXED", "BL-DRAFT-PRICEABLE");
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 1))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-PRICEABLE");
@@ -288,6 +301,16 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         dueWorkItem.setWorkStatusCode("SUCCEEDED");
         pricingCrawlWorkItemMapper.insert(dueWorkItem);
 
+        ListingFixture draftFixture = listingFixture("crawl-draft");
+        MarketplaceListing draftListing = marketplaceListing(
+                draftFixture.inventory().getItemInventoryId(),
+                draftFixture.item().getExternalCatalogItemId(),
+                2,
+                "BL-CRAWL-DRAFT"
+        );
+        draftListing.setListingStatusCode("DRAFT");
+        marketplaceListingMapper.insert(draftListing);
+
         assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
                 2,
                 "ACTIVE",
@@ -297,6 +320,15 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 10
         )).extracting(MarketplaceListing::getExternalListingId)
                 .containsExactlyInAnyOrder("BL-CRAWL-AVAILABLE", "BL-CRAWL-DUE");
+        assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                2,
+                Set.of("ACTIVE", "DRAFT"),
+                "PENDING",
+                "CLAIMED",
+                CRAWL_AT,
+                10
+        )).extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-CRAWL-AVAILABLE", "BL-CRAWL-DUE", "BL-CRAWL-DRAFT");
     }
 
     @Test

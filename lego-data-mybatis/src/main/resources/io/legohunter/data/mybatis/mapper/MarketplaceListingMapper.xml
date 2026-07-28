@@ -233,6 +233,41 @@
     LIMIT #{limit}
   </select>
 
+  <select id="findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes"
+          resultMap="marketplaceListingResultMap">
+    SELECT <include refid="marketplaceListingColumns"/>
+    <include refid="marketplaceListingFromClause"/>
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code IN
+      <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+        #{listingStatusCode}
+      </foreach>
+      AND ml.external_catalog_item_id IS NOT NULL
+      AND (
+        (
+          <include refid="fixedPriceNotAlreadyDecided"/>
+        )
+        OR (
+          COALESCE(ml.fixed_price, FALSE) &lt;&gt; TRUE
+          AND
+          <include refid="priceableInventoryConditionPresent"/>
+          AND (
+            NOT <include refid="latestPricingDecisionExists"/>
+            OR (
+              (
+                <include refid="latestMatchingPricingSnapshotId"/>
+              ) IS NOT NULL
+              AND <include refid="notAlreadyDecidedForLatestMatchingSnapshot"/>
+            )
+          )
+        )
+      )
+    ORDER BY ml.marketplace_listing_id
+    LIMIT #{limit}
+  </select>
+
   <select id="findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode"
           resultMap="marketplaceListingResultMap">
     SELECT <include refid="marketplaceListingColumns"/>
@@ -241,6 +276,34 @@
       ON ii.item_inventory_id = ml.item_inventory_id
     WHERE ml.listing_external_service_id = #{listingExternalServiceId}
       AND ml.listing_status_code = #{listingStatusCode}
+      AND ml.external_catalog_item_id IS NOT NULL
+      AND (
+        (
+          <include refid="fixedPriceNotAlreadyDecided"/>
+        )
+        OR (
+          COALESCE(ml.fixed_price, FALSE) &lt;&gt; TRUE
+          AND
+          <include refid="priceableInventoryConditionPresent"/>
+          AND <include refid="matchingPricingSnapshotExists"/>
+          AND <include refid="notAlreadyDecidedForLatestMatchingSnapshot"/>
+        )
+      )
+    ORDER BY ml.marketplace_listing_id
+    LIMIT #{limit}
+  </select>
+
+  <select id="findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCodes"
+          resultMap="marketplaceListingResultMap">
+    SELECT <include refid="marketplaceListingColumns"/>
+    <include refid="marketplaceListingFromClause"/>
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code IN
+      <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+        #{listingStatusCode}
+      </foreach>
       AND ml.external_catalog_item_id IS NOT NULL
       AND (
         (

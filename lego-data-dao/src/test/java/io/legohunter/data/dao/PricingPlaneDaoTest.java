@@ -26,6 +26,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -181,6 +182,26 @@ class PricingPlaneDaoTest {
         assertThat(marketplaceListingSyncRequestDao.countDueBySyncRequestStatusCode("PENDING", SNAPSHOT_AT.plusHours(2))).isOne();
         assertThat(marketplaceListingSyncRequestDao.findClaimableByStatusCode("PENDING", SNAPSHOT_AT.plusHours(2), 10)).hasSize(1);
 
+        MarketplaceListingSyncRequest listingCreateRequest = marketplaceListingSyncRequest(fixture, decision);
+        listingCreateRequest.setPricingDecisionId(null);
+        listingCreateRequest.setSyncRequestTypeCode("LISTING_CREATE");
+        listingCreateRequest.setSyncReasonCode("MANUAL_LISTING_CREATE");
+        listingCreateRequest.setRemoteInventoryId(null);
+        listingCreateRequest = marketplaceListingSyncRequestDao.insert(listingCreateRequest);
+        assertThat(marketplaceListingSyncRequestDao.findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+                fixture.listing().getMarketplaceListingId(),
+                "LISTING_CREATE",
+                Set.of("PENDING", "CLAIMED")
+        )).extracting(MarketplaceListingSyncRequest::getMarketplaceListingSyncRequestId)
+                .containsExactly(listingCreateRequest.getMarketplaceListingSyncRequestId());
+        assertThat(marketplaceListingSyncRequestDao.findClaimableByStatusCodeAndSyncRequestTypeCodes(
+                "PENDING",
+                Set.of("PRICE_UPDATE"),
+                SNAPSHOT_AT.plusHours(2),
+                10
+        )).extracting(MarketplaceListingSyncRequest::getMarketplaceListingSyncRequestId)
+                .containsExactly(syncRequest.getMarketplaceListingSyncRequestId());
+
         assertThat(marketplaceListingSyncRequestDao.claim(
                 syncRequest.getMarketplaceListingSyncRequestId(),
                 "PENDING",
@@ -201,8 +222,9 @@ class PricingPlaneDaoTest {
         syncRequest.setRequestedUnitPrice(new BigDecimal("218.00"));
         syncRequest = marketplaceListingSyncRequestDao.upsert(syncRequest);
         assertThat(syncRequest.getRequestedUnitPrice()).isEqualByComparingTo("218.00");
-        assertThat(marketplaceListingSyncRequestDao.findAll()).hasSize(1);
+        assertThat(marketplaceListingSyncRequestDao.findAll()).hasSize(2);
 
+        marketplaceListingSyncRequestDao.delete(listingCreateRequest.getMarketplaceListingSyncRequestId());
         marketplaceListingSyncRequestDao.delete(syncRequest.getMarketplaceListingSyncRequestId());
         assertThat(marketplaceListingSyncRequestDao.findAll()).isEmpty();
     }

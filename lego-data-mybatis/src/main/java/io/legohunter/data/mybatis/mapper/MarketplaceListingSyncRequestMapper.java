@@ -88,6 +88,64 @@ public interface MarketplaceListingSyncRequestMapper {
     }
 
     @Select("""
+            <script>
+            SELECT ${columns}
+            FROM marketplace_listing_sync_request
+            WHERE marketplace_listing_id = #{marketplaceListingId}
+              AND sync_request_type_code = #{syncRequestTypeCode}
+              AND sync_request_status_code IN
+              <foreach item="syncRequestStatusCode" collection="syncRequestStatusCodes" open="(" separator="," close=")">
+                #{syncRequestStatusCode}
+              </foreach>
+            ORDER BY marketplace_listing_sync_request_id
+            </script>
+            """)
+    @ResultMap("marketplaceListingSyncRequestResultMap")
+    Set<MarketplaceListingSyncRequest> findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+            @Param("marketplaceListingId") Integer marketplaceListingId,
+            @Param("syncRequestTypeCode") String syncRequestTypeCode,
+            @Param("syncRequestStatusCodes") Set<String> syncRequestStatusCodes,
+            @Param("columns") String columns
+    );
+
+    default Set<MarketplaceListingSyncRequest> findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+            Integer marketplaceListingId,
+            String syncRequestTypeCode,
+            Set<String> syncRequestStatusCodes
+    ) {
+        return findByMarketplaceListingIdAndSyncRequestTypeCodeAndSyncRequestStatusCodes(
+                marketplaceListingId,
+                syncRequestTypeCode,
+                syncRequestStatusCodes,
+                ALL_COLUMNS
+        );
+    }
+
+    @Select("""
+            <script>
+            SELECT ${columns}
+            FROM marketplace_listing_sync_request
+            WHERE sync_request_status_code = #{syncRequestStatusCode}
+              AND next_attempt_at &lt;= #{asOf}
+              AND attempt_count &lt; max_attempts
+              AND sync_request_type_code IN
+              <foreach item="syncRequestTypeCode" collection="syncRequestTypeCodes" open="(" separator="," close=")">
+                #{syncRequestTypeCode}
+              </foreach>
+            ORDER BY next_attempt_at, marketplace_listing_sync_request_id
+            LIMIT #{limit}
+            </script>
+            """)
+    @ResultMap("marketplaceListingSyncRequestResultMap")
+    Set<MarketplaceListingSyncRequest> findClaimableByStatusCodeAndSyncRequestTypeCodes(
+            @Param("syncRequestStatusCode") String syncRequestStatusCode,
+            @Param("syncRequestTypeCodes") Set<String> syncRequestTypeCodes,
+            @Param("asOf") ZonedDateTime asOf,
+            @Param("limit") int limit,
+            @Param("columns") String columns
+    );
+
+    @Select("""
             SELECT ${columns}
             FROM marketplace_listing_sync_request
             WHERE sync_request_status_code = #{syncRequestStatusCode}
@@ -106,6 +164,21 @@ public interface MarketplaceListingSyncRequestMapper {
 
     default Set<MarketplaceListingSyncRequest> findClaimableByStatusCode(String syncRequestStatusCode, ZonedDateTime asOf, int limit) {
         return findClaimableByStatusCode(syncRequestStatusCode, asOf, limit, ALL_COLUMNS);
+    }
+
+    default Set<MarketplaceListingSyncRequest> findClaimableByStatusCodeAndSyncRequestTypeCodes(
+            String syncRequestStatusCode,
+            Set<String> syncRequestTypeCodes,
+            ZonedDateTime asOf,
+            int limit
+    ) {
+        return findClaimableByStatusCodeAndSyncRequestTypeCodes(
+                syncRequestStatusCode,
+                syncRequestTypeCodes,
+                asOf,
+                limit,
+                ALL_COLUMNS
+        );
     }
 
     @Select("SELECT COUNT(*) FROM marketplace_listing_sync_request WHERE sync_request_status_code = #{syncRequestStatusCode}")

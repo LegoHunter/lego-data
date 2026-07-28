@@ -36,7 +36,22 @@ public class MarketplaceListingDao {
         return marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCode(
                 listingExternalServiceId,
                 listingStatusCode,
-                limit
+                Math.max(1, limit)
+        );
+    }
+
+    public Set<MarketplaceListing> findByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            int limit
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return Set.of();
+        }
+        return marketplaceListingMapper.findByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes,
+                Math.max(1, limit)
         );
     }
 
@@ -45,10 +60,25 @@ public class MarketplaceListingDao {
             String listingStatusCode,
             int limit
     ) {
-        return marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
                 listingExternalServiceId,
-                listingStatusCode,
+                Set.of(listingStatusCode),
                 limit
+        );
+    }
+
+    public Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            int limit
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return Set.of();
+        }
+        return marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes,
+                Math.max(1, limit)
         );
     }
 
@@ -58,16 +88,33 @@ public class MarketplaceListingDao {
             int limit,
             boolean requireCurrentSnapshot
     ) {
+        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                Set.of(listingStatusCode),
+                limit,
+                requireCurrentSnapshot
+        );
+    }
+
+    public Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            int limit,
+            boolean requireCurrentSnapshot
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return Set.of();
+        }
         if (requireCurrentSnapshot) {
-            return marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(
+            return marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCodes(
                     listingExternalServiceId,
-                    listingStatusCode,
-                    limit
+                    listingStatusCodes,
+                    Math.max(1, limit)
             );
         }
-        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
+        return findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(
                 listingExternalServiceId,
-                listingStatusCode,
+                listingStatusCodes,
                 limit
         );
     }
@@ -80,13 +127,34 @@ public class MarketplaceListingDao {
             ZonedDateTime asOf,
             int limit
     ) {
-        return marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
                 listingExternalServiceId,
-                listingStatusCode,
+                Set.of(listingStatusCode),
                 pendingStatusCode,
                 claimedStatusCode,
                 asOf,
                 limit
+        );
+    }
+
+    public Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            String pendingStatusCode,
+            String claimedStatusCode,
+            ZonedDateTime asOf,
+            int limit
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return Set.of();
+        }
+        return marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes,
+                pendingStatusCode,
+                claimedStatusCode,
+                asOf,
+                Math.max(1, limit)
         );
     }
 
