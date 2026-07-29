@@ -584,6 +584,16 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         readyDecision.setFinalPrice(new BigDecimal("212.25"));
         pricingDecisionMapper.insert(readyDecision);
 
+        PricingFixture draftFixture = pricingFixture("pricing-apply-draft");
+        draftFixture.listing().setListingStatusCode("DRAFT");
+        marketplaceListingMapper.update(draftFixture.listing());
+        PricingSnapshot draftSnapshot = insertedSnapshot(draftFixture);
+        PricingDecision draftDecision = pricingDecision(draftFixture.listing().getMarketplaceListingId(), draftSnapshot.getPricingSnapshotId());
+        draftDecision.setDecisionStatusCode("PROPOSED");
+        draftDecision.setReasonCode("MEAN_PLUS_STDDEV");
+        draftDecision.setFinalPrice(new BigDecimal("88.25"));
+        pricingDecisionMapper.insert(draftDecision);
+
         PricingFixture appliedFixture = pricingFixture("pricing-apply-applied");
         PricingSnapshot appliedSnapshot = insertedSnapshot(appliedFixture);
         PricingDecision appliedDecision = pricingDecision(appliedFixture.listing().getMarketplaceListingId(), appliedSnapshot.getPricingSnapshotId());
@@ -601,8 +611,8 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         latestFailedDecision.setFinalPrice(null);
         pricingDecisionMapper.insert(latestFailedDecision);
 
-        assertThat(pricingDecisionMapper.countLatestByDecisionStatusCode("PROPOSED")).isEqualTo(2);
-        assertThat(pricingDecisionMapper.countLatestUnappliedByDecisionStatusCode("PROPOSED")).isOne();
+        assertThat(pricingDecisionMapper.countLatestByDecisionStatusCode("PROPOSED")).isEqualTo(3);
+        assertThat(pricingDecisionMapper.countLatestUnappliedByDecisionStatusCode("PROPOSED")).isEqualTo(2);
         assertThat(pricingDecisionMapper.countLatestByDecisionStatusCode("FAILED")).isOne();
 
         Set<PricingDecisionReview> reviews = pricingDecisionMapper
@@ -616,6 +626,18 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         assertThat(reviews)
                 .extracting(PricingDecisionReview::getMarketplaceListingId)
                 .containsExactly(readyFixture.listing().getMarketplaceListingId());
+        assertThat(pricingDecisionMapper
+                .findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+                        2,
+                        Set.of("ACTIVE", "DRAFT"),
+                        "PROPOSED",
+                        10
+                ))
+                .extracting(PricingDecisionReview::getMarketplaceListingId)
+                .containsExactlyInAnyOrder(
+                        draftFixture.listing().getMarketplaceListingId(),
+                        readyFixture.listing().getMarketplaceListingId()
+                );
         assertThat(reviews)
                 .singleElement()
                 .satisfies(review -> {
