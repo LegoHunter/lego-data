@@ -239,6 +239,49 @@ public interface PricingDecisionMapper {
             @Param("columns") String columns
     );
 
+    @Select("""
+            <script>
+            SELECT ${columns}
+            FROM marketplace_listing ml
+            JOIN item_inventory ii
+              ON ii.item_inventory_id = ml.item_inventory_id
+            JOIN external_catalog_item eci
+              ON eci.external_catalog_item_id = ml.external_catalog_item_id
+            JOIN (
+                SELECT pd.*
+                FROM pricing_decision pd
+                JOIN (
+                    SELECT marketplace_listing_id,
+                           MAX(pricing_decision_id) AS pricing_decision_id
+                    FROM pricing_decision
+                    GROUP BY marketplace_listing_id
+                ) latest
+                  ON latest.pricing_decision_id = pd.pricing_decision_id
+            ) pd
+              ON pd.marketplace_listing_id = ml.marketplace_listing_id
+            LEFT JOIN pricing_snapshot ps
+              ON ps.pricing_snapshot_id = pd.pricing_snapshot_id
+            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+              AND ml.listing_status_code IN
+              <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+                #{listingStatusCode}
+              </foreach>
+              AND pd.decision_status_code = #{decisionStatusCode}
+              AND pd.applied_at IS NULL
+            ORDER BY pd.created_at DESC,
+                     pd.pricing_decision_id DESC
+            LIMIT #{limit}
+            </script>
+            """)
+    @ResultMap("pricingDecisionReviewResultMap")
+    Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes,
+            @Param("decisionStatusCode") String decisionStatusCode,
+            @Param("limit") int limit,
+            @Param("columns") String columns
+    );
+
     default Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
             Integer listingExternalServiceId,
             String listingStatusCode,
@@ -248,6 +291,21 @@ public interface PricingDecisionMapper {
         return findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
                 listingExternalServiceId,
                 listingStatusCode,
+                decisionStatusCode,
+                limit,
+                REVIEW_COLUMNS
+        );
+    }
+
+    default Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            String decisionStatusCode,
+            int limit
+    ) {
+        return findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+                listingExternalServiceId,
+                listingStatusCodes,
                 decisionStatusCode,
                 limit,
                 REVIEW_COLUMNS

@@ -73,6 +73,23 @@ public class PricingDecisionDao {
         );
     }
 
+    public Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            String decisionStatusCode,
+            int limit
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return Set.of();
+        }
+        return pricingDecisionMapper.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+                listingExternalServiceId,
+                listingStatusCodes,
+                decisionStatusCode,
+                Math.max(1, limit)
+        );
+    }
+
     public PricingDecision insert(PricingDecision pricingDecision) {
         pricingDecisionMapper.insert(pricingDecision);
         return findByPricingDecisionId(pricingDecision.getPricingDecisionId()).orElseThrow();

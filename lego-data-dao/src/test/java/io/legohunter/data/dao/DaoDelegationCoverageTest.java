@@ -374,6 +374,18 @@ class DaoDelegationCoverageTest {
                 "PROPOSED",
                 25
         );
+        dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+                1,
+                Set.of("ACTIVE", "DRAFT"),
+                "PROPOSED",
+                25
+        );
+        assertThat(dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+                1,
+                Set.of(),
+                "PROPOSED",
+                25
+        )).isEmpty();
 
         verify(mapper).countLatestByDecisionStatusCode("PROPOSED");
         verify(mapper).countLatestUnappliedByDecisionStatusCode("PROPOSED");
@@ -381,6 +393,12 @@ class DaoDelegationCoverageTest {
         verify(mapper).findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
                 1,
                 "ACTIVE",
+                "PROPOSED",
+                25
+        );
+        verify(mapper).findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
+                1,
+                Set.of("ACTIVE", "DRAFT"),
                 "PROPOSED",
                 25
         );
