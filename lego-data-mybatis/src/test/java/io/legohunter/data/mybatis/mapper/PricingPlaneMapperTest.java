@@ -676,6 +676,24 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingApplyReadinessCurrentReviewsIgnoreAlreadyAppliedDecision() {
+        PricingFixture fixture = pricingFixture("pricing-readiness-applied");
+        PricingSnapshot snapshot = insertedSnapshot(fixture);
+        PricingDecision decision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        decision.setDecisionStatusCode("PROPOSED");
+        pricingDecisionMapper.insert(decision);
+        PricingApplyReadiness readiness = pricingApplyReadiness(decision, snapshot, fixture);
+        pricingApplyReadinessMapper.insert(readiness);
+
+        assertThat(pricingDecisionMapper.markApplied(decision.getPricingDecisionId(), SNAPSHOT_AT.plusMinutes(5))).isOne();
+
+        assertThat(pricingApplyReadinessMapper.findByPricingApplyReadinessId(readiness.getPricingApplyReadinessId())).isPresent();
+        assertThat(pricingApplyReadinessMapper.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10)).isEmpty();
+        assertThat(pricingApplyReadinessMapper.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
+    }
+
+    @Test
     void marketplaceListingSyncRequestSupportsCrudClaimAndIdempotentUpsert() {
         PricingFixture fixture = pricingFixture("pricing-sync-request");
         PricingSnapshot snapshot = insertedSnapshot(fixture);
