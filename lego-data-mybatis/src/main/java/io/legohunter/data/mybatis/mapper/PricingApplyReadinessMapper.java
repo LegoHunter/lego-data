@@ -130,6 +130,7 @@ public interface PricingApplyReadinessMapper {
               ON ps.pricing_snapshot_id = par.pricing_snapshot_id
             WHERE (#{readinessStatusCode} IS NULL OR par.readiness_status_code = #{readinessStatusCode})
               AND (#{blockReasonCode} IS NULL OR par.block_reason_code = #{blockReasonCode})
+              AND pd.applied_at IS NULL
             ORDER BY par.evaluated_at DESC,
                      par.pricing_apply_readiness_id DESC
             LIMIT #{limit}
@@ -167,7 +168,10 @@ public interface PricingApplyReadinessMapper {
             ) latest_decision
               ON latest_decision.marketplace_listing_id = par.marketplace_listing_id
              AND latest_decision.pricing_decision_id = par.pricing_decision_id
+            JOIN pricing_decision pd
+              ON pd.pricing_decision_id = par.pricing_decision_id
             WHERE par.readiness_status_code = #{readinessStatusCode}
+              AND pd.applied_at IS NULL
             """)
     long countLatestByReadinessStatusCode(String readinessStatusCode);
 
@@ -182,7 +186,10 @@ public interface PricingApplyReadinessMapper {
             ) latest_decision
               ON latest_decision.marketplace_listing_id = par.marketplace_listing_id
              AND latest_decision.pricing_decision_id = par.pricing_decision_id
+            JOIN pricing_decision pd
+              ON pd.pricing_decision_id = par.pricing_decision_id
             WHERE par.block_reason_code = #{blockReasonCode}
+              AND pd.applied_at IS NULL
             """)
     long countLatestByBlockReasonCode(String blockReasonCode);
 

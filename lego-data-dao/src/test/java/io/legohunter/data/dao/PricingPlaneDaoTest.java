@@ -134,8 +134,8 @@ class PricingPlaneDaoTest {
         assertThat(pricingApplyReadinessDao.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).hasSize(1);
         assertThat(pricingApplyReadinessDao.countByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isOne();
         assertThat(pricingApplyReadinessDao.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
-        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isOne();
-        assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
+        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isZero();
+        assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isZero();
         assertThat(pricingApplyReadinessDao.findLatestByMarketplaceListingId(fixture.listing().getMarketplaceListingId()))
                 .map(PricingApplyReadiness::getPricingApplyReadinessId)
                 .contains(applyReadiness.getPricingApplyReadinessId());
@@ -143,12 +143,8 @@ class PricingPlaneDaoTest {
         applyReadiness.setReadinessStatusCode("READY_TO_APPLY");
         applyReadiness.setBlockReasonCode(null);
         assertThat(pricingApplyReadinessDao.upsert(applyReadiness).getReadinessStatusCode()).isEqualTo("READY_TO_APPLY");
-        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10))
-                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
-                .containsExactly(applyReadiness.getPricingApplyReadinessId());
-        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10))
-                .extracting(PricingApplyReadinessReview::getExternalListingId)
-                .containsExactly("BL-PRICING-1");
+        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
 
         pricingApplyReadinessDao.delete(applyReadiness.getPricingApplyReadinessId());
         pricingDecisionDao.delete(decision.getPricingDecisionId());
@@ -279,6 +275,22 @@ class PricingPlaneDaoTest {
         assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
         assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
         assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("STALE_DECISION")).isZero();
+    }
+
+    @Test
+    void pricingApplyReadinessDaoExcludesAlreadyAppliedDecisionFromCurrentReports() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
+        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
+        PricingApplyReadiness readiness = pricingApplyReadinessDao.insert(pricingApplyReadiness(decision, snapshot, fixture));
+
+        assertThat(pricingDecisionDao.markApplied(decision.getPricingDecisionId(), SNAPSHOT_AT.plusMinutes(5))).isPresent();
+
+        assertThat(pricingApplyReadinessDao.findByPricingApplyReadinessId(readiness.getPricingApplyReadinessId())).isPresent();
+        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
+        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
     }
 
     @Test
