@@ -32,3 +32,11 @@ Phase 2 Inventory Read, Search, and Correction workflows add reusable data-layer
 - Transaction and transaction-item cost replacement helpers delete existing rows even when the replacement list is empty, which keeps explicit empty replacement semantics deterministic.
 
 Business rules remain in `lego-data-service`; DAOs and mappers stay focused on persistence operations.
+
+## BrickLink Inventory Color Policy
+
+The shared `BricklinkInventoryColorPolicy` keeps BrickLink listing-create color semantics consistent across
+services. BrickLink SET catalog items (`S` or `SET`) use color id `0` (`Not Applicable`) when the local color is
+missing, and reject any nonzero color. Color-specific item types require a positive color id. The policy returns an
+effective color id for valid inputs and stable error codes for invalid inputs so callers can fail closed before an
+HTTP mutation.
