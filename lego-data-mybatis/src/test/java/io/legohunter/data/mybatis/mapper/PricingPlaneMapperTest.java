@@ -5,6 +5,7 @@ import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.PricingApplyReadiness;
+import io.legohunter.data.dto.PricingApplyReadinessReview;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingCrawlWorkItemDuplicate;
 import io.legohunter.data.dto.PricingCrawlWorkItemFailure;
@@ -691,6 +692,28 @@ class PricingPlaneMapperTest extends MapperTestSupport {
         assertThat(pricingApplyReadinessMapper.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
         assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10)).isEmpty();
         assertThat(pricingApplyReadinessMapper.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
+    }
+
+    @Test
+    void pricingApplyReadinessReadySelectionIncludesInitialPriceRows() {
+        PricingFixture fixture = pricingFixture("pricing-readiness-initial-price");
+        PricingSnapshot snapshot = insertedSnapshot(fixture);
+        PricingDecision decision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        decision.setDecisionStatusCode("PROPOSED");
+        pricingDecisionMapper.insert(decision);
+
+        PricingApplyReadiness readiness = pricingApplyReadiness(decision, snapshot, fixture);
+        readiness.setReadinessStatusCode("READY_TO_APPLY_INITIAL_PRICE");
+        readiness.setCurrentPrice(null);
+        readiness.setDeltaAmount(null);
+        readiness.setDeltaPercent(null);
+        readiness.setMinimumRequiredDelta(null);
+        pricingApplyReadinessMapper.insert(readiness);
+
+        assertThat(pricingApplyReadinessMapper.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
+        assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10))
+                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
+                .containsExactly(readiness.getPricingApplyReadinessId());
     }
 
     @Test
