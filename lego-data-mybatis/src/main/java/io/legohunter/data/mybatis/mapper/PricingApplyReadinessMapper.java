@@ -147,8 +147,41 @@ public interface PricingApplyReadinessMapper {
         return findLatestReviews(readinessStatusCode, blockReasonCode, limit, REVIEW_COLUMNS);
     }
 
+    @Select("""
+            SELECT ${columns}
+            FROM pricing_apply_readiness par
+            JOIN (
+                SELECT marketplace_listing_id,
+                       MAX(pricing_decision_id) AS pricing_decision_id
+                FROM pricing_decision
+                GROUP BY marketplace_listing_id
+            ) latest_decision
+              ON latest_decision.marketplace_listing_id = par.marketplace_listing_id
+             AND latest_decision.pricing_decision_id = par.pricing_decision_id
+            JOIN marketplace_listing ml
+              ON ml.marketplace_listing_id = par.marketplace_listing_id
+            JOIN item_inventory ii
+              ON ii.item_inventory_id = ml.item_inventory_id
+            LEFT JOIN external_catalog_item eci
+              ON eci.external_catalog_item_id = ml.external_catalog_item_id
+            JOIN pricing_decision pd
+              ON pd.pricing_decision_id = par.pricing_decision_id
+            LEFT JOIN pricing_snapshot ps
+              ON ps.pricing_snapshot_id = par.pricing_snapshot_id
+            WHERE par.readiness_status_code IN ('READY_TO_APPLY', 'READY_TO_APPLY_INITIAL_PRICE')
+              AND pd.applied_at IS NULL
+            ORDER BY par.evaluated_at DESC,
+                     par.pricing_apply_readiness_id DESC
+            LIMIT #{limit}
+            """)
+    @ResultMap("pricingApplyReadinessReviewResultMap")
+    Set<PricingApplyReadinessReview> findLatestReadyToApplyReviews(
+            @Param("limit") int limit,
+            @Param("columns") String columns
+    );
+
     default Set<PricingApplyReadinessReview> findLatestReadyToApplyReviews(int limit) {
-        return findLatestReviews("READY_TO_APPLY", null, limit);
+        return findLatestReadyToApplyReviews(limit, REVIEW_COLUMNS);
     }
 
     @Select("SELECT COUNT(*) FROM pricing_apply_readiness WHERE readiness_status_code = #{readinessStatusCode}")
