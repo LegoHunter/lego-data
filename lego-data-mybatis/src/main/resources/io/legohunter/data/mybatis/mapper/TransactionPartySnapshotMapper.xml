@@ -1,0 +1,15 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.TransactionPartySnapshotMapper">
+  <resultMap id="transactionPartySnapshotResultMap" type="io.legohunter.data.dto.TransactionPartySnapshot">
+    <id column="transaction_party_snapshot_id" property="transactionPartySnapshotId"/>
+    <result column="transaction_id" property="transactionId"/>
+    <result column="party_id" property="partyId"/>
+    <result column="party_role_code" property="partyRoleCode"/>
+    <result column="display_name" property="displayName"/>
+    <result column="address1" property="address1"/><result column="address2" property="address2"/>
+    <result column="city" property="city"/><result column="state" property="state"/>
+    <result column="postal_code" property="postalCode"/><result column="country_code" property="countryCode"/>
+    <result column="country" property="country"/><result column="phone" property="phone"/>
+    <result column="email" property="email"/><result column="captured_at" property="capturedAt"/>
+  </resultMap>
+</mapper>
