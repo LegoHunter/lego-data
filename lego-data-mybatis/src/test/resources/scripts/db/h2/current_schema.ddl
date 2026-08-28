@@ -1,4 +1,9 @@
 DROP TABLE IF EXISTS marketplace_order_transaction_link;
+DROP TABLE IF EXISTS transaction_item_shipment;
+DROP TABLE IF EXISTS transaction_item_revenue;
+DROP TABLE IF EXISTS transaction_party_snapshot;
+DROP TABLE IF EXISTS party_external_identity;
+DROP TABLE IF EXISTS shipment;
 DROP TABLE IF EXISTS marketplace_order_payload;
 DROP TABLE IF EXISTS marketplace_order_item;
 DROP TABLE IF EXISTS marketplace_order;
@@ -650,7 +655,8 @@ CREATE TABLE transactions (
     from_party_id BIGINT,
     to_party_id BIGINT,
     transaction_platform_id INT,
-    transaction_order_id VARCHAR(255)
+    transaction_order_id VARCHAR(255),
+    CONSTRAINT uq_transactions_platform_order UNIQUE (transaction_platform_id, transaction_order_id)
 );
 
 CREATE TABLE payment (
@@ -689,6 +695,61 @@ CREATE TABLE transaction_item_cost (
     currency_code VARCHAR(8),
     amount DOUBLE,
     notes VARCHAR(2048)
+);
+
+CREATE TABLE shipment (
+    shipment_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    external_shipment_id VARCHAR(100),
+    shipment_date DATE NOT NULL,
+    shipment_tracking_number VARCHAR(45),
+    carrier_code VARCHAR(10) NOT NULL,
+    fulfillment_platform_code VARCHAR(30),
+    service_code VARCHAR(100),
+    CONSTRAINT uq_shipment_platform_external UNIQUE (fulfillment_platform_code, external_shipment_id)
+);
+
+CREATE TABLE transaction_item_shipment (
+    item_transaction_id BIGINT NOT NULL,
+    shipment_id BIGINT NOT NULL,
+    PRIMARY KEY (item_transaction_id, shipment_id)
+);
+
+CREATE TABLE party_external_identity (
+    party_external_identity_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    party_id BIGINT NOT NULL,
+    transaction_platform_id INT NOT NULL,
+    external_party_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_party_external_identity_platform_party UNIQUE (transaction_platform_id, external_party_id)
+);
+
+CREATE TABLE transaction_party_snapshot (
+    transaction_party_snapshot_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    transaction_id BIGINT NOT NULL,
+    party_id BIGINT NOT NULL,
+    party_role_code VARCHAR(16) NOT NULL,
+    display_name VARCHAR(255),
+    address1 VARCHAR(255),
+    address2 VARCHAR(255),
+    city VARCHAR(255),
+    state VARCHAR(64),
+    postal_code VARCHAR(64),
+    country_code VARCHAR(8),
+    country VARCHAR(255),
+    phone VARCHAR(64),
+    email VARCHAR(255),
+    captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_transaction_party_snapshot_role UNIQUE (transaction_id, party_role_code)
+);
+
+CREATE TABLE transaction_item_revenue (
+    transaction_item_revenue_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    transaction_item_id BIGINT NOT NULL,
+    currency_code VARCHAR(8) NOT NULL,
+    unit_amount DECIMAL(12,4) NOT NULL,
+    quantity INT NOT NULL,
+    total_amount DECIMAL(12,4) NOT NULL,
+    CONSTRAINT uq_transaction_item_revenue_item UNIQUE (transaction_item_id)
 );
 
 ALTER TABLE external_service

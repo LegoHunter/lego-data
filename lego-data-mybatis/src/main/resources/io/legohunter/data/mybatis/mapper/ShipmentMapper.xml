@@ -1,0 +1,9 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.ShipmentMapper">
+  <resultMap id="shipmentResultMap" type="io.legohunter.data.dto.Shipment">
+    <id column="shipment_id" property="shipmentId"/><result column="external_shipment_id" property="externalShipmentId"/>
+    <result column="shipment_date" property="shipmentDate"/><result column="shipment_tracking_number" property="shipmentTrackingNumber"/>
+    <result column="carrier_code" property="carrierCode"/><result column="fulfillment_platform_code" property="fulfillmentPlatformCode"/>
+    <result column="service_code" property="serviceCode"/>
+  </resultMap>
+</mapper>

@@ -1,0 +1,9 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.TransactionItemRevenueMapper">
+  <resultMap id="transactionItemRevenueResultMap" type="io.legohunter.data.dto.TransactionItemRevenue">
+    <id column="transaction_item_revenue_id" property="transactionItemRevenueId"/>
+    <result column="transaction_item_id" property="transactionItemId"/><result column="currency_code" property="currencyCode"/>
+    <result column="unit_amount" property="unitAmount"/><result column="quantity" property="quantity"/>
+    <result column="total_amount" property="totalAmount"/>
+  </resultMap>
+</mapper>
