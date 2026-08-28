@@ -716,7 +716,7 @@ CREATE TABLE transaction_item_shipment (
 
 CREATE TABLE party_external_identity (
     party_external_identity_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    party_id BIGINT NOT NULL,
+    party_id INT NOT NULL,
     transaction_platform_id INT NOT NULL,
     external_party_id VARCHAR(255) NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -725,8 +725,8 @@ CREATE TABLE party_external_identity (
 
 CREATE TABLE transaction_party_snapshot (
     transaction_party_snapshot_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    transaction_id BIGINT NOT NULL,
-    party_id BIGINT NOT NULL,
+    transaction_id INT NOT NULL,
+    party_id INT NOT NULL,
     party_role_code VARCHAR(16) NOT NULL,
     display_name VARCHAR(255),
     address1 VARCHAR(255),
@@ -744,7 +744,7 @@ CREATE TABLE transaction_party_snapshot (
 
 CREATE TABLE transaction_item_revenue (
     transaction_item_revenue_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    transaction_item_id BIGINT NOT NULL,
+    transaction_item_id INT NOT NULL,
     currency_code VARCHAR(8) NOT NULL,
     unit_amount DECIMAL(12,4) NOT NULL,
     quantity INT NOT NULL,
