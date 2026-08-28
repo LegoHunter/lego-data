@@ -16,7 +16,4 @@ public class Shipment {
     private String carrierCode;
     private String fulfillmentPlatformCode;
     private String serviceCode;
-    private BigDecimal shipmentCost;
-    private BigDecimal insuranceCost;
-    private String currencyCode;
 }

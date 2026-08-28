@@ -705,9 +705,6 @@ CREATE TABLE shipment (
     carrier_code VARCHAR(10) NOT NULL,
     fulfillment_platform_code VARCHAR(30),
     service_code VARCHAR(100),
-    shipment_cost DECIMAL(12,4),
-    insurance_cost DECIMAL(12,4),
-    currency_code VARCHAR(8),
     CONSTRAINT uq_shipment_platform_external UNIQUE (fulfillment_platform_code, external_shipment_id)
 );
 

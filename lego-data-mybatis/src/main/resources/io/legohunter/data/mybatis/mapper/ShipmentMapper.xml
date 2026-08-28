@@ -4,7 +4,6 @@
     <id column="shipment_id" property="shipmentId"/><result column="external_shipment_id" property="externalShipmentId"/>
     <result column="shipment_date" property="shipmentDate"/><result column="shipment_tracking_number" property="shipmentTrackingNumber"/>
     <result column="carrier_code" property="carrierCode"/><result column="fulfillment_platform_code" property="fulfillmentPlatformCode"/>
-    <result column="service_code" property="serviceCode"/><result column="shipment_cost" property="shipmentCost"/>
-    <result column="insurance_cost" property="insuranceCost"/><result column="currency_code" property="currencyCode"/>
+    <result column="service_code" property="serviceCode"/>
   </resultMap>
 </mapper>
