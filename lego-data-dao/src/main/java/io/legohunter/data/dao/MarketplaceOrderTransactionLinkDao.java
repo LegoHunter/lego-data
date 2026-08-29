@@ -21,6 +21,14 @@ public class MarketplaceOrderTransactionLinkDao {
         return marketplaceOrderTransactionLinkMapper.findByMarketplaceOrderTransactionLinkId(marketplaceOrderTransactionLinkId);
     }
 
+    public Set<MarketplaceOrderTransactionLink> findByMarketplaceOrderId(Integer marketplaceOrderId) {
+        return marketplaceOrderTransactionLinkMapper.findByMarketplaceOrderId(marketplaceOrderId);
+    }
+
+    public Set<MarketplaceOrderTransactionLink> findByMarketplaceOrderItemId(Integer marketplaceOrderItemId) {
+        return marketplaceOrderTransactionLinkMapper.findByMarketplaceOrderItemId(marketplaceOrderItemId);
+    }
+
     public MarketplaceOrderTransactionLink insert(MarketplaceOrderTransactionLink marketplaceOrderTransactionLink) {
         marketplaceOrderTransactionLinkMapper.insert(marketplaceOrderTransactionLink);
         return marketplaceOrderTransactionLink;

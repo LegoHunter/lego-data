@@ -18,6 +18,10 @@ class TransactionsMapperTest extends MapperTestSupport {
 
         assertThat(transactionsMapper.findById(transaction.getTransactionId()))
                 .hasValueSatisfying(found -> assertThat(found.getNotes()).isEqualTo("Updated transaction"));
+        assertThat(transactionsMapper.findByTransactionPlatformIdAndTransactionOrderId(
+                transaction.getTransactionPlatformId(),
+                transaction.getTransactionOrderId()
+        )).hasValueSatisfying(found -> assertThat(found.getTransactionId()).isEqualTo(transaction.getTransactionId()));
         assertThat(transactionsMapper.findAll()).hasSize(1);
 
         Transactions migratedTransaction = Transactions.builder()
