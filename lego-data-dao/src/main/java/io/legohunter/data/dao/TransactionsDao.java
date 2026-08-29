@@ -28,4 +28,14 @@ public class TransactionsDao {
     public Optional<Transactions> findById(Long transactionId) {
         return transactionsMapper.findById(transactionId);
     }
+
+    public Optional<Transactions> findByTransactionPlatformIdAndTransactionOrderId(
+            Integer transactionPlatformId,
+            String transactionOrderId
+    ) {
+        return transactionsMapper.findByTransactionPlatformIdAndTransactionOrderId(
+                transactionPlatformId,
+                transactionOrderId
+        );
+    }
 }

@@ -34,6 +34,14 @@ public interface MarketplaceOrderTransactionLinkMapper {
     @ResultMap("marketplaceOrderTransactionLinkResultMap")
     Optional<MarketplaceOrderTransactionLink> findByMarketplaceOrderTransactionLinkId(Integer marketplaceOrderTransactionLinkId);
 
+    @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_order_transaction_link WHERE marketplace_order_id = #{marketplaceOrderId} ORDER BY marketplace_order_transaction_link_id")
+    @ResultMap("marketplaceOrderTransactionLinkResultMap")
+    Set<MarketplaceOrderTransactionLink> findByMarketplaceOrderId(Integer marketplaceOrderId);
+
+    @Select("SELECT " + ALL_COLUMNS + " FROM marketplace_order_transaction_link WHERE marketplace_order_item_id = #{marketplaceOrderItemId} ORDER BY marketplace_order_transaction_link_id")
+    @ResultMap("marketplaceOrderTransactionLinkResultMap")
+    Set<MarketplaceOrderTransactionLink> findByMarketplaceOrderItemId(Integer marketplaceOrderItemId);
+
     @Insert("""
             INSERT INTO marketplace_order_transaction_link (
                 marketplace_order_id,

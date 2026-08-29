@@ -193,6 +193,12 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
 
         assertThat(marketplaceOrderTransactionLinkMapper.findByMarketplaceOrderTransactionLinkId(link.getMarketplaceOrderTransactionLinkId()))
                 .hasValueSatisfying(found -> assertThat(found.getLinkStatusCode()).isEqualTo("UNLINKED"));
+        assertThat(marketplaceOrderTransactionLinkMapper.findByMarketplaceOrderId(order.getMarketplaceOrderId()))
+                .extracting(MarketplaceOrderTransactionLink::getMarketplaceOrderTransactionLinkId)
+                .containsExactly(link.getMarketplaceOrderTransactionLinkId());
+        assertThat(marketplaceOrderTransactionLinkMapper.findByMarketplaceOrderItemId(orderItem.getMarketplaceOrderItemId()))
+                .extracting(MarketplaceOrderTransactionLink::getMarketplaceOrderTransactionLinkId)
+                .containsExactly(link.getMarketplaceOrderTransactionLinkId());
         assertThat(marketplaceOrderTransactionLinkMapper.findAll()).hasSize(1);
 
         link.setLinkStatusCode("ACTIVE");

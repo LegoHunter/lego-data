@@ -197,6 +197,12 @@ class MarketplaceOrderSyncDaoTest {
 
         assertThat(marketplaceOrderTransactionLinkDao.findByMarketplaceOrderTransactionLinkId(link.getMarketplaceOrderTransactionLinkId()))
                 .hasValueSatisfying(found -> assertThat(found.getLinkStatusCode()).isEqualTo("UNLINKED"));
+        assertThat(marketplaceOrderTransactionLinkDao.findByMarketplaceOrderId(order.getMarketplaceOrderId()))
+                .extracting(MarketplaceOrderTransactionLink::getMarketplaceOrderTransactionLinkId)
+                .containsExactly(link.getMarketplaceOrderTransactionLinkId());
+        assertThat(marketplaceOrderTransactionLinkDao.findByMarketplaceOrderItemId(orderItem.getMarketplaceOrderItemId()))
+                .extracting(MarketplaceOrderTransactionLink::getMarketplaceOrderTransactionLinkId)
+                .containsExactly(link.getMarketplaceOrderTransactionLinkId());
         assertThat(marketplaceOrderTransactionLinkDao.findAll()).hasSize(1);
 
         link.setLinkStatusCode("ACTIVE");

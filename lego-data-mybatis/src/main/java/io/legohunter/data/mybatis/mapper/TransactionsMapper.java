@@ -64,4 +64,22 @@ public interface TransactionsMapper {
             """)
     @ResultMap("transactionResultMap")
     Optional<Transactions> findById(Long transactionId);
+
+    @Select("""
+            select transaction_id,
+                   transaction_date,
+                   notes,
+                   from_party_id,
+                   to_party_id,
+                   transaction_platform_id,
+                   transaction_order_id
+            from transactions
+            where transaction_platform_id = #{transactionPlatformId}
+              and transaction_order_id = #{transactionOrderId}
+            """)
+    @ResultMap("transactionResultMap")
+    Optional<Transactions> findByTransactionPlatformIdAndTransactionOrderId(
+            @Param("transactionPlatformId") Integer transactionPlatformId,
+            @Param("transactionOrderId") String transactionOrderId
+    );
 }
