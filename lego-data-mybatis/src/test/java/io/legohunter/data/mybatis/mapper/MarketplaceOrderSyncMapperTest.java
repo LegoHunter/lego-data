@@ -77,11 +77,14 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
     void marketplaceOrderFindsFulfillmentCandidatesWithOrderItems() {
         MarketplaceOrder candidate = insertedOrder("BL-CANDIDATE-1");
         insertedOrderItem(candidate.getMarketplaceOrderId());
+        TransactionItem canonicalItem = insertedTransactionItem();
+        markInvoicedAndProjected(candidate, canonicalItem.getTransactionId());
         MarketplaceOrder withoutItems = insertedOrder("BL-CANDIDATE-2");
         MarketplaceOrder shipped = insertedOrder("BL-CANDIDATE-3");
         shipped.setExternalStatusCode("SHIPPED");
         marketplaceOrderMapper.update(shipped);
         insertedOrderItem(shipped.getMarketplaceOrderId());
+        markInvoicedAndProjected(shipped, canonicalItem.getTransactionId());
 
         assertThat(marketplaceOrderMapper.findFulfillmentCandidatesByStatus("BRICKLINK", "PENDING", 10))
                 .extracting(MarketplaceOrder::getMarketplaceOrderId)
@@ -244,6 +247,18 @@ class MarketplaceOrderSyncMapperTest extends MapperTestSupport {
                 .build();
         transactionItemMapper.insert(transactionItem);
         return transactionItem;
+    }
+
+    private void markInvoicedAndProjected(MarketplaceOrder order, Long transactionId) {
+        order.setInvoiced(true);
+        marketplaceOrderMapper.update(order);
+        marketplaceOrderTransactionLinkMapper.insert(MarketplaceOrderTransactionLink.builder()
+                .marketplaceOrderId(order.getMarketplaceOrderId())
+                .transactionId(transactionId)
+                .linkTypeCode("ORDER")
+                .linkStatusCode("INVOICED")
+                .linkedAt(STARTED_AT.plusHours(1))
+                .build());
     }
 
     private MarketplaceOrderSyncRun marketplaceOrderSyncRun() {

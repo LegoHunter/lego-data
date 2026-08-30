@@ -101,4 +101,19 @@ class Phase1AccountingMapperTest {
         assertThat(shipmentMapper.delete(shipment.getShipmentId())).isOne();
         assertThat(shipmentMapper.findByShipmentId(shipment.getShipmentId())).isEmpty();
     }
+
+    @Test
+    void shipmentTransactionItemLinksAreIdempotent() {
+        Shipment shipment = Shipment.builder()
+                .externalShipmentId("ss-link-1").shipmentDate(LocalDate.parse("2026-08-28"))
+                .shipmentTrackingNumber("TRACK-LINK-1").carrierCode("USPS")
+                .fulfillmentPlatformCode("SHIPSTATION").serviceCode("USPS_GROUND_ADVANTAGE").build();
+        shipmentMapper.insert(shipment);
+
+        shipmentMapper.linkTransactionItem(101L, shipment.getShipmentId());
+        shipmentMapper.linkTransactionItem(101L, shipment.getShipmentId());
+
+        assertThat(shipmentMapper.findTransactionItemIdsByShipmentId(shipment.getShipmentId()))
+                .containsExactly(101L);
+    }
 }

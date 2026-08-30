@@ -94,10 +94,13 @@ class MarketplaceOrderSyncDaoTest {
     void marketplaceOrderDaoFindsFulfillmentCandidatesAcrossStatuses() {
         MarketplaceOrder pending = insertedOrder("DAO-BL-CANDIDATE-1");
         marketplaceOrderItemDao.insert(marketplaceOrderItem(pending.getMarketplaceOrderId()));
+        TransactionItem canonicalItem = insertedTransactionItem();
+        markInvoicedAndProjected(pending, canonicalItem.getTransactionId());
         MarketplaceOrder ready = insertedOrder("DAO-BL-CANDIDATE-2");
         ready.setExternalStatusCode("READY");
         marketplaceOrderDao.update(ready);
         marketplaceOrderItemDao.insert(marketplaceOrderItem(ready.getMarketplaceOrderId()));
+        markInvoicedAndProjected(ready, canonicalItem.getTransactionId());
         MarketplaceOrder withoutItems = insertedOrder("DAO-BL-CANDIDATE-3");
 
         assertThat(marketplaceOrderDao.findFulfillmentCandidates("BRICKLINK", List.of("PENDING", "READY"), 10))
@@ -258,6 +261,18 @@ class MarketplaceOrderSyncDaoTest {
                 .build();
         transactionItemDao.insert(transactionItem);
         return transactionItem;
+    }
+
+    private void markInvoicedAndProjected(MarketplaceOrder order, Long transactionId) {
+        order.setInvoiced(true);
+        marketplaceOrderDao.update(order);
+        marketplaceOrderTransactionLinkDao.insert(MarketplaceOrderTransactionLink.builder()
+                .marketplaceOrderId(order.getMarketplaceOrderId())
+                .transactionId(transactionId)
+                .linkTypeCode("ORDER")
+                .linkStatusCode("INVOICED")
+                .linkedAt(STARTED_AT.plusHours(1))
+                .build());
     }
 
     private Party party(String name) {
