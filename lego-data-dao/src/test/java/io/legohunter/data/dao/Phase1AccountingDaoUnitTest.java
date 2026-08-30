@@ -79,7 +79,10 @@ class Phase1AccountingDaoUnitTest {
         assertThat(dao.upsert(value)).isSameAs(value);
         assertThat(dao.findAll()).containsExactly(value);
         assertThat(dao.findByShipmentId(1L)).contains(value);
+        when(mapper.findTransactionItemIdsByShipmentId(1L)).thenReturn(List.of(10L));
+        assertThat(dao.findTransactionItemIdsByShipmentId(1L)).containsExactly(10L);
+        dao.linkTransactionItem(10L, 1L);
         dao.delete(1L);
-        verify(mapper).insert(value); verify(mapper).upsert(value); verify(mapper).delete(1L);
+        verify(mapper).insert(value); verify(mapper).upsert(value); verify(mapper).linkTransactionItem(10L, 1L); verify(mapper).delete(1L);
     }
 }

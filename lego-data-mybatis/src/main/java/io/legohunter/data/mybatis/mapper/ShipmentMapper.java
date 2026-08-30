@@ -70,10 +70,24 @@ public interface ShipmentMapper {
 
     @Insert("""
             INSERT INTO transaction_item_shipment (item_transaction_id, shipment_id)
-            VALUES (#{transactionItemId}, #{shipmentId})
+            SELECT #{transactionItemId}, #{shipmentId}
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM transaction_item_shipment
+                WHERE item_transaction_id = #{transactionItemId}
+                  AND shipment_id = #{shipmentId}
+            )
             """)
     void linkTransactionItem(
             @Param("transactionItemId") Long transactionItemId,
             @Param("shipmentId") Long shipmentId
     );
+
+    @Select("""
+            SELECT item_transaction_id
+            FROM transaction_item_shipment
+            WHERE shipment_id = #{shipmentId}
+            ORDER BY item_transaction_id
+            """)
+    List<Long> findTransactionItemIdsByShipmentId(@Param("shipmentId") Long shipmentId);
 }

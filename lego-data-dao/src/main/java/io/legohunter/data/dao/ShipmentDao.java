@@ -17,4 +17,5 @@ public class ShipmentDao {
     public int delete(Long shipmentId) { return mapper.delete(shipmentId); }
     public Optional<Shipment> findByPlatformAndExternalShipmentId(String platformCode, String externalShipmentId) { return mapper.findByPlatformAndExternalShipmentId(platformCode, externalShipmentId); }
     public void linkTransactionItem(Long transactionItemId, Long shipmentId) { mapper.linkTransactionItem(transactionItemId, shipmentId); }
+    public List<Long> findTransactionItemIdsByShipmentId(Long shipmentId) { return mapper.findTransactionItemIdsByShipmentId(shipmentId); }
 }

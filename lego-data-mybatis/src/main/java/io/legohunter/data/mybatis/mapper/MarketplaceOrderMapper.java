@@ -68,10 +68,18 @@ public interface MarketplaceOrderMapper {
             @Param("marketplaceCode") String marketplaceCode,
             @Param("externalOrderId") String externalOrderId);
 
-    @Select("SELECT " + ALL_COLUMNS + """
-            FROM marketplace_order mo
+    @Select("""
+            SELECT mo.*
+            FROM transactions t
+            JOIN marketplace_order_transaction_link motl
+              ON motl.transaction_id = t.transaction_id
+             AND motl.link_type_code = 'ORDER'
+             AND motl.link_status_code = 'INVOICED'
+            JOIN marketplace_order mo
+              ON mo.marketplace_order_id = motl.marketplace_order_id
             WHERE mo.marketplace_code = #{marketplaceCode}
               AND mo.external_status_code = #{externalStatusCode}
+              AND mo.is_invoiced = TRUE
               AND EXISTS (
                   SELECT 1
                   FROM marketplace_order_item moi
