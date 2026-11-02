@@ -1,34 +1,30 @@
-name: 'Build Test Deploy'
+name: Build Test Deploy
+
+# Thin caller for the shared LCMS Maven library pipeline (HOMELAB-26 E2):
+#   LegoHunter/lego-server-configuration/.github/workflows/maven-library-pipeline.yml
+# push feature/** or develop -> test + publish the SNAPSHOT; PR into develop -> tests only.
+# What runs on each event is documented there.
+
 on:
   push:
     branches:
       - 'feature/**'
+      - develop
   pull_request:
     branches:
       - develop
-      - master
     types:
-      - closed
+      - opened
+      - reopened
+      - synchronize
+
+# Upper bound for the shared pipeline's jobs (each job narrows it further).
+permissions:
+  contents: read
+  packages: write
 
 jobs:
-  build-test-deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-    - name: git checkout
-      uses: actions/checkout@v4
-
-    - name: setup java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        architecture: x64
-        cache: maven
-
-    - name: mvn deploy
-      run: mvn --batch-mode --update-snapshots deploy
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  pipeline:
+    uses: LegoHunter/lego-server-configuration/.github/workflows/maven-library-pipeline.yml@develop
+    with:
+      java-version: '21'
