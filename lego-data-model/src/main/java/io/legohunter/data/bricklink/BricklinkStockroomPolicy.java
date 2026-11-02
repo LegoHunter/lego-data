@@ -11,8 +11,11 @@ import java.util.stream.Collectors;
  * The BrickLink stockroom rules shared by every service that creates or updates BrickLink lots.
  *
  * <p>Services run these rules at startup and refuse to start on any violation, so a lower
- * environment can never write into PROD's stockroom or another environment's stockroom. See
- * {@link LegoEnvironment} for which stockroom each environment owns.
+ * environment can never write into PROD's stockroom or another environment's stockroom. The
+ * stockroom facts come from {@link LegoEnvironment}: an environment that
+ * {@linkplain LegoEnvironment#forcesStockroom() forces} its lots into a stockroom must be configured
+ * with exactly {@linkplain LegoEnvironment#stockroom() the one it owns}; PROD forces nothing, so it
+ * has no rule here.
  */
 public final class BricklinkStockroomPolicy {
 
@@ -43,10 +46,11 @@ public final class BricklinkStockroomPolicy {
                     settingPrefix, production, environment.code(), environment.isProduction() ? "PROD" : "not PROD"));
             return violations;
         }
-        if (environment.isProduction()) {
+        if (!environment.forcesStockroom()) {
             return violations;
         }
-        BricklinkStockroom expected = environment.lowerEnvironmentStockroom().orElseThrow();
+        BricklinkStockroom expected = environment.stockroom();
+        BricklinkStockroom prodStockroom = LegoEnvironment.PROD.stockroom();
         if (configuredStockroom == null || configuredStockroom.isBlank()) {
             violations.add("%s.%s must be set for environment '%s' (expected %s)".formatted(
                     settingPrefix, stockroomSetting, environment.code(), expected.id()));
@@ -58,9 +62,9 @@ public final class BricklinkStockroomPolicy {
                     settingPrefix, stockroomSetting, configuredStockroom.trim()));
             return violations;
         }
-        if (stockroom == BricklinkStockroom.A) {
-            violations.add("%s.%s must not be A for environment '%s': stockroom A is reserved for PROD's own hidden lots (expected %s)".formatted(
-                    settingPrefix, stockroomSetting, environment.code(), expected.id()));
+        if (stockroom == prodStockroom) {
+            violations.add("%s.%s must not be %s for environment '%s': stockroom %s is PROD's own, for deliberately hidden lots (expected %s)".formatted(
+                    settingPrefix, stockroomSetting, prodStockroom.id(), environment.code(), prodStockroom.id(), expected.id()));
             return violations;
         }
         if (stockroom != expected) {

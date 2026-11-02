@@ -14,11 +14,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LegoEnvironmentTest {
 
     @Test
-    void eachLowerEnvironmentOwnsTheAgreedStockroomAndProdNone() {
-        assertThat(LegoEnvironment.LOCAL.lowerEnvironmentStockroom()).contains(BricklinkStockroom.C);
-        assertThat(LegoEnvironment.SANDBOX.lowerEnvironmentStockroom()).contains(BricklinkStockroom.C);
-        assertThat(LegoEnvironment.DEV.lowerEnvironmentStockroom()).contains(BricklinkStockroom.B);
-        assertThat(LegoEnvironment.PROD.lowerEnvironmentStockroom()).isEmpty();
+    void eachEnvironmentOwnsTheAgreedStockroom() {
+        assertThat(LegoEnvironment.LOCAL.stockroom()).isEqualTo(BricklinkStockroom.C);
+        assertThat(LegoEnvironment.SANDBOX.stockroom()).isEqualTo(BricklinkStockroom.C);
+        assertThat(LegoEnvironment.DEV.stockroom()).isEqualTo(BricklinkStockroom.B);
+        assertThat(LegoEnvironment.PROD.stockroom()).isEqualTo(BricklinkStockroom.A);
+    }
+
+    @Test
+    void everyEnvironmentOwnsAStockroom() {
+        assertThat(LegoEnvironment.values()).allSatisfy(environment -> assertThat(environment.stockroom()).isNotNull());
     }
 
     @Test
@@ -28,15 +33,17 @@ class LegoEnvironmentTest {
     }
 
     @Test
-    void noLowerEnvironmentUsesProdsStockroomA() {
-        assertThat(Arrays.stream(LegoEnvironment.values()))
-                .allSatisfy(environment -> assertThat(environment.lowerEnvironmentStockroom()).isNotEqualTo(java.util.Optional.of(BricklinkStockroom.A)));
+    void everyEnvironmentExceptProdForcesItsLotsIntoItsStockroom() {
+        // PROD's lots are public by default; forcing them into stockroom A would hide the whole store.
+        assertThat(LegoEnvironment.PROD.forcesStockroom()).isFalse();
+        assertThat(Arrays.stream(LegoEnvironment.values()).filter(LegoEnvironment::forcesStockroom))
+                .containsExactlyInAnyOrder(LegoEnvironment.LOCAL, LegoEnvironment.SANDBOX, LegoEnvironment.DEV);
     }
 
     @Test
-    void everyLowerEnvironmentHasAStockroom() {
-        assertThat(Arrays.stream(LegoEnvironment.values()).filter(environment -> !environment.isProduction()))
-                .allSatisfy(environment -> assertThat(environment.lowerEnvironmentStockroom()).isPresent());
+    void onlyProdOwnsStockroomA() {
+        assertThat(Arrays.stream(LegoEnvironment.values()).filter(environment -> environment.stockroom() == BricklinkStockroom.A))
+                .containsExactly(LegoEnvironment.PROD);
     }
 
     @ParameterizedTest
