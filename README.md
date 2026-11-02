@@ -40,3 +40,20 @@ services. BrickLink SET catalog items (`S` or `SET`) use color id `0` (`Not Appl
 missing, and reject any nonzero color. Color-specific item types require a positive color id. The policy returns an
 effective color id for valid inputs and stable error codes for invalid inputs so callers can fail closed before an
 HTTP mutation.
+
+## Environments and BrickLink Stockrooms
+
+`LegoEnvironment` (`io.legohunter.data.enums`) is the one list of LCMS runtime environments: `local`, `sandbox`,
+`dev` and `prod`. For each it records the configuration code, whether it is PROD, the BrickLink stockroom it owns
+(`stockroom()`: `C` for SANDBOX and local, `B` for DEV, `A` for PROD), and whether it forces every lot into that
+stockroom (`forcesStockroom()`). All environments share one BrickLink account, so every environment except PROD forces
+each lot it creates or updates into its own stockroom, hidden from buyers. PROD's lots are public by default; it owns
+stockroom `A` only for deliberately hiding a particular lot, and never forces lots into it. `BricklinkStockroom` is
+the `A`/`B`/`C` enum.
+
+The shared `BricklinkStockroomPolicy` turns those facts into startup checks. Given a service's configured
+environment code, production flag and non-prod stockroom, it lists every violation. It rejects an unknown
+environment code (so a typo cannot borrow another environment's stockroom), a production flag that disagrees with
+the environment, a missing stockroom, a value other than `A`/`B`/`C`, PROD's stockroom `A`, and another environment's
+stockroom. lego-data-ingress and lego-data-service both run it at startup and refuse to start on any violation.
+Adding an environment means adding a `LegoEnvironment` constant.
