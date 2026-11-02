@@ -23,7 +23,7 @@ jobs:
     - name: setup java
       uses: actions/setup-java@v4
       with:
-        java-version: '22'
+        java-version: '21'
         distribution: 'temurin'
         architecture: x64
         cache: maven

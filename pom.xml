@@ -15,7 +15,7 @@
 
     <properties>
         <spring.boot.version>3.5.9</spring.boot.version>
-        <java.version>22</java.version>
+        <java.version>21</java.version>
         <mysql-connector-j.version>8.0.33</mysql-connector-j.version>
         <lombok.version>1.18.42</lombok.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
