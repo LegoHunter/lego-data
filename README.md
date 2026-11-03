@@ -57,3 +57,12 @@ environment code (so a typo cannot borrow another environment's stockroom), a pr
 the environment, a missing stockroom, a value other than `A`/`B`/`C`, PROD's stockroom `A`, and another environment's
 stockroom. lego-data-ingress and lego-data-service both run it at startup and refuse to start on any violation.
 Adding an environment means adding a `LegoEnvironment` constant.
+
+Each environment also names the database schema it must be connected to (`databaseSchema()`): `lego_sandbox`,
+`lego_dev` and `lego_prod`. LOCAL names none, because a developer run may use any schema except `lego_prod`, including
+the in-memory H2 test database. The shared `EnvironmentDatabasePolicy` (`io.legohunter.data.environment`) compares a
+service's configured environment code and production flag with the schema its data source reports, ignoring case.
+It rejects an unknown environment code, a production flag that disagrees with the environment, a schema it cannot
+determine, an environment connected to another environment's schema, and any non-PROD environment connected to
+`lego_prod`. Both services run it at startup, so a PROD configuration cannot run against a lower-environment
+database, and a lower-environment configuration cannot run against PROD's.
