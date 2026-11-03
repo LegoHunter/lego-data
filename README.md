@@ -64,5 +64,21 @@ the in-memory H2 test database. The shared `EnvironmentDatabasePolicy` (`io.lego
 service's configured environment code and production flag with the schema its data source reports, ignoring case.
 It rejects an unknown environment code, a production flag that disagrees with the environment, a schema it cannot
 determine, an environment connected to another environment's schema, and any non-PROD environment connected to
-`lego_prod`. Both services run it at startup, so a PROD configuration cannot run against a lower-environment
-database, and a lower-environment configuration cannot run against PROD's.
+`lego_prod`.
+
+The lego-data starter runs it at startup for every service, so a PROD configuration cannot run against a
+lower-environment database, and a lower-environment configuration cannot run against PROD's. Each service declares its
+environment once:
+
+```yaml
+lego:
+  environment:
+    code: sandbox        # local (default), sandbox, dev or prod
+    production: false    # true only for prod
+```
+
+`LegoEnvironmentAutoConfiguration` binds `lego.environment` (`LegoEnvironmentProperties`) for every service, and
+registers `EnvironmentDatabaseVerifier` when `lego.data.enabled=true` and a `DataSource` exists. The verifier reads
+`SELECT DATABASE()` and refuses to start on any violation, including when the database cannot be reached. The `local`
+default is safe: it runs against any database except `lego_prod`. A tool that deliberately targets several schemas
+can opt out with `lego.environment.verify-database=false`.

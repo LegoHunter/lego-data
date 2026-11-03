@@ -12,10 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EnvironmentDatabasePolicyTest {
 
-    private static final String PREFIX = "lego.test";
+    private static final String CODE = "lego.test.code";
+    private static final String PRODUCTION = "lego.test.production";
 
     private static List<String> violations(String code, boolean production, String schema) {
-        return EnvironmentDatabasePolicy.violations(PREFIX, code, production, schema);
+        return EnvironmentDatabasePolicy.violations(CODE, PRODUCTION, code, production, schema);
     }
 
     @ParameterizedTest(name = "{0} on {2}")
@@ -43,36 +44,36 @@ class EnvironmentDatabasePolicyTest {
     })
     void rejectsALowerEnvironmentOnAnotherDatabase(String code, String schema, String required) {
         assertThat(violations(code, false, schema)).containsExactly(
-                "lego.test.environment-code '%s' must be connected to database schema '%s', not '%s'".formatted(code, required, schema));
+                "lego.test.code '%s' must be connected to database schema '%s', not '%s'".formatted(code, required, schema));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"lego_sandbox", "lego_dev", "TESTDB", "lego_prod_legacy"})
     void rejectsProdOnAnyDatabaseButLegoProd(String schema) {
         assertThat(violations("prod", true, schema)).containsExactly(
-                "lego.test.environment-code 'prod' must be connected to database schema 'lego_prod', not '%s'".formatted(schema));
+                "lego.test.code 'prod' must be connected to database schema 'lego_prod', not '%s'".formatted(schema));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"lego_prod", "LEGO_PROD"})
     void rejectsLocalOnTheProdDatabase(String schema) {
         assertThat(violations("local", false, schema)).containsExactly(
-                "lego.test.environment-code 'local' is not PROD but is connected to PROD's database schema '%s'".formatted(schema));
+                "lego.test.code 'local' is not PROD but is connected to PROD's database schema '%s'".formatted(schema));
     }
 
     @Test
     void rejectsProductionFlagOnALowerEnvironment() {
         // The PROD flag switches off every lower-environment guard, whatever database is connected.
         assertThat(violations("sandbox", true, "lego_sandbox")).containsExactly(
-                "lego.test.production is true but environment-code 'sandbox' is not PROD");
+                "lego.test.production is true but lego.test.code 'sandbox' is not PROD");
         assertThat(violations("local", true, "lego_prod")).containsExactly(
-                "lego.test.production is true but environment-code 'local' is not PROD");
+                "lego.test.production is true but lego.test.code 'local' is not PROD");
     }
 
     @Test
     void rejectsProdWithoutTheProductionFlag() {
         assertThat(violations("prod", false, "lego_prod")).containsExactly(
-                "lego.test.production is false but environment-code 'prod' is PROD");
+                "lego.test.production is false but lego.test.code 'prod' is PROD");
     }
 
     @ParameterizedTest
@@ -80,7 +81,7 @@ class EnvironmentDatabasePolicyTest {
     @ValueSource(strings = {"sandbx", "production", "  "})
     void rejectsAnUnknownEnvironmentCode(String code) {
         assertThat(violations(code, false, "lego_sandbox")).containsExactly(
-                "lego.test.environment-code '%s' is not a known environment (local, sandbox, dev, prod)".formatted(code));
+                "lego.test.code '%s' is not a known environment (local, sandbox, dev, prod)".formatted(code));
     }
 
     @ParameterizedTest
