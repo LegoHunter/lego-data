@@ -28,24 +28,26 @@ public final class EnvironmentDatabasePolicy {
     /**
      * Every way the settings disagree with the connected database, or an empty list.
      *
-     * @param settingPrefix   the configuration prefix, used to name settings in the messages
-     *                        (for example {@code "lego.bricklink.marketplace-sync"})
+     * @param codeSetting       the environment code setting's full name, used in the messages
+     *                          (for example {@code "lego.environment.code"})
+     * @param productionSetting the production flag setting's full name, used in the messages
+     *                          (for example {@code "lego.environment.production"})
      * @param environmentCode the configured {@code environment-code}
      * @param production      the configured {@code production} flag
      * @param connectedSchema the schema the service's data source is connected to, as reported by
      *                        the database (for example by {@code SELECT DATABASE()})
      */
-    public static List<String> violations(String settingPrefix, String environmentCode, boolean production, String connectedSchema) {
+    public static List<String> violations(String codeSetting, String productionSetting, String environmentCode, boolean production, String connectedSchema) {
         List<String> violations = new ArrayList<>();
         LegoEnvironment environment = LegoEnvironment.fromCode(environmentCode).orElse(null);
         if (environment == null) {
-            violations.add("%s.environment-code '%s' is not a known environment (%s)".formatted(
-                    settingPrefix, environmentCode, knownCodes()));
+            violations.add("%s '%s' is not a known environment (%s)".formatted(
+                    codeSetting, environmentCode, knownCodes()));
             return violations;
         }
         if (environment.isProduction() != production) {
-            violations.add("%s.production is %s but environment-code '%s' is %s".formatted(
-                    settingPrefix, production, environment.code(), environment.isProduction() ? "PROD" : "not PROD"));
+            violations.add("%s is %s but %s '%s' is %s".formatted(
+                    productionSetting, production, codeSetting, environment.code(), environment.isProduction() ? "PROD" : "not PROD"));
             return violations;
         }
         if (connectedSchema == null || connectedSchema.isBlank()) {
@@ -56,13 +58,13 @@ public final class EnvironmentDatabasePolicy {
         String schema = connectedSchema.trim();
         Optional<String> required = environment.databaseSchema();
         if (required.isPresent() && !required.get().equalsIgnoreCase(schema)) {
-            violations.add("%s.environment-code '%s' must be connected to database schema '%s', not '%s'".formatted(
-                    settingPrefix, environment.code(), required.get(), schema));
+            violations.add("%s '%s' must be connected to database schema '%s', not '%s'".formatted(
+                    codeSetting, environment.code(), required.get(), schema));
             return violations;
         }
         if (!environment.isProduction() && isProdSchema(schema)) {
-            violations.add("%s.environment-code '%s' is not PROD but is connected to PROD's database schema '%s'".formatted(
-                    settingPrefix, environment.code(), schema));
+            violations.add("%s '%s' is not PROD but is connected to PROD's database schema '%s'".formatted(
+                    codeSetting, environment.code(), schema));
         }
         return violations;
     }
