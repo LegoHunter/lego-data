@@ -15,11 +15,11 @@ import java.util.Optional;
  *
  * <table>
  *   <caption>Environments</caption>
- *   <tr><th>Environment</th><th>Code</th><th>Production</th><th>Stockroom it owns</th><th>Forces every lot into it</th></tr>
- *   <tr><td>{@link #LOCAL}</td><td>local</td><td>no</td><td>C (shared with SANDBOX; marketplace sync always runs DRY_RUN)</td><td>yes</td></tr>
- *   <tr><td>{@link #SANDBOX}</td><td>sandbox</td><td>no</td><td>C</td><td>yes</td></tr>
- *   <tr><td>{@link #DEV}</td><td>dev</td><td>no</td><td>B</td><td>yes</td></tr>
- *   <tr><td>{@link #PROD}</td><td>prod</td><td>yes</td><td>A</td><td>no</td></tr>
+ *   <tr><th>Environment</th><th>Code</th><th>Production</th><th>Stockroom it owns</th><th>Forces every lot into it</th><th>Database schema</th></tr>
+ *   <tr><td>{@link #LOCAL}</td><td>local</td><td>no</td><td>C (shared with SANDBOX; marketplace sync always runs DRY_RUN)</td><td>yes</td><td>any except {@code lego_prod}</td></tr>
+ *   <tr><td>{@link #SANDBOX}</td><td>sandbox</td><td>no</td><td>C</td><td>yes</td><td>{@code lego_sandbox}</td></tr>
+ *   <tr><td>{@link #DEV}</td><td>dev</td><td>no</td><td>B</td><td>yes</td><td>{@code lego_dev}</td></tr>
+ *   <tr><td>{@link #PROD}</td><td>prod</td><td>yes</td><td>A</td><td>no</td><td>{@code lego_prod}</td></tr>
  * </table>
  *
  * <p>Owning and forcing are different things. A lower environment <em>forces</em> every lot it
@@ -32,19 +32,21 @@ import java.util.Optional;
  * environment: adding an environment means adding a constant here.
  */
 public enum LegoEnvironment {
-    LOCAL("local", false, BricklinkStockroom.C),
-    SANDBOX("sandbox", false, BricklinkStockroom.C),
-    DEV("dev", false, BricklinkStockroom.B),
-    PROD("prod", true, BricklinkStockroom.A);
+    LOCAL("local", false, BricklinkStockroom.C, Optional.empty()),
+    SANDBOX("sandbox", false, BricklinkStockroom.C, Optional.of("lego_sandbox")),
+    DEV("dev", false, BricklinkStockroom.B, Optional.of("lego_dev")),
+    PROD("prod", true, BricklinkStockroom.A, Optional.of("lego_prod"));
 
     private final String code;
     private final boolean production;
     private final BricklinkStockroom stockroom;
+    private final Optional<String> databaseSchema;
 
-    LegoEnvironment(String code, boolean production, BricklinkStockroom stockroom) {
+    LegoEnvironment(String code, boolean production, BricklinkStockroom stockroom, Optional<String> databaseSchema) {
         this.code = code;
         this.production = production;
         this.stockroom = stockroom;
+        this.databaseSchema = databaseSchema;
     }
 
     /** The configuration code, for example {@code "sandbox"}. */
@@ -60,6 +62,14 @@ public enum LegoEnvironment {
     /** The BrickLink stockroom this environment owns. Never null. */
     public BricklinkStockroom stockroom() {
         return stockroom;
+    }
+
+    /**
+     * The database schema this environment must be connected to. Empty only for LOCAL: a developer
+     * run may use any schema except PROD's, including an in-memory test database.
+     */
+    public Optional<String> databaseSchema() {
+        return databaseSchema;
     }
 
     /**

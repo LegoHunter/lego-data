@@ -46,6 +46,15 @@ class LegoEnvironmentTest {
                 .containsExactly(LegoEnvironment.PROD);
     }
 
+    @Test
+    void eachEnvironmentNamesItsDatabaseSchema() {
+        assertThat(LegoEnvironment.SANDBOX.databaseSchema()).contains("lego_sandbox");
+        assertThat(LegoEnvironment.DEV.databaseSchema()).contains("lego_dev");
+        assertThat(LegoEnvironment.PROD.databaseSchema()).contains("lego_prod");
+        // A developer run may use any non-PROD schema, including the in-memory test database.
+        assertThat(LegoEnvironment.LOCAL.databaseSchema()).isEmpty();
+    }
+
     @ParameterizedTest
     @CsvSource({"local, LOCAL", "sandbox, SANDBOX", "dev, DEV", "prod, PROD", "' Sandbox ', SANDBOX", "DEV, DEV"})
     void findsAnEnvironmentByItsCode(String code, LegoEnvironment expected) {
