@@ -108,6 +108,23 @@ public class PricingDecisionDao {
         return findByPricingDecisionId(pricingDecisionId);
     }
 
+    /**
+     * Moves a decision from {@code fromStatusCode} to {@code toStatusCode} if it still has the
+     * expected status and is not applied yet. Empty when the decision had moved on already.
+     */
+    public Optional<PricingDecision> transitionStatus(
+            Long pricingDecisionId,
+            String fromStatusCode,
+            String toStatusCode,
+            ZonedDateTime appliedAt
+    ) {
+        int updated = pricingDecisionMapper.transitionStatus(pricingDecisionId, fromStatusCode, toStatusCode, appliedAt);
+        if (updated == 0) {
+            return Optional.empty();
+        }
+        return findByPricingDecisionId(pricingDecisionId);
+    }
+
     public void delete(Long pricingDecisionId) {
         pricingDecisionMapper.delete(pricingDecisionId);
     }

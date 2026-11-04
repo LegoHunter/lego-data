@@ -26,6 +26,18 @@ public class MarketplaceListingSyncRequestDao {
         return marketplaceListingSyncRequestMapper.findByMarketplaceListingId(marketplaceListingId);
     }
 
+    public Optional<MarketplaceListingSyncRequest> findByMarketplaceListingIdAndPricingDecisionIdAndSyncRequestTypeCode(
+            Integer marketplaceListingId,
+            Long pricingDecisionId,
+            String syncRequestTypeCode
+    ) {
+        return marketplaceListingSyncRequestMapper.findByMarketplaceListingIdAndPricingDecisionIdAndSyncRequestTypeCode(
+                marketplaceListingId,
+                pricingDecisionId,
+                syncRequestTypeCode
+        );
+    }
+
     public Set<MarketplaceListingSyncRequest> findBySyncRequestStatusCode(String syncRequestStatusCode) {
         return marketplaceListingSyncRequestMapper.findBySyncRequestStatusCode(syncRequestStatusCode);
     }

@@ -294,6 +294,33 @@ class PricingPlaneDaoTest {
     }
 
     @Test
+    void pricingDecisionDaoMovesAProposedDecisionThroughAcceptedToApplied() {
+        PricingFixture fixture = pricingFixture();
+        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
+        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
+        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
+        pricingApplyReadinessDao.insert(pricingApplyReadiness(decision, snapshot, fixture));
+
+        assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "PROPOSED", "ACCEPTED", null))
+                .hasValueSatisfying(accepted -> {
+                    assertThat(accepted.getDecisionStatusCode()).isEqualTo("ACCEPTED");
+                    assertThat(accepted.getAppliedAt()).isNull();
+                });
+        // An accepted decision is waiting on BrickLink: apply must not pick it up again.
+        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
+        // A second worker that still thinks it is PROPOSED loses the race.
+        assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "PROPOSED", "ACCEPTED", null)).isEmpty();
+
+        assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "ACCEPTED", "APPLIED", SNAPSHOT_AT.plusMinutes(5)))
+                .hasValueSatisfying(applied -> {
+                    assertThat(applied.getDecisionStatusCode()).isEqualTo("APPLIED");
+                    assertThat(applied.getAppliedAt()).isNotNull();
+                });
+        // Applied is final.
+        assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "APPLIED", "ACCEPTED", null)).isEmpty();
+    }
+
+    @Test
     void pricingCrawlDaoClaimsDueWorkAndRequeuesStaleClaims() {
         PricingFixture fixture = pricingFixture();
         PricingCrawlWorkItem workItem = pricingCrawlWorkItem(fixture);

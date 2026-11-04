@@ -348,6 +348,12 @@ class DaoDelegationCoverageTest {
                 "LISTING_CREATE",
                 Set.of("PENDING", "CLAIMED")
         )).containsExactly(syncRequest);
+        when(mapper.findByMarketplaceListingIdAndPricingDecisionIdAndSyncRequestTypeCode(200, 300L, "PRICE_UPDATE"))
+                .thenReturn(Optional.of(syncRequest));
+        assertThat(dao.findByMarketplaceListingIdAndPricingDecisionIdAndSyncRequestTypeCode(200, 300L, "PRICE_UPDATE"))
+                .contains(syncRequest);
+        assertThat(dao.findByMarketplaceListingIdAndPricingDecisionIdAndSyncRequestTypeCode(200, 301L, "PRICE_UPDATE"))
+                .isEmpty();
         assertThat(dao.findClaimableByStatusCodeAndSyncRequestTypeCodes(
                 "PENDING",
                 Set.of("PRICE_UPDATE"),
