@@ -382,6 +382,26 @@ public interface PricingDecisionMapper {
             """)
     int markApplied(@Param("pricingDecisionId") Long pricingDecisionId, @Param("appliedAt") ZonedDateTime appliedAt);
 
+    /**
+     * Moves a decision from one status to the next, only if it still has the expected status and has
+     * not been applied. Returns 0 when another worker already moved it, so the caller can tell a lost
+     * race from a success. {@code appliedAt} is written only when given.
+     */
+    @Update("""
+            UPDATE pricing_decision
+            SET decision_status_code = #{toStatusCode},
+                applied_at = COALESCE(#{appliedAt}, applied_at)
+            WHERE pricing_decision_id = #{pricingDecisionId}
+              AND decision_status_code = #{fromStatusCode}
+              AND applied_at IS NULL
+            """)
+    int transitionStatus(
+            @Param("pricingDecisionId") Long pricingDecisionId,
+            @Param("fromStatusCode") String fromStatusCode,
+            @Param("toStatusCode") String toStatusCode,
+            @Param("appliedAt") ZonedDateTime appliedAt
+    );
+
     @Delete("DELETE FROM pricing_decision WHERE pricing_decision_id = #{pricingDecisionId}")
     int delete(Long pricingDecisionId);
 

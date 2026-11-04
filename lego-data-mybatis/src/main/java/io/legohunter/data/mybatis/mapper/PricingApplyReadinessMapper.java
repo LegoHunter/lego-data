@@ -169,6 +169,7 @@ public interface PricingApplyReadinessMapper {
             LEFT JOIN pricing_snapshot ps
               ON ps.pricing_snapshot_id = par.pricing_snapshot_id
             WHERE par.readiness_status_code IN ('READY_TO_APPLY', 'READY_TO_APPLY_INITIAL_PRICE')
+              AND pd.decision_status_code = 'PROPOSED'
               AND pd.applied_at IS NULL
             ORDER BY par.evaluated_at DESC,
                      par.pricing_apply_readiness_id DESC

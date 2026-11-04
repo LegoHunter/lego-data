@@ -695,6 +695,35 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingDecisionTransitionStatusOnlyMovesTheExpectedUnappliedStatus() {
+        PricingFixture fixture = pricingFixture("pricing-decision-transition");
+        PricingSnapshot snapshot = insertedSnapshot(fixture);
+        PricingDecision decision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        decision.setDecisionStatusCode("PROPOSED");
+        pricingDecisionMapper.insert(decision);
+        PricingApplyReadiness readiness = pricingApplyReadiness(decision, snapshot, fixture);
+        pricingApplyReadinessMapper.insert(readiness);
+        assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10)).hasSize(1);
+
+        assertThat(pricingDecisionMapper.transitionStatus(decision.getPricingDecisionId(), "FAILED", "ACCEPTED", null)).isZero();
+        assertThat(pricingDecisionMapper.transitionStatus(decision.getPricingDecisionId(), "PROPOSED", "ACCEPTED", null)).isOne();
+        assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId()))
+                .hasValueSatisfying(accepted -> {
+                    assertThat(accepted.getDecisionStatusCode()).isEqualTo("ACCEPTED");
+                    assertThat(accepted.getAppliedAt()).isNull();
+                });
+        assertThat(pricingApplyReadinessMapper.findLatestReadyToApplyReviews(10)).isEmpty();
+
+        assertThat(pricingDecisionMapper.transitionStatus(decision.getPricingDecisionId(), "ACCEPTED", "APPLIED", SNAPSHOT_AT.plusMinutes(5))).isOne();
+        assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId()))
+                .hasValueSatisfying(applied -> {
+                    assertThat(applied.getDecisionStatusCode()).isEqualTo("APPLIED");
+                    assertThat(applied.getAppliedAt()).isNotNull();
+                });
+        assertThat(pricingDecisionMapper.transitionStatus(decision.getPricingDecisionId(), "APPLIED", "ACCEPTED", null)).isZero();
+    }
+
+    @Test
     void pricingApplyReadinessReadySelectionIncludesInitialPriceRows() {
         PricingFixture fixture = pricingFixture("pricing-readiness-initial-price");
         PricingSnapshot snapshot = insertedSnapshot(fixture);
