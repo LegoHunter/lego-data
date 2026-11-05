@@ -1,0 +1,10 @@
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.ItemInventorySeedSourceMapper">
+  <resultMap type="io.legohunter.data.dto.ItemInventorySeedSource" id="itemInventorySeedSourceResultMap">
+    <id     column="item_inventory_id" property="itemInventoryId"/>
+    <result column="source_system"     property="sourceSystem"/>
+    <result column="source_key"        property="sourceKey"/>
+    <result column="seed_run_id"       property="seedRunId"/>
+    <result column="seeded_at"         property="seededAt"/>
+  </resultMap>
+</mapper>

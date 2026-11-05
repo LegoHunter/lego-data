@@ -4,6 +4,7 @@ import io.legohunter.data.dto.Carrier;
 import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.CostType;
 import io.legohunter.data.dto.InventoryIndex;
+import io.legohunter.data.dto.ItemInventorySeedSource;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Payment;
@@ -23,6 +24,7 @@ import io.legohunter.data.mybatis.mapper.CarrierMapper;
 import io.legohunter.data.mybatis.mapper.ConditionMapper;
 import io.legohunter.data.mybatis.mapper.CostTypeMapper;
 import io.legohunter.data.mybatis.mapper.InventoryIndexMapper;
+import io.legohunter.data.mybatis.mapper.ItemInventorySeedSourceMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingSyncRequestMapper;
 import io.legohunter.data.mybatis.mapper.PartyMapper;
@@ -498,5 +500,30 @@ class DaoDelegationCoverageTest {
         verify(mapper).summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
         verify(mapper).findDuplicateMarketplaceListingWorkItems("PENDING", "CLAIMED", 1);
         verify(mapper).findRecentFailures(1);
+    }
+
+    @Test
+    void itemInventorySeedSourceDaoDelegatesAllOperations() {
+        ItemInventorySeedSourceMapper mapper = mock(ItemInventorySeedSourceMapper.class);
+        ItemInventorySeedSourceDao dao = new ItemInventorySeedSourceDao(mapper);
+        ItemInventorySeedSource seedSource = ItemInventorySeedSource.builder()
+                .itemInventoryId(7)
+                .sourceSystem(ItemInventorySeedSource.SOURCE_SYSTEM_LEGO_PROD_LEGACY)
+                .sourceKey("28")
+                .seedRunId("run-1")
+                .build();
+        when(mapper.findAll()).thenReturn(List.of(seedSource));
+        when(mapper.findByItemInventoryId(7)).thenReturn(Optional.of(seedSource));
+        when(mapper.findBySourceSystemAndSourceKey(ItemInventorySeedSource.SOURCE_SYSTEM_LEGO_PROD_LEGACY, "28")).thenReturn(Optional.of(seedSource));
+        when(mapper.findBySeedRunId("run-1")).thenReturn(List.of(seedSource));
+        when(mapper.deleteByItemInventoryId(7)).thenReturn(1);
+
+        assertThat(dao.findAll()).containsExactly(seedSource);
+        assertThat(dao.findByItemInventoryId(7)).contains(seedSource);
+        assertThat(dao.findBySourceSystemAndSourceKey(ItemInventorySeedSource.SOURCE_SYSTEM_LEGO_PROD_LEGACY, "28")).contains(seedSource);
+        assertThat(dao.findBySeedRunId("run-1")).containsExactly(seedSource);
+        assertThat(dao.insert(seedSource)).isSameAs(seedSource);
+        verify(mapper).insert(seedSource);
+        assertThat(dao.deleteByItemInventoryId(7)).isOne();
     }
 }

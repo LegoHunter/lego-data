@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS ebay_listing_item_specific;
 DROP TABLE IF EXISTS ebay_marketplace_listing;
 DROP TABLE IF EXISTS bricklink_marketplace_listing;
 DROP TABLE IF EXISTS marketplace_listing;
+DROP TABLE IF EXISTS item_inventory_seed_source;
 DROP TABLE IF EXISTS item_inventory_external_catalog_item;
 DROP TABLE IF EXISTS external_catalog_item_category;
 DROP TABLE IF EXISTS external_service_capability;
@@ -183,6 +184,17 @@ CREATE TABLE item_inventory_external_catalog_item (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (item_inventory_id, external_catalog_item_id)
 );
+
+CREATE TABLE item_inventory_seed_source (
+    item_inventory_id INT NOT NULL PRIMARY KEY,
+    source_system VARCHAR(32) NOT NULL,
+    source_key VARCHAR(64) NOT NULL,
+    seed_run_id CHAR(36) NOT NULL,
+    seeded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_item_inventory_seed_source_source UNIQUE (source_system, source_key)
+);
+
+CREATE INDEX idx_item_inventory_seed_source_run ON item_inventory_seed_source (seed_run_id);
 
 CREATE TABLE marketplace_listing (
     marketplace_listing_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -810,6 +822,11 @@ ALTER TABLE item_inventory_external_catalog_item
 ALTER TABLE item_inventory_external_catalog_item
     ADD CONSTRAINT fk_item_inventory_external_catalog_item_catalog_item1
     FOREIGN KEY (external_catalog_item_id) REFERENCES external_catalog_item (external_catalog_item_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE item_inventory_seed_source
+    ADD CONSTRAINT fk_item_inventory_seed_source_item_inventory
+    FOREIGN KEY (item_inventory_id) REFERENCES item_inventory (item_inventory_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE marketplace_listing
