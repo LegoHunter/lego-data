@@ -1,6 +1,8 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingDataQualityGap;
+import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingHydrationGap;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
@@ -144,39 +146,18 @@ public interface MarketplaceListingMapper {
         );
     }
 
-    @Select("""
-            <script>
-            SELECT ${columns}
-            ${fromClause}
-            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code IN
-              <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
-                #{listingStatusCode}
-              </foreach>
-              AND ml.external_catalog_item_id IS NOT NULL
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM pricing_crawl_work_item pcwi
-                  WHERE pcwi.marketplace_listing_id = ml.marketplace_listing_id
-                    AND (
-                        pcwi.work_status_code IN (#{pendingStatusCode}, #{claimedStatusCode})
-                        OR pcwi.next_attempt_at > #{asOf}
-                    )
-              )
-            ORDER BY ml.marketplace_listing_id
-            LIMIT #{limit}
-            </script>
-            """)
-    @ResultMap("marketplaceListingResultMap")
+    /**
+     * Listings due for a market crawl. Defined in MarketplaceListingMapper.xml so it shares the
+     * inventory condition/completeness predicate with the pricing decision candidate queries:
+     * a listing the decision stage can never price is not crawled either.
+     */
     Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCodes") Set<String> listingStatusCodes,
             @Param("pendingStatusCode") String pendingStatusCode,
             @Param("claimedStatusCode") String claimedStatusCode,
             @Param("asOf") ZonedDateTime asOf,
-            @Param("limit") int limit,
-            @Param("columns") String columns,
-            @Param("fromClause") String fromClause
+            @Param("limit") int limit
     );
 
     default Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
@@ -193,29 +174,7 @@ public interface MarketplaceListingMapper {
                 pendingStatusCode,
                 claimedStatusCode,
                 asOf,
-                limit,
-                ALL_COLUMNS,
-                FROM_CLAUSE
-        );
-    }
-
-    default Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-            Integer listingExternalServiceId,
-            Set<String> listingStatusCodes,
-            String pendingStatusCode,
-            String claimedStatusCode,
-            ZonedDateTime asOf,
-            int limit
-    ) {
-        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                listingExternalServiceId,
-                listingStatusCodes,
-                pendingStatusCode,
-                claimedStatusCode,
-                asOf,
-                limit,
-                ALL_COLUMNS,
-                FROM_CLAUSE
+                limit
         );
     }
 
@@ -269,6 +228,26 @@ public interface MarketplaceListingMapper {
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,
             @Param("limit") int limit
+    );
+
+    /**
+     * Listings in the given statuses whose inventory or catalog data is missing something the
+     * Pricing Plane needs. Each row carries one flag per gap; rows without any gap are not returned.
+     * Defined in MarketplaceListingMapper.xml.
+     */
+    Set<PricingDataQualityGap> findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes,
+            @Param("limit") int limit
+    );
+
+    /**
+     * Gap counts over every listing the data-quality query would return, ignoring its row limit.
+     * Defined in MarketplaceListingMapper.xml.
+     */
+    PricingDataQualitySummary summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes
     );
 
     @Select("""

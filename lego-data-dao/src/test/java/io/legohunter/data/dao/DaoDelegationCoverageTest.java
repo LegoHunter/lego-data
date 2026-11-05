@@ -9,6 +9,7 @@ import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Payment;
 import io.legohunter.data.dto.PaymentPlatform;
 import io.legohunter.data.dto.PricingApplyReadiness;
+import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.TransactionCost;
 import io.legohunter.data.dto.TransactionItem;
@@ -302,6 +303,17 @@ class DaoDelegationCoverageTest {
 
         dao.findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 0);
         verify(mapper).findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 1);
+
+        dao.findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(1, Set.of("ACTIVE"), 0);
+        verify(mapper).findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(1, Set.of("ACTIVE"), 1);
+        assertThat(dao.findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(1, Set.of(), 5)).isEmpty();
+        PricingDataQualitySummary summary = PricingDataQualitySummary.builder().listingsChecked(3).build();
+        when(mapper.summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(1, Set.of("ACTIVE")))
+                .thenReturn(summary);
+        assertThat(dao.summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(1, Set.of("ACTIVE")))
+                .isSameAs(summary);
+        assertThat(dao.summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(1, Set.of()).getListingsChecked())
+                .isZero();
 
         MarketplaceListing missingIdListing = MarketplaceListing.builder()
                 .listingExternalServiceId(1)

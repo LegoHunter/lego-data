@@ -38,6 +38,47 @@
     <result column="completeness"               property="completeness"/>
   </resultMap>
 
+  <resultMap type="io.legohunter.data.dto.PricingDataQualityGap" id="pricingDataQualityGapResultMap">
+    <result column="marketplace_listing_id"       property="marketplaceListingId"/>
+    <result column="external_listing_id"          property="externalListingId"/>
+    <result column="listing_status_code"          property="listingStatusCode"/>
+    <result column="fixed_price"                  property="fixedPrice"/>
+    <result column="item_inventory_id"            property="itemInventoryId"/>
+    <result column="item_inventory_uuid"          property="itemInventoryUuid"/>
+    <result column="new_or_used"                  property="newOrUsed"/>
+    <result column="completeness"                 property="completeness"/>
+    <result column="box_condition_id"             property="boxConditionId"/>
+    <result column="box_condition_code"           property="boxConditionCode"/>
+    <result column="instructions_condition_id"    property="instructionsConditionId"/>
+    <result column="instructions_condition_code"  property="instructionsConditionCode"/>
+    <result column="external_catalog_item_id"     property="externalCatalogItemId"/>
+    <result column="external_item_key"            property="externalItemKey"/>
+    <result column="item_type_code"               property="itemTypeCode"/>
+    <result column="external_unique_key"          property="externalUniqueKey"/>
+    <result column="latest_crawl_status_code"     property="latestCrawlStatusCode"/>
+    <result column="missing_condition"            property="missingCondition"/>
+    <result column="missing_completeness"         property="missingCompleteness"/>
+    <result column="missing_catalog_item"         property="missingCatalogItem"/>
+    <result column="missing_item_number"          property="missingItemNumber"/>
+    <result column="missing_item_type"            property="missingItemType"/>
+    <result column="missing_internal_item_id"     property="missingInternalItemId"/>
+    <result column="missing_box_grade"            property="missingBoxGrade"/>
+    <result column="missing_instructions_grade"   property="missingInstructionsGrade"/>
+  </resultMap>
+
+  <resultMap type="io.legohunter.data.dto.PricingDataQualitySummary" id="pricingDataQualitySummaryResultMap">
+    <result column="listings_checked"             property="listingsChecked"/>
+    <result column="listings_with_gaps"           property="listingsWithGaps"/>
+    <result column="missing_condition"            property="missingCondition"/>
+    <result column="missing_completeness"         property="missingCompleteness"/>
+    <result column="missing_catalog_item"         property="missingCatalogItem"/>
+    <result column="missing_item_number"          property="missingItemNumber"/>
+    <result column="missing_item_type"            property="missingItemType"/>
+    <result column="missing_internal_item_id"     property="missingInternalItemId"/>
+    <result column="missing_box_grade"            property="missingBoxGrade"/>
+    <result column="missing_instructions_grade"   property="missingInstructionsGrade"/>
+  </resultMap>
+
   <sql id="marketplaceListingColumns">
     ml.marketplace_listing_id,
     ml.item_inventory_id,
@@ -85,9 +126,15 @@
       ON est.external_service_type_id = es.external_service_type_id
   </sql>
 
+  <!--
+    Inventory the Pricing Plane can price: a recognised condition (N/NEW/U/USED, the same values
+    the crawl accepts) and a completeness. Shared by crawl scheduling and the decision candidate
+    queries so a listing is crawled only when a decision could use the result.
+  -->
   <sql id="priceableInventoryConditionPresent">
-    ii.new_or_used IS NOT NULL
-    AND TRIM(ii.new_or_used) &lt;&gt; ''
+    <include refid="normalizedItemConditionCode">
+      <property name="value" value="ii.new_or_used"/>
+    </include> IS NOT NULL
     AND ii.completeness IS NOT NULL
     AND TRIM(ii.completeness) &lt;&gt; ''
   </sql>
@@ -319,5 +366,128 @@
       )
     ORDER BY ml.marketplace_listing_id
     LIMIT #{limit}
+  </select>
+
+  <select id="findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes"
+          resultMap="marketplaceListingResultMap">
+    SELECT <include refid="marketplaceListingColumns"/>
+    <include refid="marketplaceListingFromClause"/>
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code IN
+      <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+        #{listingStatusCode}
+      </foreach>
+      AND ml.external_catalog_item_id IS NOT NULL
+      AND <include refid="priceableInventoryConditionPresent"/>
+      AND NOT EXISTS (
+        SELECT 1
+        FROM pricing_crawl_work_item pcwi
+        WHERE pcwi.marketplace_listing_id = ml.marketplace_listing_id
+          AND (
+            pcwi.work_status_code IN (#{pendingStatusCode}, #{claimedStatusCode})
+            OR pcwi.next_attempt_at &gt; #{asOf}
+          )
+      )
+    ORDER BY ml.marketplace_listing_id
+    LIMIT #{limit}
+  </select>
+
+  <!--
+    One row per listing in the requested statuses, with a 0/1 flag per Pricing Plane data gap.
+    Box and instructions grades are checked for used items only: new items are priced without
+    them; a NULL grade id is a gap. MS (missing) and NA
+    (not applicable) are recorded grades, not gaps.
+  -->
+  <sql id="pricingDataQualityRows">
+    SELECT ml.marketplace_listing_id,
+           ml.external_listing_id,
+           ml.listing_status_code,
+           ml.fixed_price,
+           ii.item_inventory_id,
+           ii.uuid AS item_inventory_uuid,
+           ii.new_or_used,
+           ii.completeness,
+           ii.box_condition_id,
+           bc.condition_code AS box_condition_code,
+           ii.instructions_condition_id,
+           ic.condition_code AS instructions_condition_code,
+           eci.external_catalog_item_id,
+           eci.external_item_key,
+           eci.item_type_code,
+           eci.external_unique_key,
+           (
+             SELECT latest_pcwi.work_status_code
+             FROM pricing_crawl_work_item latest_pcwi
+             WHERE latest_pcwi.marketplace_listing_id = ml.marketplace_listing_id
+             ORDER BY latest_pcwi.pricing_crawl_work_item_id DESC
+             LIMIT 1
+           ) AS latest_crawl_status_code,
+           CASE WHEN <include refid="normalizedItemConditionCode"><property name="value" value="ii.new_or_used"/></include> IS NULL
+                THEN 1 ELSE 0 END AS missing_condition,
+           CASE WHEN ii.completeness IS NULL OR TRIM(ii.completeness) = ''
+                THEN 1 ELSE 0 END AS missing_completeness,
+           CASE WHEN eci.external_catalog_item_id IS NULL
+                THEN 1 ELSE 0 END AS missing_catalog_item,
+           CASE WHEN eci.external_catalog_item_id IS NOT NULL AND TRIM(COALESCE(eci.external_item_key, '')) = ''
+                THEN 1 ELSE 0 END AS missing_item_number,
+           CASE WHEN eci.external_catalog_item_id IS NOT NULL AND TRIM(COALESCE(eci.item_type_code, '')) = ''
+                THEN 1 ELSE 0 END AS missing_item_type,
+           CASE WHEN eci.external_catalog_item_id IS NOT NULL AND TRIM(COALESCE(eci.external_unique_key, '')) = ''
+                THEN 1 ELSE 0 END AS missing_internal_item_id,
+           CASE WHEN <include refid="normalizedItemConditionCode"><property name="value" value="ii.new_or_used"/></include> = 'U'
+                     AND bc.condition_id IS NULL
+                THEN 1 ELSE 0 END AS missing_box_grade,
+           CASE WHEN <include refid="normalizedItemConditionCode"><property name="value" value="ii.new_or_used"/></include> = 'U'
+                     AND ic.condition_id IS NULL
+                THEN 1 ELSE 0 END AS missing_instructions_grade
+    FROM marketplace_listing ml
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    LEFT JOIN external_catalog_item eci
+      ON eci.external_catalog_item_id = ml.external_catalog_item_id
+    LEFT JOIN `condition` bc
+      ON bc.condition_id = ii.box_condition_id
+    LEFT JOIN `condition` ic
+      ON ic.condition_id = ii.instructions_condition_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code IN
+      <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+        #{listingStatusCode}
+      </foreach>
+  </sql>
+
+  <sql id="pricingDataQualityGapCount">
+    (q.missing_condition + q.missing_completeness + q.missing_catalog_item + q.missing_item_number
+     + q.missing_item_type + q.missing_internal_item_id + q.missing_box_grade + q.missing_instructions_grade)
+  </sql>
+
+  <select id="findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes"
+          resultMap="pricingDataQualityGapResultMap">
+    SELECT q.*
+    FROM (
+      <include refid="pricingDataQualityRows"/>
+    ) q
+    WHERE <include refid="pricingDataQualityGapCount"/> &gt; 0
+    ORDER BY q.marketplace_listing_id
+    LIMIT #{limit}
+  </select>
+
+  <select id="summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes"
+          resultMap="pricingDataQualitySummaryResultMap">
+    SELECT COUNT(*) AS listings_checked,
+           COALESCE(SUM(CASE WHEN <include refid="pricingDataQualityGapCount"/> &gt; 0 THEN 1 ELSE 0 END), 0) AS listings_with_gaps,
+           COALESCE(SUM(q.missing_condition), 0) AS missing_condition,
+           COALESCE(SUM(q.missing_completeness), 0) AS missing_completeness,
+           COALESCE(SUM(q.missing_catalog_item), 0) AS missing_catalog_item,
+           COALESCE(SUM(q.missing_item_number), 0) AS missing_item_number,
+           COALESCE(SUM(q.missing_item_type), 0) AS missing_item_type,
+           COALESCE(SUM(q.missing_internal_item_id), 0) AS missing_internal_item_id,
+           COALESCE(SUM(q.missing_box_grade), 0) AS missing_box_grade,
+           COALESCE(SUM(q.missing_instructions_grade), 0) AS missing_instructions_grade
+    FROM (
+      <include refid="pricingDataQualityRows"/>
+    ) q
   </select>
 </mapper>
