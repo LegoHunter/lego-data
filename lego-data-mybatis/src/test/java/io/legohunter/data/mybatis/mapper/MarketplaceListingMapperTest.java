@@ -1,6 +1,7 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.BricklinkMarketplaceListing;
+import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.EbayListingItemSpecific;
 import io.legohunter.data.dto.EbayMarketplaceListing;
 import io.legohunter.data.dto.ExternalCatalogItem;
@@ -8,6 +9,8 @@ import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
+import io.legohunter.data.dto.PricingDataQualityGap;
+import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingSnapshot;
 import org.junit.jupiter.api.Test;
@@ -329,6 +332,162 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 10
         )).extracting(MarketplaceListing::getExternalListingId)
                 .containsExactlyInAnyOrder("BL-CRAWL-AVAILABLE", "BL-CRAWL-DUE", "BL-CRAWL-DRAFT");
+    }
+
+    @Test
+    void pricingCrawlSchedulingCandidatesSkipListingsWithoutPriceableCondition() {
+        insertedListingWithCondition("crawl-priceable", "BL-CRAWL-PRICEABLE", "USED", "COMPLETE");
+        insertedListingWithCondition("crawl-short-codes", "BL-CRAWL-SHORT-CODES", " n ", "S");
+        insertedListingWithCondition("crawl-no-condition", "BL-CRAWL-NO-CONDITION", null, "COMPLETE");
+        insertedListingWithCondition("crawl-blank-condition", "BL-CRAWL-BLANK-CONDITION", "  ", "COMPLETE");
+        insertedListingWithCondition("crawl-unknown-condition", "BL-CRAWL-UNKNOWN-CONDITION", "MINT", "COMPLETE");
+        insertedListingWithCondition("crawl-no-completeness", "BL-CRAWL-NO-COMPLETENESS", "NEW", null);
+        insertedListingWithCondition("crawl-blank-completeness", "BL-CRAWL-BLANK-COMPLETENESS", "NEW", " ");
+
+        assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
+                2,
+                "ACTIVE",
+                "PENDING",
+                "CLAIMED",
+                CRAWL_AT,
+                10
+        )).extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-CRAWL-PRICEABLE", "BL-CRAWL-SHORT-CODES");
+        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
+                .extracting(MarketplaceListing::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-CRAWL-PRICEABLE", "BL-CRAWL-SHORT-CODES");
+    }
+
+    @Test
+    void pricingDataQualityGapsFlagEachMissingField() {
+        seedConditionGrade(8, "MS", "Missing");
+        insertedListingWithCondition("dq-clean", "BL-DQ-CLEAN", "USED", "COMPLETE");
+
+        MarketplaceListing missingCondition = insertedListingWithCondition("dq-condition", "BL-DQ-CONDITION", "MINT", null);
+
+        ListingFixture newWithoutGrades = listingFixture("dq-new-no-grades");
+        newWithoutGrades.inventory().setNewOrUsed("NEW");
+        newWithoutGrades.inventory().setCompleteness("SEALED");
+        newWithoutGrades.inventory().setBoxConditionId(null);
+        newWithoutGrades.inventory().setInstructionsConditionId(null);
+        itemInventoryMapper.update(newWithoutGrades.inventory());
+        marketplaceListingMapper.insert(marketplaceListing(newWithoutGrades.inventory().getItemInventoryId(), newWithoutGrades.item().getExternalCatalogItemId(), 2, "BL-DQ-NEW-NO-GRADES"));
+
+        ListingFixture usedWithoutGrades = listingFixture("dq-used-no-grades");
+        usedWithoutGrades.inventory().setBoxConditionId(null);
+        usedWithoutGrades.inventory().setInstructionsConditionId(null);
+        itemInventoryMapper.update(usedWithoutGrades.inventory());
+        MarketplaceListing usedListing = marketplaceListing(usedWithoutGrades.inventory().getItemInventoryId(), usedWithoutGrades.item().getExternalCatalogItemId(), 2, "BL-DQ-USED-NO-GRADES");
+        marketplaceListingMapper.insert(usedListing);
+        PricingCrawlWorkItem olderWorkItem = pricingCrawlWorkItem(usedListing.getMarketplaceListingId(), usedWithoutGrades.item().getExternalCatalogItemId(), 2, CRAWL_AT.minusDays(8));
+        olderWorkItem.setWorkStatusCode("SUCCEEDED");
+        pricingCrawlWorkItemMapper.insert(olderWorkItem);
+        PricingCrawlWorkItem latestWorkItem = pricingCrawlWorkItem(usedListing.getMarketplaceListingId(), usedWithoutGrades.item().getExternalCatalogItemId(), 2, CRAWL_AT.minusDays(1));
+        latestWorkItem.setWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
+        pricingCrawlWorkItemMapper.insert(latestWorkItem);
+
+        ListingFixture usedGradedMissing = listingFixture("dq-used-graded-missing");
+        usedGradedMissing.inventory().setBoxConditionId(8);
+        usedGradedMissing.inventory().setInstructionsConditionId(8);
+        itemInventoryMapper.update(usedGradedMissing.inventory());
+        marketplaceListingMapper.insert(marketplaceListing(usedGradedMissing.inventory().getItemInventoryId(), usedGradedMissing.item().getExternalCatalogItemId(), 2, "BL-DQ-USED-GRADED-MISSING"));
+
+        ListingFixture catalogGaps = listingFixture("dq-catalog");
+        catalogGaps.item().setItemTypeCode(" ");
+        catalogGaps.item().setExternalUniqueKey(null);
+        externalCatalogItemMapper.update(catalogGaps.item());
+        marketplaceListingMapper.insert(marketplaceListing(catalogGaps.inventory().getItemInventoryId(), catalogGaps.item().getExternalCatalogItemId(), 2, "BL-DQ-CATALOG"));
+
+        ListingFixture noCatalog = listingFixture("dq-no-catalog");
+        marketplaceListingMapper.insert(marketplaceListing(noCatalog.inventory().getItemInventoryId(), null, 2, "BL-DQ-NO-CATALOG"));
+
+        MarketplaceListing endedListing = insertedListingWithCondition("dq-ended", "BL-DQ-ENDED", null, null);
+        endedListing.setListingStatusCode("ENDED");
+        marketplaceListingMapper.update(endedListing);
+
+        Set<PricingDataQualityGap> gaps = marketplaceListingMapper.findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(2, Set.of("ACTIVE"), 10);
+
+        assertThat(gaps).extracting(PricingDataQualityGap::getExternalListingId)
+                .containsExactlyInAnyOrder("BL-DQ-CONDITION", "BL-DQ-USED-NO-GRADES", "BL-DQ-CATALOG", "BL-DQ-NO-CATALOG");
+        assertThat(gap(gaps, "BL-DQ-CONDITION")).satisfies(gap -> {
+            assertThat(gap.getMarketplaceListingId()).isEqualTo(missingCondition.getMarketplaceListingId());
+            assertThat(gap.getNewOrUsed()).isEqualTo("MINT");
+            assertThat(gap.isMissingCondition()).isTrue();
+            assertThat(gap.isMissingCompleteness()).isTrue();
+            assertThat(gap.isMissingBoxGrade()).isFalse();
+            assertThat(gap.getLatestCrawlStatusCode()).isNull();
+        });
+        assertThat(gap(gaps, "BL-DQ-USED-NO-GRADES")).satisfies(gap -> {
+            assertThat(gap.isMissingCondition()).isFalse();
+            assertThat(gap.isMissingBoxGrade()).isTrue();
+            assertThat(gap.isMissingInstructionsGrade()).isTrue();
+            assertThat(gap.getBoxConditionId()).isNull();
+            assertThat(gap.getInstructionsConditionId()).isNull();
+            assertThat(gap.getInstructionsConditionCode()).isNull();
+            assertThat(gap.getLatestCrawlStatusCode()).isEqualTo("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
+        });
+        assertThat(gap(gaps, "BL-DQ-CATALOG")).satisfies(gap -> {
+            assertThat(gap.isMissingItemType()).isTrue();
+            assertThat(gap.isMissingInternalItemId()).isTrue();
+            assertThat(gap.isMissingItemNumber()).isFalse();
+            assertThat(gap.isMissingCatalogItem()).isFalse();
+            assertThat(gap.isMissingBoxGrade()).isFalse();
+        });
+        assertThat(gap(gaps, "BL-DQ-NO-CATALOG")).satisfies(gap -> {
+            assertThat(gap.isMissingCatalogItem()).isTrue();
+            assertThat(gap.isMissingItemType()).isFalse();
+            assertThat(gap.isMissingInternalItemId()).isFalse();
+        });
+        assertThat(marketplaceListingMapper.findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(2, Set.of("ACTIVE"), 1))
+                .hasSize(1);
+
+        PricingDataQualitySummary summary = marketplaceListingMapper.summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(2, Set.of("ACTIVE"));
+        assertThat(summary.getListingsChecked()).isEqualTo(7);
+        assertThat(summary.getListingsWithGaps()).isEqualTo(4);
+        assertThat(summary.getMissingCondition()).isEqualTo(1);
+        assertThat(summary.getMissingCompleteness()).isEqualTo(1);
+        assertThat(summary.getMissingCatalogItem()).isEqualTo(1);
+        assertThat(summary.getMissingItemNumber()).isZero();
+        assertThat(summary.getMissingItemType()).isEqualTo(1);
+        assertThat(summary.getMissingInternalItemId()).isEqualTo(1);
+        assertThat(summary.getMissingBoxGrade()).isEqualTo(1);
+        assertThat(summary.getMissingInstructionsGrade()).isEqualTo(1);
+
+        PricingDataQualitySummary emptySummary = marketplaceListingMapper.summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(2, Set.of("DRAFT"));
+        assertThat(emptySummary.getListingsChecked()).isZero();
+        assertThat(emptySummary.getListingsWithGaps()).isZero();
+    }
+
+    private MarketplaceListing insertedListingWithCondition(String itemKey, String externalListingId, String newOrUsed, String completeness) {
+        ListingFixture fixture = listingFixture(itemKey);
+        fixture.inventory().setNewOrUsed(newOrUsed);
+        fixture.inventory().setCompleteness(completeness);
+        itemInventoryMapper.update(fixture.inventory());
+        MarketplaceListing listing = marketplaceListing(fixture.inventory().getItemInventoryId(), fixture.item().getExternalCatalogItemId(), 2, externalListingId);
+        listing.setFixedPrice(false);
+        marketplaceListingMapper.insert(listing);
+        return listing;
+    }
+
+    private void seedConditionGrade(int conditionId, String code, String description) {
+        conditionMapper.findConditionById(conditionId)
+                .orElseGet(() -> {
+                    Condition condition = Condition.builder()
+                            .conditionId(conditionId)
+                            .conditionCode(code)
+                            .conditionDescription(description)
+                            .conditionText(description)
+                            .build();
+                    conditionMapper.insert(condition);
+                    return condition;
+                });
+    }
+
+    private static PricingDataQualityGap gap(Set<PricingDataQualityGap> gaps, String externalListingId) {
+        return gaps.stream()
+                .filter(gap -> externalListingId.equals(gap.getExternalListingId()))
+                .findFirst()
+                .orElseThrow();
     }
 
     @Test

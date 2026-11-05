@@ -1,6 +1,8 @@
 package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.PricingDataQualityGap;
+import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingHydrationGap;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
 import lombok.RequiredArgsConstructor;
@@ -171,6 +173,34 @@ public class MarketplaceListingDao {
                 listingExternalServiceId,
                 listingStatusCode,
                 Math.max(1, limit)
+        );
+    }
+
+    public Set<PricingDataQualityGap> findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes,
+            int limit
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return Set.of();
+        }
+        return marketplaceListingMapper.findPricingDataQualityGapsByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes,
+                Math.max(1, limit)
+        );
+    }
+
+    public PricingDataQualitySummary summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return new PricingDataQualitySummary();
+        }
+        return marketplaceListingMapper.summarizePricingDataQualityByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes
         );
     }
 
