@@ -54,6 +54,7 @@ abstract class MapperTestSupport {
     @Autowired ItemInventoryExternalCatalogItemMapper itemInventoryExternalCatalogItemMapper;
     @Autowired ItemInventoryMapper itemInventoryMapper;
     @Autowired ItemInventoryPhotoMapper itemInventoryPhotoMapper;
+    @Autowired ItemInventorySeedSourceMapper itemInventorySeedSourceMapper;
     @Autowired ItemInventorySaleIntentMapper itemInventorySaleIntentMapper;
     @Autowired ItemInventoryStateMapper itemInventoryStateMapper;
     @Autowired MarketplaceListingMapper marketplaceListingMapper;
