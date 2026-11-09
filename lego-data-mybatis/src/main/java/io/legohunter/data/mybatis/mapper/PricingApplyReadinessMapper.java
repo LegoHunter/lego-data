@@ -49,6 +49,7 @@ public interface PricingApplyReadinessMapper {
             eci.external_unique_key,
             par.pricing_decision_id,
             par.pricing_snapshot_id,
+            par.market_snapshot_id,
             pd.algorithm_version,
             pd.decision_status_code,
             pd.reason_code AS decision_reason_code,
@@ -128,8 +129,8 @@ public interface PricingApplyReadinessMapper {
               ON eci.external_catalog_item_id = ml.external_catalog_item_id
             JOIN pricing_decision pd
               ON pd.pricing_decision_id = par.pricing_decision_id
-            LEFT JOIN pricing_snapshot ps
-              ON ps.pricing_snapshot_id = par.pricing_snapshot_id
+            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
+              ON ps.market_snapshot_id = par.market_snapshot_id
             WHERE (#{readinessStatusCode} IS NULL OR par.readiness_status_code = #{readinessStatusCode})
               AND (#{blockReasonCode} IS NULL OR par.block_reason_code = #{blockReasonCode})
               AND pd.applied_at IS NULL
@@ -168,8 +169,8 @@ public interface PricingApplyReadinessMapper {
               ON eci.external_catalog_item_id = ml.external_catalog_item_id
             JOIN pricing_decision pd
               ON pd.pricing_decision_id = par.pricing_decision_id
-            LEFT JOIN pricing_snapshot ps
-              ON ps.pricing_snapshot_id = par.pricing_snapshot_id
+            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
+              ON ps.market_snapshot_id = par.market_snapshot_id
             WHERE par.readiness_status_code IN ('READY_TO_APPLY', 'READY_TO_APPLY_INITIAL_PRICE')
               AND pd.decision_status_code = 'PROPOSED'
               AND pd.applied_at IS NULL

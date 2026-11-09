@@ -22,6 +22,11 @@ public class CrawlAttemptDao {
         return mapper.findLatestByCrawlTargetId(crawlTargetId, limit);
     }
 
+    /** The latest failed attempts on one marketplace, newest first. */
+    public List<CrawlAttempt> findRecentFailures(String marketplaceCode, int limit) {
+        return mapper.findRecentFailures(marketplaceCode, Math.max(1, limit));
+    }
+
     public CrawlAttempt insert(CrawlAttempt crawlAttempt) {
         mapper.insert(crawlAttempt);
         return findByCrawlAttemptId(crawlAttempt.getCrawlAttemptId()).orElseThrow();

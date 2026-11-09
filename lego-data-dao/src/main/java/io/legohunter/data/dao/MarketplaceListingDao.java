@@ -2,6 +2,7 @@ package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingDataQualityGap;
+import io.legohunter.data.dto.WantedCatalogItem;
 import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingHydrationGap;
 import io.legohunter.data.mybatis.mapper.MarketplaceListingMapper;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -173,6 +175,20 @@ public class MarketplaceListingDao {
                 listingExternalServiceId,
                 listingStatusCode,
                 Math.max(1, limit)
+        );
+    }
+
+    /** What this environment is pricing, for its want list in marketplace_pricing (HOMELAB-32). */
+    public List<WantedCatalogItem> findWantedCatalogItemsByListingExternalServiceIdAndListingStatusCodes(
+            Integer listingExternalServiceId,
+            Set<String> listingStatusCodes
+    ) {
+        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
+            return List.of();
+        }
+        return marketplaceListingMapper.findWantedCatalogItemsByListingExternalServiceIdAndListingStatusCodes(
+                listingExternalServiceId,
+                listingStatusCodes
         );
     }
 

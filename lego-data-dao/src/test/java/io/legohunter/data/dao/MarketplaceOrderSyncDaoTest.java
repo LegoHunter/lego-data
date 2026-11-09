@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
 @Import({MyBatisV2Configuration.class, LegoDataDaoConfiguration.class})
-@Sql(scripts = "/scripts/db/h2/current_schema.ddl")
+@Sql(scripts = {"/scripts/db/h2/current_schema.ddl", "/scripts/db/h2/marketplace_pricing_schema.ddl"})
 class MarketplaceOrderSyncDaoTest {
     private static final ZonedDateTime STARTED_AT = ZonedDateTime.parse("2026-06-01T12:00:00Z");
     private static final ZonedDateTime ORDERED_AT = ZonedDateTime.parse("2026-06-01T13:00:00Z");

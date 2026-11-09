@@ -5,11 +5,14 @@ import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.EbayListingItemSpecific;
 import io.legohunter.data.dto.EbayMarketplaceListing;
 import io.legohunter.data.dto.ExternalCatalogItem;
+import io.legohunter.data.dto.MarketSnapshot;
+import io.legohunter.data.dto.CrawlTarget;
 import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDataQualityGap;
+import io.legohunter.data.dto.WantedCatalogItem;
 import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.PricingSnapshot;
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,16 +125,7 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         MarketplaceListing snapshotListing = marketplaceListing(snapshotFixture.inventory().getItemInventoryId(), snapshotFixture.item().getExternalCatalogItemId(), 2, "BL-WITH-SNAPSHOT");
         snapshotListing.setFixedPrice(false);
         marketplaceListingMapper.insert(snapshotListing);
-        PricingSnapshot snapshot = pricingSnapshot(
-                null,
-                snapshotListing.getMarketplaceListingId(),
-                snapshotFixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT
-        );
-        snapshot.setItemConditionCode("U");
-        snapshot.setCompletenessCode("C");
-        pricingSnapshotMapper.insert(snapshot);
+        insertMarketSnapshot(snapshotFixture.item(), "U", CRAWL_AT);
 
         ListingFixture fixedPriceFixture = listingFixture("listing-fixed-without-snapshot");
         fixedPriceFixture.inventory().setNewOrUsed(null);
@@ -154,16 +149,9 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         MarketplaceListing listing = marketplaceListing(fixture.inventory().getItemInventoryId(), fixture.item().getExternalCatalogItemId(), 2, "BL-DEDUPE");
         listing.setFixedPrice(false);
         marketplaceListingMapper.insert(listing);
-        PricingSnapshot firstSnapshot = pricingSnapshot(
-                null,
-                listing.getMarketplaceListingId(),
-                fixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT
-        );
-        firstSnapshot.setItemConditionCode("U");
-        firstSnapshot.setCompletenessCode("C");
-        pricingSnapshotMapper.insert(firstSnapshot);
+        MarketSnapshot firstSnapshot = insertMarketSnapshot(fixture.item(), "U", CRAWL_AT);
+        // A snapshot of the other condition never makes a used listing a candidate.
+        insertMarketSnapshot(fixture.item(), "N", CRAWL_AT.plusHours(2));
 
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
@@ -172,23 +160,17 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-DEDUPE");
 
-        pricingDecisionMapper.insert(pricingDecision(listing.getMarketplaceListingId(), firstSnapshot.getPricingSnapshotId()));
+        PricingDecision decision = pricingDecision(listing.getMarketplaceListingId(), null);
+        decision.setMarketSnapshotId(firstSnapshot.getMarketSnapshotId());
+        decision.setMarketSnapshotCapturedAt(firstSnapshot.getCapturedAt());
+        pricingDecisionMapper.insert(decision);
 
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .isEmpty();
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .isEmpty();
 
-        PricingSnapshot newerSnapshot = pricingSnapshot(
-                null,
-                listing.getMarketplaceListingId(),
-                fixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT.plusHours(1)
-        );
-        newerSnapshot.setItemConditionCode("U");
-        newerSnapshot.setCompletenessCode("C");
-        pricingSnapshotMapper.insert(newerSnapshot);
+        insertMarketSnapshot(fixture.item(), "U", CRAWL_AT.plusHours(1));
 
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
@@ -359,6 +341,32 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void wantedCatalogItemsGroupPriceableListingsByItemConditionAndCompleteness() {
+        insertedListingWithCondition("want-a", "BL-WANT-A1", "USED", "COMPLETE");
+        MarketplaceListing sealed = insertedListingWithCondition("want-b", "BL-WANT-B", "NEW", "SEALED");
+        insertedListingWithCondition("want-c", "BL-WANT-C", "MINT", "COMPLETE");          // unrecognised condition
+        MarketplaceListing ended = insertedListingWithCondition("want-d", "BL-WANT-D", "USED", "COMPLETE");
+        ended.setListingStatusCode("ENDED");
+        marketplaceListingMapper.update(ended);
+
+        List<WantedCatalogItem> wanted = marketplaceListingMapper.findWantedCatalogItemsByListingExternalServiceIdAndListingStatusCodes(
+                2, Set.of("ACTIVE", "DRAFT"));
+
+        assertThat(wanted).extracting(WantedCatalogItem::getItemNumber, WantedCatalogItem::getConditionCode,
+                        WantedCatalogItem::getCompletenessCode, WantedCatalogItem::getListingCount)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("want-a", "U", "C", 1),
+                        org.assertj.core.groups.Tuple.tuple("want-b", "N", "S", 1));
+        assertThat(wanted).allSatisfy(item -> {
+            assertThat(item.getItemTypeCode()).isEqualTo("SET");
+            assertThat(item.getItemName()).isEqualTo("Catalog item");
+        });
+        assertThat(sealed.getListingStatusCode()).isEqualTo("ACTIVE");
+        assertThat(marketplaceListingMapper.findWantedCatalogItemsByListingExternalServiceIdAndListingStatusCodes(2, Set.of("ENDED")))
+                .extracting(WantedCatalogItem::getItemNumber).containsExactly("want-d");
+    }
+
+    @Test
     void pricingDataQualityGapsFlagEachMissingField() {
         seedConditionGrade(8, "MS", "Missing");
         insertedListingWithCondition("dq-clean", "BL-DQ-CLEAN", "USED", "COMPLETE");
@@ -379,12 +387,15 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         itemInventoryMapper.update(usedWithoutGrades.inventory());
         MarketplaceListing usedListing = marketplaceListing(usedWithoutGrades.inventory().getItemInventoryId(), usedWithoutGrades.item().getExternalCatalogItemId(), 2, "BL-DQ-USED-NO-GRADES");
         marketplaceListingMapper.insert(usedListing);
-        PricingCrawlWorkItem olderWorkItem = pricingCrawlWorkItem(usedListing.getMarketplaceListingId(), usedWithoutGrades.item().getExternalCatalogItemId(), 2, CRAWL_AT.minusDays(8));
-        olderWorkItem.setWorkStatusCode("SUCCEEDED");
-        pricingCrawlWorkItemMapper.insert(olderWorkItem);
-        PricingCrawlWorkItem latestWorkItem = pricingCrawlWorkItem(usedListing.getMarketplaceListingId(), usedWithoutGrades.item().getExternalCatalogItemId(), 2, CRAWL_AT.minusDays(1));
-        latestWorkItem.setWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
-        pricingCrawlWorkItemMapper.insert(latestWorkItem);
+        // The shared crawl target for this item and condition has failed once since its last success.
+        crawlTargetMapper.insert(CrawlTarget.builder()
+                .marketplaceCode("BRICKLINK")
+                .canonicalItemId(canonicalItemFor(usedWithoutGrades.item()).getCanonicalItemId())
+                .queryConditionCode("U")
+                .nextDueAt(CRAWL_AT)
+                .consecutiveFailureCount(1)
+                .lastErrorMessage("No exact BrickLink catalog item match")
+                .build());
 
         ListingFixture usedGradedMissing = listingFixture("dq-used-graded-missing");
         usedGradedMissing.inventory().setBoxConditionId(8);
@@ -424,7 +435,7 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
             assertThat(gap.getBoxConditionId()).isNull();
             assertThat(gap.getInstructionsConditionId()).isNull();
             assertThat(gap.getInstructionsConditionCode()).isNull();
-            assertThat(gap.getLatestCrawlStatusCode()).isEqualTo("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
+            assertThat(gap.getLatestCrawlStatusCode()).isEqualTo("FAILING");
         });
         assertThat(gap(gaps, "BL-DQ-CATALOG")).satisfies(gap -> {
             assertThat(gap.isMissingItemType()).isTrue();

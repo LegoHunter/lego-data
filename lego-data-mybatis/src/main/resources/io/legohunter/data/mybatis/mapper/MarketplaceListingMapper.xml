@@ -66,6 +66,15 @@
     <result column="missing_instructions_grade"   property="missingInstructionsGrade"/>
   </resultMap>
 
+  <resultMap type="io.legohunter.data.dto.WantedCatalogItem" id="wantedCatalogItemResultMap">
+    <result column="item_type_code"    property="itemTypeCode"/>
+    <result column="item_number"       property="itemNumber"/>
+    <result column="item_name"         property="itemName"/>
+    <result column="condition_code"    property="conditionCode"/>
+    <result column="completeness_code" property="completenessCode"/>
+    <result column="listing_count"     property="listingCount"/>
+  </resultMap>
+
   <resultMap type="io.legohunter.data.dto.PricingDataQualitySummary" id="pricingDataQualitySummaryResultMap">
     <result column="listings_checked"             property="listingsChecked"/>
     <result column="listings_with_gaps"           property="listingsWithGaps"/>
@@ -162,39 +171,38 @@
     END
   </sql>
 
-  <sql id="pricingSnapshotMatchesInventoryCondition">
-    ps.item_condition_code = <include refid="normalizedItemConditionCode">
+  <!--
+    The shared market snapshots (marketplace_pricing, HOMELAB-32) for the listing's catalog item and
+    New/Used condition. One snapshot holds every sub-condition; the decision filters the comparables.
+    The canonical item is the BrickLink item type + number.
+  -->
+  <sql id="marketSnapshotMatchesListing">
+    ms.marketplace_code = 'BRICKLINK'
+    AND ms.query_condition_code = <include refid="normalizedItemConditionCode">
       <property name="value" value="ii.new_or_used"/>
     </include>
-    AND (
-      ps.completeness_code = <include refid="normalizedCompletenessCode">
-        <property name="value" value="ii.completeness"/>
-      </include>
-      OR (
-        ps.completeness_code IS NULL
-        AND <include refid="normalizedCompletenessCode">
-          <property name="value" value="ii.completeness"/>
-        </include> IS NULL
-      )
+    AND ms.canonical_item_id = (
+      SELECT ci.canonical_item_id
+      FROM ${marketplacePricingSchema}.canonical_item ci
+      WHERE ci.item_type_code = eci.item_type_code
+        AND ci.item_number = eci.external_item_key
     )
   </sql>
 
   <sql id="latestMatchingPricingSnapshotId">
-    SELECT ps.pricing_snapshot_id
-    FROM pricing_snapshot ps
-    WHERE ps.marketplace_listing_id = ml.marketplace_listing_id
-      AND <include refid="pricingSnapshotMatchesInventoryCondition"/>
-    ORDER BY ps.captured_at DESC,
-             ps.pricing_snapshot_id DESC
+    SELECT ms.market_snapshot_id
+    FROM ${marketplacePricingSchema}.market_snapshot ms
+    WHERE <include refid="marketSnapshotMatchesListing"/>
+    ORDER BY ms.captured_at DESC,
+             ms.market_snapshot_id DESC
     LIMIT 1
   </sql>
 
   <sql id="matchingPricingSnapshotExists">
     EXISTS (
       SELECT 1
-      FROM pricing_snapshot ps
-      WHERE ps.marketplace_listing_id = ml.marketplace_listing_id
-        AND <include refid="pricingSnapshotMatchesInventoryCondition"/>
+      FROM ${marketplacePricingSchema}.market_snapshot ms
+      WHERE <include refid="marketSnapshotMatchesListing"/>
     )
   </sql>
 
@@ -242,7 +250,7 @@
       FROM pricing_decision latest_pd
       <include refid="latestPricingDecisionJoin"/>
       WHERE latest_pd.marketplace_listing_id = ml.marketplace_listing_id
-        AND latest_pd.pricing_snapshot_id = (
+        AND latest_pd.market_snapshot_id = (
           <include refid="latestMatchingPricingSnapshotId"/>
         )
     )
@@ -400,6 +408,47 @@
     them; a NULL grade id is a gap. MS (missing) and NA
     (not applicable) are recorded grades, not gaps.
   -->
+  <!--
+    What this environment is pricing, for its want list in marketplace_pricing (HOMELAB-32): the same
+    listings the decision prices (priceable status, catalog item, recognised condition and completeness),
+    grouped by catalog item, canonical condition and canonical completeness.
+  -->
+  <select id="findWantedCatalogItemsByListingExternalServiceIdAndListingStatusCodes"
+          resultMap="wantedCatalogItemResultMap">
+    SELECT eci.item_type_code,
+           eci.external_item_key AS item_number,
+           MAX(eci.item_name) AS item_name,
+           <include refid="normalizedItemConditionCode">
+             <property name="value" value="ii.new_or_used"/>
+           </include> AS condition_code,
+           <include refid="normalizedCompletenessCode">
+             <property name="value" value="ii.completeness"/>
+           </include> AS completeness_code,
+           COUNT(*) AS listing_count
+    FROM marketplace_listing ml
+    JOIN item_inventory ii
+      ON ii.item_inventory_id = ml.item_inventory_id
+    JOIN external_catalog_item eci
+      ON eci.external_catalog_item_id = ml.external_catalog_item_id
+    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
+      AND ml.listing_status_code IN
+      <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
+        #{listingStatusCode}
+      </foreach>
+      AND <include refid="priceableInventoryConditionPresent"/>
+      AND TRIM(COALESCE(eci.external_item_key, '')) &lt;&gt; ''
+      AND TRIM(COALESCE(eci.item_type_code, '')) &lt;&gt; ''
+    GROUP BY eci.item_type_code,
+             eci.external_item_key,
+             <include refid="normalizedItemConditionCode">
+               <property name="value" value="ii.new_or_used"/>
+             </include>,
+             <include refid="normalizedCompletenessCode">
+               <property name="value" value="ii.completeness"/>
+             </include>
+    ORDER BY eci.item_type_code, eci.external_item_key, condition_code, completeness_code
+  </select>
+
   <sql id="pricingDataQualityRows">
     SELECT ml.marketplace_listing_id,
            ml.external_listing_id,
@@ -418,11 +467,14 @@
            eci.item_type_code,
            eci.external_unique_key,
            (
-             SELECT latest_pcwi.work_status_code
-             FROM pricing_crawl_work_item latest_pcwi
-             WHERE latest_pcwi.marketplace_listing_id = ml.marketplace_listing_id
-             ORDER BY latest_pcwi.pricing_crawl_work_item_id DESC
-             LIMIT 1
+             SELECT CASE WHEN ct.consecutive_failure_count &gt; 0 THEN 'FAILING' ELSE ct.target_status_code END
+             FROM ${marketplacePricingSchema}.crawl_target ct
+             JOIN ${marketplacePricingSchema}.canonical_item ci
+               ON ci.canonical_item_id = ct.canonical_item_id
+             WHERE ct.marketplace_code = 'BRICKLINK'
+               AND ci.item_type_code = eci.item_type_code
+               AND ci.item_number = eci.external_item_key
+               AND ct.query_condition_code = <include refid="normalizedItemConditionCode"><property name="value" value="ii.new_or_used"/></include>
            ) AS latest_crawl_status_code,
            CASE WHEN <include refid="normalizedItemConditionCode"><property name="value" value="ii.new_or_used"/></include> IS NULL
                 THEN 1 ELSE 0 END AS missing_condition,
@@ -434,7 +486,18 @@
                 THEN 1 ELSE 0 END AS missing_item_number,
            CASE WHEN eci.external_catalog_item_id IS NOT NULL AND TRIM(COALESCE(eci.item_type_code, '')) = ''
                 THEN 1 ELSE 0 END AS missing_item_type,
-           CASE WHEN eci.external_catalog_item_id IS NOT NULL AND TRIM(COALESCE(eci.external_unique_key, '')) = ''
+           CASE WHEN eci.external_catalog_item_id IS NOT NULL
+                     AND TRIM(COALESCE(eci.external_unique_key, '')) = ''
+                     AND NOT EXISTS (
+                       SELECT 1
+                       FROM ${marketplacePricingSchema}.marketplace_item mi
+                       JOIN ${marketplacePricingSchema}.canonical_item ci
+                         ON ci.canonical_item_id = mi.canonical_item_id
+                       WHERE mi.marketplace_code = 'BRICKLINK'
+                         AND ci.item_type_code = eci.item_type_code
+                         AND ci.item_number = eci.external_item_key
+                         AND TRIM(COALESCE(mi.marketplace_unique_key, '')) &lt;&gt; ''
+                     )
                 THEN 1 ELSE 0 END AS missing_internal_item_id,
            CASE WHEN <include refid="normalizedItemConditionCode"><property name="value" value="ii.new_or_used"/></include> = 'U'
                      AND bc.condition_id IS NULL

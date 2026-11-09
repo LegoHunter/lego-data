@@ -2,6 +2,7 @@ package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.ExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventory;
+import io.legohunter.data.dto.MarketSnapshot;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.PricingApplyReadiness;
@@ -522,14 +523,18 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     @Test
     void pricingDecisionReviewReturnsLatestDecisionWithListingContext() {
         PricingFixture decidedFixture = pricingFixture("pricing-review-decided");
-        PricingSnapshot snapshot = insertedSnapshot(decidedFixture);
-        PricingDecision olderDecision = pricingDecision(decidedFixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        decidedFixture.inventory().setNewOrUsed("USED");
+        itemInventoryMapper.update(decidedFixture.inventory());
+        MarketSnapshot snapshot = insertMarketSnapshot(decidedFixture.catalogItem(), "U", SNAPSHOT_AT);
+        PricingDecision olderDecision = pricingDecision(decidedFixture.listing().getMarketplaceListingId(), null);
         olderDecision.setReasonCode("NO_CURRENT_SNAPSHOT");
         olderDecision.setDecisionStatusCode("FAILED");
         olderDecision.setFinalPrice(null);
         pricingDecisionMapper.insert(olderDecision);
 
-        PricingDecision latestDecision = pricingDecision(decidedFixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        PricingDecision latestDecision = pricingDecision(decidedFixture.listing().getMarketplaceListingId(), null);
+        latestDecision.setMarketSnapshotId(snapshot.getMarketSnapshotId());
+        latestDecision.setMarketSnapshotCapturedAt(snapshot.getCapturedAt());
         latestDecision.setReasonCode("MATCHED_LOWEST_COMPETITOR");
         latestDecision.setDecisionStatusCode("PROPOSED");
         latestDecision.setFinalPrice(new BigDecimal("199.99"));
@@ -557,8 +562,10 @@ class PricingPlaneMapperTest extends MapperTestSupport {
                     assertThat(review.getDecisionCurrencyCode()).isEqualTo("USD");
                     assertThat(review.getCurrencyCode()).isEqualTo("USD");
                     assertThat(review.getExternalItemKey()).isEqualTo("pricing-review-decided");
-                    assertThat(review.getSnapshotComparableCount()).isEqualTo(snapshot.getComparableCount());
-                    assertThat(review.getSnapshotCapturedAt()).isEqualTo(snapshot.getCapturedAt());
+                    assertThat(review.getMarketSnapshotId()).isEqualTo(snapshot.getMarketSnapshotId());
+                    assertThat(review.getSnapshotComparableCount()).isEqualTo(snapshot.getListingCount());
+                    assertThat(review.getSnapshotCapturedAt().toInstant()).isEqualTo(snapshot.getCapturedAt().toInstant());
+                    assertThat(review.getNewerSnapshotAvailable()).isFalse();
                 });
         assertThat(reviews)
                 .filteredOn(review -> review.getMarketplaceListingId().equals(undecidedFixture.listing().getMarketplaceListingId()))

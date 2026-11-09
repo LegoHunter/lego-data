@@ -40,6 +40,7 @@
     <result column="external_unique_key"     property="externalUniqueKey"/>
     <result column="pricing_decision_id"     property="pricingDecisionId"/>
     <result column="pricing_snapshot_id"     property="pricingSnapshotId"/>
+    <result column="market_snapshot_id"      property="marketSnapshotId"/>
     <result column="algorithm_version"       property="algorithmVersion"/>
     <result column="decision_status_code"    property="decisionStatusCode"/>
     <result column="reason_code"             property="reasonCode"/>

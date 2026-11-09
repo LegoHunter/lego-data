@@ -2,6 +2,7 @@ package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.PricingDataQualityGap;
+import io.legohunter.data.dto.WantedCatalogItem;
 import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingHydrationGap;
 import org.apache.ibatis.annotations.Delete;
@@ -14,6 +15,7 @@ import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -228,6 +230,16 @@ public interface MarketplaceListingMapper {
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,
             @Param("limit") int limit
+    );
+
+    /**
+     * What this environment is pricing, grouped by catalog item and canonical condition + completeness:
+     * the rows it keeps on its want list in marketplace_pricing (HOMELAB-32). Defined in
+     * MarketplaceListingMapper.xml.
+     */
+    List<WantedCatalogItem> findWantedCatalogItemsByListingExternalServiceIdAndListingStatusCodes(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("listingStatusCodes") Set<String> listingStatusCodes
     );
 
     /**

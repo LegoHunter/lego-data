@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
 @Import({MyBatisV2Configuration.class, LegoDataDaoConfiguration.class})
-@Sql(scripts = "/scripts/db/h2/current_schema.ddl")
+@Sql(scripts = {"/scripts/db/h2/current_schema.ddl", "/scripts/db/h2/marketplace_pricing_schema.ddl"})
 class ExternalImageDaoTest {
 
     @Autowired ExternalImageAlbumDao externalImageAlbumDao;
