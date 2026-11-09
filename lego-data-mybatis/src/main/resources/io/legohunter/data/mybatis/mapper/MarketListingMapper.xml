@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketListingMapper">
+  <resultMap type="io.legohunter.data.dto.MarketListing" id="marketListingResultMap">
+    <id     column="market_listing_id"      property="marketListingId"/>
+    <result column="market_snapshot_id"     property="marketSnapshotId"/>
+    <result column="external_listing_id"    property="externalListingId"/>
+    <result column="seller_key"             property="sellerKey"/>
+    <result column="seller_name"            property="sellerName"/>
+    <result column="seller_country_code"    property="sellerCountryCode"/>
+    <result column="seller_feedback_score"  property="sellerFeedbackScore"/>
+    <result column="raw_condition_code"     property="rawConditionCode"/>
+    <result column="raw_completeness_code"  property="rawCompletenessCode"/>
+    <result column="condition_code"         property="conditionCode"/>
+    <result column="completeness_code"      property="completenessCode"/>
+    <result column="match_confidence"       property="matchConfidence"/>
+    <result column="listing_format_code"    property="listingFormatCode"/>
+    <result column="quantity_available"     property="quantityAvailable"/>
+    <result column="item_price"             property="itemPrice"/>
+    <result column="shipping_price"         property="shippingPrice"/>
+    <result column="total_price"            property="totalPrice"/>
+    <result column="currency_code"          property="currencyCode"/>
+    <result column="native_price"           property="nativePrice"/>
+    <result column="native_currency_code"   property="nativeCurrencyCode"/>
+    <result column="description"            property="description"/>
+    <result column="source_listing_payload" property="sourceListingPayload"/>
+    <result column="created_at"             property="createdAt"/>
+  </resultMap>
+</mapper>

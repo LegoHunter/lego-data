@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.CrawlTargetMapper">
+  <resultMap type="io.legohunter.data.dto.CrawlTarget" id="crawlTargetResultMap">
+    <id     column="crawl_target_id"           property="crawlTargetId"/>
+    <result column="marketplace_code"          property="marketplaceCode"/>
+    <result column="canonical_item_id"         property="canonicalItemId"/>
+    <result column="query_condition_code"      property="queryConditionCode"/>
+    <result column="target_status_code"        property="targetStatusCode"/>
+    <result column="next_due_at"               property="nextDueAt"/>
+    <result column="claimed_at"                property="claimedAt"/>
+    <result column="claim_expires_at"          property="claimExpiresAt"/>
+    <result column="claimed_by"                property="claimedBy"/>
+    <result column="last_attempt_at"           property="lastAttemptAt"/>
+    <result column="last_success_at"           property="lastSuccessAt"/>
+    <result column="last_market_snapshot_id"   property="lastMarketSnapshotId"/>
+    <result column="consecutive_failure_count" property="consecutiveFailureCount"/>
+    <result column="last_error_message"        property="lastErrorMessage"/>
+    <result column="created_at"                property="createdAt"/>
+    <result column="updated_at"                property="updatedAt"/>
+  </resultMap>
+</mapper>

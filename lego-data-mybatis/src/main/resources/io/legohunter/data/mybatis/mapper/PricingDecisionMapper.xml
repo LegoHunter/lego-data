@@ -4,6 +4,8 @@
     <id     column="pricing_decision_id"    property="pricingDecisionId"/>
     <result column="marketplace_listing_id" property="marketplaceListingId"/>
     <result column="pricing_snapshot_id"    property="pricingSnapshotId"/>
+    <result column="market_snapshot_id"          property="marketSnapshotId"/>
+    <result column="market_snapshot_captured_at" property="marketSnapshotCapturedAt"/>
     <result column="algorithm_version"      property="algorithmVersion"/>
     <result column="decision_status_code"   property="decisionStatusCode"/>
     <result column="reason_code"            property="reasonCode"/>

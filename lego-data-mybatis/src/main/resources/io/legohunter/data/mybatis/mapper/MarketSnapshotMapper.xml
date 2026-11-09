@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketSnapshotMapper">
+  <resultMap type="io.legohunter.data.dto.MarketSnapshot" id="marketSnapshotResultMap">
+    <id     column="market_snapshot_id"         property="marketSnapshotId"/>
+    <result column="crawl_target_id"            property="crawlTargetId"/>
+    <result column="marketplace_code"           property="marketplaceCode"/>
+    <result column="canonical_item_id"          property="canonicalItemId"/>
+    <result column="query_condition_code"       property="queryConditionCode"/>
+    <result column="marketplace_item_key"       property="marketplaceItemKey"/>
+    <result column="marketplace_unique_key"     property="marketplaceUniqueKey"/>
+    <result column="request_url"                property="requestUrl"/>
+    <result column="request_parameters"         property="requestParameters"/>
+    <result column="raw_payload_hash"           property="rawPayloadHash"/>
+    <result column="listing_count"              property="listingCount"/>
+    <result column="captured_at"                property="capturedAt"/>
+    <result column="source_environment_code"    property="sourceEnvironmentCode"/>
+    <result column="source_pricing_snapshot_id" property="sourcePricingSnapshotId"/>
+    <result column="created_at"                 property="createdAt"/>
+  </resultMap>
+</mapper>

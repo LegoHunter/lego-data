@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketplaceItemMapper">
+  <resultMap type="io.legohunter.data.dto.MarketplaceItem" id="marketplaceItemResultMap">
+    <id     column="marketplace_item_id"    property="marketplaceItemId"/>
+    <result column="marketplace_code"       property="marketplaceCode"/>
+    <result column="canonical_item_id"      property="canonicalItemId"/>
+    <result column="marketplace_item_key"   property="marketplaceItemKey"/>
+    <result column="marketplace_unique_key" property="marketplaceUniqueKey"/>
+    <result column="search_terms"           property="searchTerms"/>
+    <result column="match_method_code"      property="matchMethodCode"/>
+    <result column="resolved_at"            property="resolvedAt"/>
+    <result column="created_at"             property="createdAt"/>
+    <result column="updated_at"             property="updatedAt"/>
+  </resultMap>
+</mapper>

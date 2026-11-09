@@ -78,6 +78,7 @@
                         <configuration>
                             <includes>
                                 <include>scripts/db/h2/current_schema.ddl</include>
+                                <include>scripts/db/h2/marketplace_pricing_schema.ddl</include>
                             </includes>
                         </configuration>
                         <goals>

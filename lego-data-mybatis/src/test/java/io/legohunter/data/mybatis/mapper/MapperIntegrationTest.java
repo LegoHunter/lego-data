@@ -14,6 +14,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = MapperTestConfiguration.class)
-@Sql(scripts = "/scripts/db/h2/current_schema.ddl")
+@Sql(scripts = {"/scripts/db/h2/current_schema.ddl", "/scripts/db/h2/marketplace_pricing_schema.ddl"})
 @interface MapperIntegrationTest {
 }

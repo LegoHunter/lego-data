@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.MarketplaceMapper">
+  <resultMap type="io.legohunter.data.dto.Marketplace" id="marketplaceResultMap">
+    <id     column="marketplace_code"      property="marketplaceCode"/>
+    <result column="display_name"          property="displayName"/>
+    <result column="base_url"              property="baseUrl"/>
+    <result column="default_currency_code" property="defaultCurrencyCode"/>
+    <result column="crawl_enabled"         property="crawlEnabled"/>
+    <result column="created_at"            property="createdAt"/>
+  </resultMap>
+</mapper>
