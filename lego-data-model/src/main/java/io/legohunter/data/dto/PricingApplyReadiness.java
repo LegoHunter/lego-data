@@ -17,6 +17,9 @@ public class PricingApplyReadiness {
     private Integer marketplaceListingId;
     private Long pricingDecisionId;
     private Long pricingSnapshotId;
+    /** marketplace_pricing.market_snapshot this row was made from; no foreign key (shared schema). */
+    private Long marketSnapshotId;
+    private ZonedDateTime marketSnapshotCapturedAt;
     private String readinessStatusCode;
     private String blockReasonCode;
     private BigDecimal currentPrice;

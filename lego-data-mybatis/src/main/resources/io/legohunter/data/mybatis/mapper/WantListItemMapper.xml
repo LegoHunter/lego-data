@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.WantListItemMapper">
+  <resultMap type="io.legohunter.data.dto.WantListItem" id="wantListItemResultMap">
+    <id     column="environment_code"  property="environmentCode"/>
+    <id     column="canonical_item_id" property="canonicalItemId"/>
+    <id     column="condition_code"    property="conditionCode"/>
+    <id     column="completeness_code" property="completenessCode"/>
+    <result column="first_wanted_at"   property="firstWantedAt"/>
+    <result column="last_confirmed_at" property="lastConfirmedAt"/>
+  </resultMap>
+</mapper>

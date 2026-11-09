@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.legohunter.data.mybatis.mapper.CrawlAttemptMapper">
+  <resultMap type="io.legohunter.data.dto.CrawlAttempt" id="crawlAttemptResultMap">
+    <id     column="crawl_attempt_id"   property="crawlAttemptId"/>
+    <result column="crawl_target_id"    property="crawlTargetId"/>
+    <result column="started_at"         property="startedAt"/>
+    <result column="finished_at"        property="finishedAt"/>
+    <result column="outcome_code"       property="outcomeCode"/>
+    <result column="error_message"      property="errorMessage"/>
+    <result column="market_snapshot_id" property="marketSnapshotId"/>
+  </resultMap>
+</mapper>
