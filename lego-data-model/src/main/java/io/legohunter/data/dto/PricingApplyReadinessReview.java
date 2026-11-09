@@ -25,6 +25,7 @@ public class PricingApplyReadinessReview {
     private String externalUniqueKey;
     private Long pricingDecisionId;
     private Long pricingSnapshotId;
+    private Long marketSnapshotId;
     private String algorithmVersion;
     private String decisionStatusCode;
     private String decisionReasonCode;

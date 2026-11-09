@@ -46,6 +46,26 @@ public interface CrawlAttemptMapper {
         return findLatestByCrawlTargetId(crawlTargetId, limit, ALL_COLUMNS);
     }
 
+    /** The latest failed attempts on one marketplace, newest first: what the maintenance report shows. */
+    @Select("""
+            SELECT ca.crawl_attempt_id,
+                   ca.crawl_target_id,
+                   ca.started_at,
+                   ca.finished_at,
+                   ca.outcome_code,
+                   ca.error_message,
+                   ca.market_snapshot_id
+            FROM ${marketplacePricingSchema}.crawl_attempt ca
+            JOIN ${marketplacePricingSchema}.crawl_target ct
+              ON ct.crawl_target_id = ca.crawl_target_id
+            WHERE ct.marketplace_code = #{marketplaceCode}
+              AND ca.outcome_code LIKE 'FAILED%'
+            ORDER BY ca.started_at DESC, ca.crawl_attempt_id DESC
+            LIMIT #{limit}
+            """)
+    @ResultMap("crawlAttemptResultMap")
+    List<CrawlAttempt> findRecentFailures(@Param("marketplaceCode") String marketplaceCode, @Param("limit") int limit);
+
     @Insert("""
             INSERT INTO ${marketplacePricingSchema}.crawl_attempt (
                 crawl_target_id,

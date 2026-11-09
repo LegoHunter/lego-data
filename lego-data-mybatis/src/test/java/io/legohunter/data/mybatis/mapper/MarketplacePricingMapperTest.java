@@ -33,12 +33,9 @@ class MarketplacePricingMapperTest extends MapperTestSupport {
     private static final ZonedDateTime NOW = ZonedDateTime.parse("2026-11-09T12:00:00Z");
 
     @Autowired MarketplaceMapper marketplaceMapper;
-    @Autowired CanonicalItemMapper canonicalItemMapper;
     @Autowired MarketplaceItemMapper marketplaceItemMapper;
     @Autowired WantListItemMapper wantListItemMapper;
-    @Autowired CrawlTargetMapper crawlTargetMapper;
     @Autowired CrawlAttemptMapper crawlAttemptMapper;
-    @Autowired MarketSnapshotMapper marketSnapshotMapper;
     @Autowired MarketListingMapper marketListingMapper;
 
     @Test
@@ -164,6 +161,75 @@ class MarketplacePricingMapperTest extends MapperTestSupport {
         assertThat(failed.getConsecutiveFailureCount()).isOne();
         assertThat(failed.getLastErrorMessage()).isEqualTo("maintenance redirect");
         assertThat(failed.getClaimedBy()).isNull();
+    }
+
+    @Test
+    void schedulingFindsNewWantsDisablesUnwantedTargetsAndFindsWantsComingBack() {
+        CanonicalItem mainStreet = canonicalItem("S", "6390-1");
+        CanonicalItem harbor = canonicalItem("S", "6541-1");
+        wantListItemMapper.upsert(want("sandbox", mainStreet, "N", "S", NOW));
+        wantListItemMapper.upsert(want("dev", mainStreet, "N", "C", NOW));   // same item + N: one target
+        wantListItemMapper.upsert(want("sandbox", harbor, "U", "C", NOW));
+
+        assertThat(crawlTargetMapper.findWantedWithoutTarget("BRICKLINK"))
+                .extracting(CrawlTarget::getCanonicalItemId, CrawlTarget::getQueryConditionCode)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(mainStreet.getCanonicalItemId(), "N"),
+                        org.assertj.core.groups.Tuple.tuple(harbor.getCanonicalItemId(), "U"));
+
+        CrawlTarget mainStreetNew = crawlTarget(mainStreet, "N", NOW);
+        crawlTargetMapper.insert(mainStreetNew);
+        CrawlTarget harborUsed = crawlTarget(harbor, "U", NOW);
+        crawlTargetMapper.insert(harborUsed);
+        assertThat(crawlTargetMapper.findWantedWithoutTarget("BRICKLINK")).isEmpty();
+        assertThat(crawlTargetMapper.findWantedWithoutTarget("EBAY")).hasSize(2);
+
+        // Harbor is sold everywhere: its target is disabled; Main Street keeps its target.
+        assertThat(wantListItemMapper.delete(want("sandbox", harbor, "U", "C", NOW))).isOne();
+        assertThat(crawlTargetMapper.disableUnwanted("BRICKLINK")).isOne();
+        assertThat(crawlTargetMapper.findByCrawlTargetId(harborUsed.getCrawlTargetId()).orElseThrow().getTargetStatusCode())
+                .isEqualTo(CrawlTargetMapper.STATUS_DISABLED);
+        assertThat(crawlTargetMapper.findByCrawlTargetId(mainStreetNew.getCrawlTargetId()).orElseThrow().getTargetStatusCode())
+                .isEqualTo(CrawlTargetMapper.STATUS_IDLE);
+        assertThat(crawlTargetMapper.disableUnwanted("BRICKLINK")).isZero();
+        assertThat(crawlTargetMapper.findDisabledWanted("BRICKLINK")).isEmpty();
+
+        // Wanted again: the disabled target is found, not a new one.
+        wantListItemMapper.upsert(want("dev", harbor, "U", "C", NOW));
+        assertThat(crawlTargetMapper.findWantedWithoutTarget("BRICKLINK")).isEmpty();
+        assertThat(crawlTargetMapper.findDisabledWanted("BRICKLINK")).extracting(CrawlTarget::getCrawlTargetId)
+                .containsExactly(harborUsed.getCrawlTargetId());
+    }
+
+    @Test
+    void queueCountsAndRecentFailuresFeedTheMonitoring() {
+        CanonicalItem item = canonicalItem("S", "6390-1");
+        CanonicalItem other = canonicalItem("S", "6541-1");
+        CrawlTarget due = crawlTarget(item, "N", NOW.minusMinutes(1));
+        crawlTargetMapper.insert(due);
+        CrawlTarget failing = crawlTarget(item, "U", NOW.plusHours(6));
+        failing.setConsecutiveFailureCount(2);
+        crawlTargetMapper.insert(failing);
+        CrawlTarget disabled = crawlTarget(other, "U", NOW.minusDays(1));
+        disabled.setTargetStatusCode(CrawlTargetMapper.STATUS_DISABLED);
+        disabled.setConsecutiveFailureCount(1);
+        crawlTargetMapper.insert(disabled);
+
+        assertThat(crawlTargetMapper.countByTargetStatusCode("BRICKLINK", "IDLE")).isEqualTo(2);
+        assertThat(crawlTargetMapper.countByTargetStatusCode("BRICKLINK", "DISABLED")).isOne();
+        assertThat(crawlTargetMapper.countDue("BRICKLINK", NOW)).isOne();
+        assertThat(crawlTargetMapper.countFailing("BRICKLINK")).isOne();
+
+        crawlAttemptMapper.insert(CrawlAttempt.builder().crawlTargetId(failing.getCrawlTargetId()).startedAt(NOW.minusHours(2))
+                .outcomeCode("FAILED_HTTP").errorMessage("maintenance redirect").build());
+        crawlAttemptMapper.insert(CrawlAttempt.builder().crawlTargetId(failing.getCrawlTargetId()).startedAt(NOW.minusHours(1))
+                .outcomeCode("FAILED_PARSE").build());
+        crawlAttemptMapper.insert(CrawlAttempt.builder().crawlTargetId(due.getCrawlTargetId()).startedAt(NOW)
+                .outcomeCode("SUCCEEDED").build());
+        assertThat(crawlAttemptMapper.findRecentFailures("BRICKLINK", 10)).extracting(CrawlAttempt::getOutcomeCode)
+                .containsExactly("FAILED_PARSE", "FAILED_HTTP");
+        assertThat(crawlAttemptMapper.findRecentFailures("BRICKLINK", 1)).hasSize(1);
+        assertThat(crawlAttemptMapper.findRecentFailures("EBAY", 10)).isEmpty();
     }
 
     @Test

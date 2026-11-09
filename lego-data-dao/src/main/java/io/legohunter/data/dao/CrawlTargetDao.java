@@ -36,6 +36,33 @@ public class CrawlTargetDao {
         return mapper.claim(crawlTargetId, claimedBy, claimedAt, claimExpiresAt) == 1;
     }
 
+    /** Item + query condition pairs some environment wants that have no target on this marketplace yet. */
+    public List<CrawlTarget> findWantedWithoutTarget(String marketplaceCode) {
+        return mapper.findWantedWithoutTarget(marketplaceCode);
+    }
+
+    /** DISABLED targets that some environment wants again. */
+    public List<CrawlTarget> findDisabledWanted(String marketplaceCode) {
+        return mapper.findDisabledWanted(marketplaceCode);
+    }
+
+    /** Disables IDLE targets no environment wants any more; returns how many. */
+    public int disableUnwanted(String marketplaceCode) {
+        return mapper.disableUnwanted(marketplaceCode);
+    }
+
+    public long countByTargetStatusCode(String marketplaceCode, String targetStatusCode) {
+        return mapper.countByTargetStatusCode(marketplaceCode, targetStatusCode);
+    }
+
+    public long countDue(String marketplaceCode, ZonedDateTime now) {
+        return mapper.countDue(marketplaceCode, now);
+    }
+
+    public long countFailing(String marketplaceCode) {
+        return mapper.countFailing(marketplaceCode);
+    }
+
     public CrawlTarget insert(CrawlTarget crawlTarget) {
         mapper.insert(crawlTarget);
         return findByCrawlTargetId(crawlTarget.getCrawlTargetId()).orElseThrow();

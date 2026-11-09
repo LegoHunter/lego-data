@@ -53,6 +53,7 @@ public interface PricingDecisionMapper {
             eci.external_unique_key,
             pd.pricing_decision_id,
             pd.pricing_snapshot_id,
+            pd.market_snapshot_id,
             pd.algorithm_version,
             pd.decision_status_code,
             pd.reason_code,
@@ -68,22 +69,28 @@ public interface PricingDecisionMapper {
             pd.created_at AS decision_created_at,
             pd.applied_at,
             ps.captured_at AS snapshot_captured_at,
-            ps.comparable_count AS snapshot_comparable_count,
+            ps.listing_count AS snapshot_comparable_count
+            """;
+
+    /**
+     * Whether a newer shared market snapshot exists for the listing's item and New/Used condition than
+     * the one the decision used (HOMELAB-32). Kept out of REVIEW_COLUMNS because that list is passed in
+     * as a runtime parameter, where the ${marketplacePricingSchema} variable would not be substituted:
+     * it is concatenated into each review query's text instead.
+     */
+    String NEWER_SNAPSHOT_AVAILABLE_COLUMN = """
             CASE
                 WHEN EXISTS (
                     SELECT 1
-                    FROM pricing_snapshot newer_ps
-                    WHERE newer_ps.marketplace_listing_id = ml.marketplace_listing_id
-                      AND (
-                            newer_ps.captured_at > ps.captured_at
-                            OR (
-                                ps.captured_at IS NULL
-                                AND (
-                                    pd.pricing_snapshot_id IS NULL
-                                    OR newer_ps.pricing_snapshot_id <> pd.pricing_snapshot_id
-                                )
-                            )
-                          )
+                    FROM ${marketplacePricingSchema}.market_snapshot newer_ps
+                    JOIN ${marketplacePricingSchema}.canonical_item newer_ci
+                      ON newer_ci.canonical_item_id = newer_ps.canonical_item_id
+                    WHERE newer_ps.marketplace_code = 'BRICKLINK'
+                      AND newer_ci.item_type_code = eci.item_type_code
+                      AND newer_ci.item_number = eci.external_item_key
+                      AND newer_ps.query_condition_code = CASE UPPER(TRIM(ii.new_or_used))
+                            WHEN 'NEW' THEN 'N' WHEN 'N' THEN 'N' WHEN 'USED' THEN 'U' WHEN 'U' THEN 'U' ELSE NULL END
+                      AND (ps.captured_at IS NULL OR newer_ps.captured_at > ps.captured_at)
                 )
                 THEN TRUE
                 ELSE FALSE
@@ -157,7 +164,8 @@ public interface PricingDecisionMapper {
     }
 
     @Select("""
-            SELECT ${columns}
+            SELECT ${columns},
+            """ + NEWER_SNAPSHOT_AVAILABLE_COLUMN + """
             FROM marketplace_listing ml
             JOIN item_inventory ii
               ON ii.item_inventory_id = ml.item_inventory_id
@@ -175,8 +183,8 @@ public interface PricingDecisionMapper {
                   ON latest.pricing_decision_id = pd.pricing_decision_id
             ) pd
               ON pd.marketplace_listing_id = ml.marketplace_listing_id
-            LEFT JOIN pricing_snapshot ps
-              ON ps.pricing_snapshot_id = pd.pricing_snapshot_id
+            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
+              ON ps.market_snapshot_id = pd.market_snapshot_id
             WHERE ml.listing_external_service_id = #{listingExternalServiceId}
               AND ml.listing_status_code = #{listingStatusCode}
             ORDER BY ml.marketplace_listing_id
@@ -204,7 +212,8 @@ public interface PricingDecisionMapper {
     }
 
     @Select("""
-            SELECT ${columns}
+            SELECT ${columns},
+            """ + NEWER_SNAPSHOT_AVAILABLE_COLUMN + """
             FROM marketplace_listing ml
             JOIN item_inventory ii
               ON ii.item_inventory_id = ml.item_inventory_id
@@ -222,8 +231,8 @@ public interface PricingDecisionMapper {
                   ON latest.pricing_decision_id = pd.pricing_decision_id
             ) pd
               ON pd.marketplace_listing_id = ml.marketplace_listing_id
-            LEFT JOIN pricing_snapshot ps
-              ON ps.pricing_snapshot_id = pd.pricing_snapshot_id
+            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
+              ON ps.market_snapshot_id = pd.market_snapshot_id
             WHERE ml.listing_external_service_id = #{listingExternalServiceId}
               AND ml.listing_status_code = #{listingStatusCode}
               AND pd.decision_status_code = #{decisionStatusCode}
@@ -243,7 +252,8 @@ public interface PricingDecisionMapper {
 
     @Select("""
             <script>
-            SELECT ${columns}
+            SELECT ${columns},
+            """ + NEWER_SNAPSHOT_AVAILABLE_COLUMN + """
             FROM marketplace_listing ml
             JOIN item_inventory ii
               ON ii.item_inventory_id = ml.item_inventory_id
@@ -261,8 +271,8 @@ public interface PricingDecisionMapper {
                   ON latest.pricing_decision_id = pd.pricing_decision_id
             ) pd
               ON pd.marketplace_listing_id = ml.marketplace_listing_id
-            LEFT JOIN pricing_snapshot ps
-              ON ps.pricing_snapshot_id = pd.pricing_snapshot_id
+            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
+              ON ps.market_snapshot_id = pd.market_snapshot_id
             WHERE ml.listing_external_service_id = #{listingExternalServiceId}
               AND ml.listing_status_code IN
               <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">

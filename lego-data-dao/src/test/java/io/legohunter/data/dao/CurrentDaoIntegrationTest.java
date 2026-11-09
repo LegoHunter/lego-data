@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({MyBatisV2Configuration.class, LegoDataDaoConfiguration.class})
 @Sql(scripts = {
         "/scripts/db/h2/current_schema.ddl",
+        "/scripts/db/h2/marketplace_pricing_schema.ddl",
         "/scripts/db/h2/current_lookup_data.sql"
 })
 class CurrentDaoIntegrationTest {

@@ -1,6 +1,7 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.BricklinkMarketplaceListing;
+import io.legohunter.data.dto.CanonicalItem;
 import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.EbayListingItemSpecific;
 import io.legohunter.data.dto.EbayMarketplaceListing;
@@ -16,6 +17,7 @@ import io.legohunter.data.dto.ExternalServiceType;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.ItemInventoryExternalCatalogItem;
 import io.legohunter.data.dto.ItemInventoryPhoto;
+import io.legohunter.data.dto.MarketSnapshot;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Party;
@@ -66,6 +68,9 @@ abstract class MapperTestSupport {
     @Autowired PricingSnapshotListingMapper pricingSnapshotListingMapper;
     @Autowired PricingDecisionMapper pricingDecisionMapper;
     @Autowired PricingApplyReadinessMapper pricingApplyReadinessMapper;
+    @Autowired CanonicalItemMapper canonicalItemMapper;
+    @Autowired MarketSnapshotMapper marketSnapshotMapper;
+    @Autowired CrawlTargetMapper crawlTargetMapper;
     @Autowired MarketplaceListingSyncRequestMapper marketplaceListingSyncRequestMapper;
     @Autowired PartyMapper partyMapper;
     @Autowired PaymentMapper paymentMapper;
@@ -530,5 +535,34 @@ abstract class MapperTestSupport {
                 .transactionTypeDescription("Buy")
                 .conversionFactor(1)
                 .build());
+    }
+
+    /** The canonical item (marketplace_pricing) for an environment catalog item: same type + number. */
+    CanonicalItem canonicalItemFor(ExternalCatalogItem catalogItem) {
+        return canonicalItemMapper.findByItemTypeCodeAndItemNumber(catalogItem.getItemTypeCode(), catalogItem.getExternalItemKey())
+                .orElseGet(() -> {
+                    CanonicalItem item = CanonicalItem.builder()
+                            .itemTypeCode(catalogItem.getItemTypeCode())
+                            .itemNumber(catalogItem.getExternalItemKey())
+                            .itemName(catalogItem.getItemName())
+                            .build();
+                    canonicalItemMapper.insert(item);
+                    return item;
+                });
+    }
+
+    /** A shared BrickLink market snapshot for a catalog item and N/U condition (HOMELAB-32). */
+    MarketSnapshot insertMarketSnapshot(ExternalCatalogItem catalogItem, String queryConditionCode, ZonedDateTime capturedAt) {
+        MarketSnapshot snapshot = MarketSnapshot.builder()
+                .marketplaceCode("BRICKLINK")
+                .canonicalItemId(canonicalItemFor(catalogItem).getCanonicalItemId())
+                .queryConditionCode(queryConditionCode)
+                .marketplaceItemKey(catalogItem.getExternalItemKey())
+                .marketplaceUniqueKey("4997")
+                .listingCount(2)
+                .capturedAt(capturedAt)
+                .build();
+        marketSnapshotMapper.insert(snapshot);
+        return snapshot;
     }
 }
