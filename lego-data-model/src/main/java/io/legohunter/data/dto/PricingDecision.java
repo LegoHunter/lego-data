@@ -22,6 +22,10 @@ public class PricingDecision {
     private String algorithmVersion;
     private String decisionStatusCode;
     private String reasonCode;
+    /** Reprice guard outcome: PASSED or BLOCKED; null for decisions made by the older decision job. */
+    private String guardStatusCode;
+    /** Why the guard blocked the decision (for example BELOW_MINIMUM_DELTA); null when it passed. */
+    private String guardReasonCode;
     private String strategyCode;
     private BigDecimal computedPrice;
     private BigDecimal finalPrice;
