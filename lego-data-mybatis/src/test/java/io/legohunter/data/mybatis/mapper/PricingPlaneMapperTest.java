@@ -521,6 +521,43 @@ class PricingPlaneMapperTest extends MapperTestSupport {
     }
 
     @Test
+    void pricingDecisionStoresTheRepriceGuardOutcome() {
+        PricingFixture fixture = pricingFixture("pricing-decision-guard");
+        PricingSnapshot snapshot = insertedSnapshot(fixture);
+        PricingDecision decision = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        decision.setDecisionStatusCode("BLOCKED");
+        decision.setGuardStatusCode("BLOCKED");
+        decision.setGuardReasonCode("BELOW_MINIMUM_DELTA");
+
+        pricingDecisionMapper.insert(decision);
+        assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getGuardStatusCode()).isEqualTo("BLOCKED");
+                    assertThat(found.getGuardReasonCode()).isEqualTo("BELOW_MINIMUM_DELTA");
+                });
+
+        decision.setGuardStatusCode("PASSED");
+        decision.setGuardReasonCode(null);
+        assertThat(pricingDecisionMapper.update(decision)).isOne();
+        assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getGuardStatusCode()).isEqualTo("PASSED");
+                    assertThat(found.getGuardReasonCode()).isNull();
+                });
+
+        decision.setGuardReasonCode("ABOVE_MAXIMUM_PERCENT_DELTA");
+        pricingDecisionMapper.upsert(decision);
+        assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId()))
+                .hasValueSatisfying(found -> assertThat(found.getGuardReasonCode()).isEqualTo("ABOVE_MAXIMUM_PERCENT_DELTA"));
+
+        // Decisions from the older decision job carry no guard outcome.
+        PricingDecision older = pricingDecision(fixture.listing().getMarketplaceListingId(), snapshot.getPricingSnapshotId());
+        pricingDecisionMapper.insert(older);
+        assertThat(pricingDecisionMapper.findByPricingDecisionId(older.getPricingDecisionId()))
+                .hasValueSatisfying(found -> assertThat(found.getGuardStatusCode()).isNull());
+    }
+
+    @Test
     void pricingDecisionReviewReturnsLatestDecisionWithListingContext() {
         PricingFixture decidedFixture = pricingFixture("pricing-review-decided");
         decidedFixture.inventory().setNewOrUsed("USED");

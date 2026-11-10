@@ -280,6 +280,8 @@ CREATE TABLE pricing_decision (
     algorithm_version VARCHAR(64) NOT NULL,
     decision_status_code VARCHAR(32) NOT NULL,
     reason_code VARCHAR(64) NOT NULL,
+    guard_status_code VARCHAR(32),
+    guard_reason_code VARCHAR(64),
     strategy_code VARCHAR(64),
     computed_price DECIMAL(12,2),
     final_price DECIMAL(12,2),
