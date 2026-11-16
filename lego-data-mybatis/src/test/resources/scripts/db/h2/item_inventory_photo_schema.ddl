@@ -10,6 +10,9 @@ create table if not exists item_inventory_photo
     file_size               bigint                                                             null,
     is_primary              tinyint                                  default 0                 null,
     caption                 varchar(1024)                                                      null,
+    sealed_keyword          boolean                                                            null,
+    built_once_keyword      boolean                                                            null,
+    keywords                clob                                                               null,
     status                  enum ('UPLOADED', 'PROCESSED', 'FAILED') default 'UPLOADED'        not null,
     created_at              timestamp                                default CURRENT_TIMESTAMP not null,
     updated_at              timestamp                                default CURRENT_TIMESTAMP not null,
@@ -24,4 +27,7 @@ create index if not exists fk_item_inventory_photo_item_inventory
     on item_inventory_photo (item_inventory_id);
 
 alter table item_inventory_photo add column if not exists metadata_hash char(64);
+alter table item_inventory_photo add column if not exists sealed_keyword boolean;
+alter table item_inventory_photo add column if not exists built_once_keyword boolean;
+alter table item_inventory_photo add column if not exists keywords clob;
 
