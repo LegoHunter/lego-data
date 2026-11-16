@@ -128,6 +128,11 @@ public class ItemInventoryPhotoDao {
         return itemInventoryPhoto;
     }
 
+    /** Records what the photo's own sealed and built-once keywords said, and its raw keyword list (HOMELAB-96). */
+    public int updateKeywordsByMd5(String md5, Boolean sealedKeyword, Boolean builtOnceKeyword, String keywords) {
+        return itemInventoryPhotoMapper.updateKeywordsByMd5(md5, sealedKeyword, builtOnceKeyword, keywords);
+    }
+
     // =========================
     // Deduplication
     // =========================

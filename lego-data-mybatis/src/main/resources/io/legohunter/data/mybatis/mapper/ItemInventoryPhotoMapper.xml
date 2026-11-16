@@ -11,6 +11,9 @@
         <result column="file_size"                 property="fileSize"/>
         <result column="is_primary"                property="primary"/>
         <result column="caption"                   property="caption"/>
+        <result column="sealed_keyword"            property="sealedKeyword"/>
+        <result column="built_once_keyword"        property="builtOnceKeyword"/>
+        <result column="keywords"                  property="keywords"/>
         <result column="status"                    property="status"/>
         <result column="created_at"                property="createdAt"/>
         <result column="updated_at"                property="updatedAt"/>

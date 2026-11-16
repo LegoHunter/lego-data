@@ -77,4 +77,51 @@ class ItemInventoryPhotoMapperTest extends MapperTestSupport {
         assertThat(itemInventoryPhotoMapper.deleteByMd5("md5-delete")).isOne();
         assertThat(itemInventoryPhotoMapper.findByMD5("md5-delete")).isEmpty();
     }
+
+    @Test
+    void storesEachPhotosOwnSealedAndBuiltOnceKeywordsAndItsKeywordList() {
+        // HOMELAB-96: null means the photo has no such keyword, which is different from false.
+        ItemInventory itemInventory = insertItemInventory("uuid-photo-keywords");
+        ItemInventoryPhoto photo = ItemInventoryPhoto.builder()
+                .itemInventoryId(itemInventory.getItemInventoryId())
+                .s3Bucket("bucket")
+                .s3Key("keyword-key")
+                .md5("md5-keywords")
+                .fileName("keywords.jpg")
+                .fileSize(1000L)
+                .primary(false)
+                .status(PhotoStatus.PROCESSED)
+                .build();
+        itemInventoryPhotoMapper.insert(photo);
+
+        assertThat(itemInventoryPhotoMapper.findByMD5("md5-keywords")).hasValueSatisfying(found -> {
+            assertThat(found.getSealedKeyword()).isNull();
+            assertThat(found.getBuiltOnceKeyword()).isNull();
+            assertThat(found.getKeywords()).isNull();
+        });
+
+        assertThat(itemInventoryPhotoMapper.updateKeywordsByMd5("md5-keywords", null, true, "uuid:abc; bl:6390-1; bo:true")).isOne();
+        assertThat(itemInventoryPhotoMapper.findByMD5("md5-keywords")).hasValueSatisfying(found -> {
+            assertThat(found.getSealedKeyword()).isNull();
+            assertThat(found.getBuiltOnceKeyword()).isTrue();
+            assertThat(found.getKeywords()).isEqualTo("uuid:abc; bl:6390-1; bo:true");
+        });
+
+        assertThat(itemInventoryPhotoMapper.updateKeywordsByMd5("md5-keywords", false, null, null)).isOne();
+        assertThat(itemInventoryPhotoMapper.findByMD5("md5-keywords")).hasValueSatisfying(found -> {
+            assertThat(found.getSealedKeyword()).isFalse();
+            assertThat(found.getBuiltOnceKeyword()).isNull();
+            assertThat(found.getKeywords()).isNull();
+        });
+        assertThat(itemInventoryPhotoMapper.updateKeywordsByMd5("no-such-md5", true, null, null)).isZero();
+    }
+
+    @Test
+    void lockingAnItemReturnsItsIdOrNothing() {
+        ItemInventory itemInventory = insertItemInventory("uuid-photo-lock");
+
+        assertThat(itemInventoryMapper.lockByItemInventoryId(itemInventory.getItemInventoryId()))
+                .isEqualTo(itemInventory.getItemInventoryId());
+        assertThat(itemInventoryMapper.lockByItemInventoryId(-1)).isNull();
+    }
 }
