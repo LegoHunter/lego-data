@@ -1,7 +1,6 @@
 package io.legohunter.data.dao;
 
 import io.legohunter.data.dto.PricingDecision;
-import io.legohunter.data.dto.PricingDecisionReview;
 import io.legohunter.data.mybatis.mapper.PricingDecisionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -45,49 +44,6 @@ public class PricingDecisionDao {
 
     public Optional<PricingDecision> findLatestByMarketplaceListingId(Integer marketplaceListingId) {
         return pricingDecisionMapper.findLatestByMarketplaceListingId(marketplaceListingId);
-    }
-
-    public Set<PricingDecisionReview> findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            int limit
-    ) {
-        return pricingDecisionMapper.findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
-                listingExternalServiceId,
-                listingStatusCode,
-                limit
-        );
-    }
-
-    public Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            String decisionStatusCode,
-            int limit
-    ) {
-        return pricingDecisionMapper.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-                listingExternalServiceId,
-                listingStatusCode,
-                decisionStatusCode,
-                limit
-        );
-    }
-
-    public Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-            Integer listingExternalServiceId,
-            Set<String> listingStatusCodes,
-            String decisionStatusCode,
-            int limit
-    ) {
-        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
-            return Set.of();
-        }
-        return pricingDecisionMapper.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-                listingExternalServiceId,
-                listingStatusCodes,
-                decisionStatusCode,
-                Math.max(1, limit)
-        );
     }
 
     public PricingDecision insert(PricingDecision pricingDecision) {

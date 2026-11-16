@@ -43,11 +43,7 @@ public class SeededItemTeardownDao {
 
         Map<String, Integer> deleted = new LinkedHashMap<>();
         step(deleted, "marketplace_listing_sync_request", () -> mapper.deleteSyncRequests(itemInventoryId));
-        step(deleted, "pricing_apply_readiness", () -> mapper.deletePricingApplyReadiness(itemInventoryId));
         step(deleted, "pricing_decision", () -> mapper.deletePricingDecisions(itemInventoryId));
-        step(deleted, "pricing_snapshot_listing", () -> mapper.deletePricingSnapshotListings(itemInventoryId));
-        step(deleted, "pricing_snapshot", () -> mapper.deletePricingSnapshots(itemInventoryId));
-        step(deleted, "pricing_crawl_work_item", () -> mapper.deletePricingCrawlWorkItems(itemInventoryId));
         step(deleted, "bricklink_marketplace_listing", () -> mapper.deleteBricklinkListings(itemInventoryId));
         step(deleted, "ebay_listing_item_specific", () -> mapper.deleteEbayItemSpecifics(itemInventoryId));
         step(deleted, "ebay_marketplace_listing", () -> mapper.deleteEbayListings(itemInventoryId));

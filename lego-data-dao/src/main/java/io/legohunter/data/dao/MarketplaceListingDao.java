@@ -123,45 +123,6 @@ public class MarketplaceListingDao {
         );
     }
 
-    public Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            String pendingStatusCode,
-            String claimedStatusCode,
-            ZonedDateTime asOf,
-            int limit
-    ) {
-        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                listingExternalServiceId,
-                Set.of(listingStatusCode),
-                pendingStatusCode,
-                claimedStatusCode,
-                asOf,
-                limit
-        );
-    }
-
-    public Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-            Integer listingExternalServiceId,
-            Set<String> listingStatusCodes,
-            String pendingStatusCode,
-            String claimedStatusCode,
-            ZonedDateTime asOf,
-            int limit
-    ) {
-        if (listingStatusCodes == null || listingStatusCodes.isEmpty()) {
-            return Set.of();
-        }
-        return marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                listingExternalServiceId,
-                listingStatusCodes,
-                pendingStatusCode,
-                claimedStatusCode,
-                asOf,
-                Math.max(1, limit)
-        );
-    }
-
     public Optional<MarketplaceListing> findByListingExternalServiceIdAndExternalListingId(Integer listingExternalServiceId, String externalListingId) {
         return marketplaceListingMapper.findByListingExternalServiceIdAndExternalListingId(listingExternalServiceId, externalListingId);
     }

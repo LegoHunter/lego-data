@@ -376,31 +376,6 @@
     LIMIT #{limit}
   </select>
 
-  <select id="findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes"
-          resultMap="marketplaceListingResultMap">
-    SELECT <include refid="marketplaceListingColumns"/>
-    <include refid="marketplaceListingFromClause"/>
-    JOIN item_inventory ii
-      ON ii.item_inventory_id = ml.item_inventory_id
-    WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-      AND ml.listing_status_code IN
-      <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
-        #{listingStatusCode}
-      </foreach>
-      AND ml.external_catalog_item_id IS NOT NULL
-      AND <include refid="priceableInventoryConditionPresent"/>
-      AND NOT EXISTS (
-        SELECT 1
-        FROM pricing_crawl_work_item pcwi
-        WHERE pcwi.marketplace_listing_id = ml.marketplace_listing_id
-          AND (
-            pcwi.work_status_code IN (#{pendingStatusCode}, #{claimedStatusCode})
-            OR pcwi.next_attempt_at &gt; #{asOf}
-          )
-      )
-    ORDER BY ml.marketplace_listing_id
-    LIMIT #{limit}
-  </select>
 
   <!--
     One row per listing in the requested statuses, with a 0/1 flag per Pricing Plane data gap.

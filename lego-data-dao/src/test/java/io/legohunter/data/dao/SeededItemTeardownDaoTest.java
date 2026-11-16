@@ -13,11 +13,7 @@ import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Party;
 import io.legohunter.data.dto.Payment;
-import io.legohunter.data.dto.PricingApplyReadiness;
-import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDecision;
-import io.legohunter.data.dto.PricingSnapshot;
-import io.legohunter.data.dto.PricingSnapshotListing;
 import io.legohunter.data.dto.SeededItemTeardownCheck;
 import io.legohunter.data.dto.SeededItemTeardownResult;
 import io.legohunter.data.dto.TransactionItem;
@@ -70,11 +66,7 @@ class SeededItemTeardownDaoTest {
     @Autowired ItemInventorySeedSourceDao itemInventorySeedSourceDao;
     @Autowired MarketplaceListingDao marketplaceListingDao;
     @Autowired BricklinkMarketplaceListingDao bricklinkMarketplaceListingDao;
-    @Autowired PricingCrawlWorkItemDao pricingCrawlWorkItemDao;
-    @Autowired PricingSnapshotDao pricingSnapshotDao;
-    @Autowired PricingSnapshotListingDao pricingSnapshotListingDao;
     @Autowired PricingDecisionDao pricingDecisionDao;
-    @Autowired PricingApplyReadinessDao pricingApplyReadinessDao;
     @Autowired MarketplaceListingSyncRequestDao marketplaceListingSyncRequestDao;
     @Autowired PartyDao partyDao;
     @Autowired TransactionsDao transactionsDao;
@@ -129,11 +121,7 @@ class SeededItemTeardownDaoTest {
                 .containsEntry("marketplace_listing", 1)
                 .containsEntry("bricklink_marketplace_listing", 1)
                 .containsEntry("marketplace_listing_sync_request", 1)
-                .containsEntry("pricing_apply_readiness", 1)
                 .containsEntry("pricing_decision", 1)
-                .containsEntry("pricing_snapshot_listing", 1)
-                .containsEntry("pricing_snapshot", 1)
-                .containsEntry("pricing_crawl_work_item", 1)
                 .containsEntry("item_inventory_external_catalog_item", 1)
                 .containsEntry("transaction_item_cost", 1)
                 .containsEntry("transaction_item", 1)
@@ -145,7 +133,7 @@ class SeededItemTeardownDaoTest {
 
         // The other seeded item is untouched, and the acquisition still holds it.
         assertThat(itemInventoryDao.findByItemInventoryId(second.item().getItemInventoryId())).isPresent();
-        assertThat(rows("pricing_snapshot")).isOne();
+        assertThat(rows("pricing_decision")).isOne();
         assertThat(rows("transactions")).isOne();
         assertThat(rows("payment")).isOne();
 
@@ -154,8 +142,7 @@ class SeededItemTeardownDaoTest {
         assertThat(last.getDeletedTransactionIds()).containsExactly(acquisition.getTransactionId());
         assertThat(last.getDeletedRows()).containsEntry("transactions", 1).containsEntry("payment", 1);
         for (String table : new String[]{"item_inventory", "item_inventory_seed_source", "marketplace_listing",
-                "bricklink_marketplace_listing", "marketplace_listing_sync_request", "pricing_apply_readiness",
-                "pricing_decision", "pricing_snapshot_listing", "pricing_snapshot", "pricing_crawl_work_item",
+                "bricklink_marketplace_listing", "marketplace_listing_sync_request", "pricing_decision",
                 "item_inventory_external_catalog_item", "transaction_item_cost", "transaction_item", "transactions", "payment"}) {
             assertThat(rows(table)).as(table).isZero();
         }
@@ -174,7 +161,7 @@ class SeededItemTeardownDaoTest {
 
         assertThat(itemInventoryDao.findByItemInventoryId(real.item().getItemInventoryId())).isPresent();
         assertThat(rows("marketplace_listing")).isOne();
-        assertThat(rows("pricing_snapshot")).isOne();
+        assertThat(rows("pricing_decision")).isOne();
         assertThat(rows("transaction_item")).isOne();
         assertThat(rows("transactions")).isOne();
     }
@@ -192,7 +179,7 @@ class SeededItemTeardownDaoTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("BrickLink lot");
         assertThat(itemInventoryDao.findByItemInventoryId(seeded.item().getItemInventoryId())).isPresent();
-        assertThat(rows("pricing_snapshot")).isOne();
+        assertThat(rows("pricing_decision")).isOne();
     }
 
     @Test
@@ -295,46 +282,8 @@ class SeededItemTeardownDaoTest {
                 .environmentCode("sandbox")
                 .build());
 
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(PricingCrawlWorkItem.builder()
-                .marketplaceListingId(listing.getMarketplaceListingId())
-                .externalCatalogItemId(catalogItem.getExternalCatalogItemId())
-                .sourceExternalServiceId(bricklink.getExternalServiceId())
-                .workStatusCode("SUCCEEDED")
-                .attemptCount(1)
-                .maxAttempts(3)
-                .nextAttemptAt(AT)
-                .sourceRequestUrl("https://bricklink.example/catalogifs")
-                .sourceRequestParameters("itemid=" + uuid)
-                .build());
-        PricingSnapshot snapshot = pricingSnapshotDao.insert(PricingSnapshot.builder()
-                .pricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId())
-                .marketplaceListingId(listing.getMarketplaceListingId())
-                .externalCatalogItemId(catalogItem.getExternalCatalogItemId())
-                .sourceExternalServiceId(bricklink.getExternalServiceId())
-                .sourceItemKey(uuid + "-1")
-                .sourceUniqueKey(uuid)
-                .itemConditionCode("U")
-                .completenessCode("COMPLETE")
-                .sourceRequestUrl("https://bricklink.example/catalogifs")
-                .sourceRequestParameters("itemid=" + uuid)
-                .rawPayloadHash("hash-" + uuid)
-                .comparableCount(1)
-                .capturedAt(AT)
-                .build());
-        pricingSnapshotListingDao.insert(PricingSnapshotListing.builder()
-                .pricingSnapshotId(snapshot.getPricingSnapshotId())
-                .externalListingId("competitor-" + uuid)
-                .sellerName("seller")
-                .sellerCountryCode("US")
-                .itemConditionCode("U")
-                .completenessCode("COMPLETE")
-                .quantityAvailable(1)
-                .unitPrice(new BigDecimal("50.00"))
-                .currencyCode("USD")
-                .build());
         PricingDecision decision = pricingDecisionDao.insert(PricingDecision.builder()
                 .marketplaceListingId(listing.getMarketplaceListingId())
-                .pricingSnapshotId(snapshot.getPricingSnapshotId())
                 .algorithmVersion("BRICKLINK_MARKET_POSITION_V2")
                 .decisionStatusCode("APPLIED")
                 .reasonCode("MARKET_POSITION")
@@ -345,22 +294,10 @@ class SeededItemTeardownDaoTest {
                 .comparableCount(1)
                 .confidence(new BigDecimal("0.5000"))
                 .build());
-        PricingApplyReadiness readiness = pricingApplyReadinessDao.insert(PricingApplyReadiness.builder()
-                .marketplaceListingId(listing.getMarketplaceListingId())
-                .pricingDecisionId(decision.getPricingDecisionId())
-                .pricingSnapshotId(snapshot.getPricingSnapshotId())
-                .readinessStatusCode("READY_TO_APPLY_INITIAL_PRICE")
-                .proposedPrice(new BigDecimal("49.00"))
-                .currencyCode("USD")
-                .confidence(new BigDecimal("0.5000"))
-                .comparableCount(1)
-                .evaluatedAt(AT)
-                .build());
         marketplaceListingSyncRequestDao.insert(MarketplaceListingSyncRequest.builder()
                 .marketplaceListingId(listing.getMarketplaceListingId())
                 .listingExternalServiceId(bricklink.getExternalServiceId())
                 .pricingDecisionId(decision.getPricingDecisionId())
-                .pricingApplyReadinessId(readiness.getPricingApplyReadinessId())
                 .syncRequestTypeCode("LISTING_CREATE")
                 .syncRequestStatusCode("BLOCKED")
                 .syncReasonCode("PRICING_DECISION_APPLIED")

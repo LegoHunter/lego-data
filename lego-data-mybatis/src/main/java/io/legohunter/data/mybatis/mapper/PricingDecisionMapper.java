@@ -1,7 +1,6 @@
 package io.legohunter.data.mybatis.mapper;
 
 import io.legohunter.data.dto.PricingDecision;
-import io.legohunter.data.dto.PricingDecisionReview;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Options;
@@ -18,7 +17,6 @@ public interface PricingDecisionMapper {
     String ALL_COLUMNS = """
             pricing_decision_id,
             marketplace_listing_id,
-            pricing_snapshot_id,
             market_snapshot_id,
             market_snapshot_captured_at,
             algorithm_version,
@@ -37,66 +35,6 @@ public interface PricingDecisionMapper {
             notes,
             applied_at,
             created_at
-            """;
-
-    String REVIEW_COLUMNS = """
-            ml.marketplace_listing_id,
-            ml.external_listing_id,
-            ml.listing_status_code,
-            ml.unit_price AS current_unit_price,
-            ml.currency_code AS current_currency_code,
-            ml.fixed_price,
-            ii.item_inventory_id,
-            ii.uuid AS item_inventory_uuid,
-            ii.new_or_used,
-            ii.completeness,
-            eci.external_catalog_item_id,
-            eci.external_item_key,
-            eci.external_unique_key,
-            pd.pricing_decision_id,
-            pd.pricing_snapshot_id,
-            pd.market_snapshot_id,
-            pd.algorithm_version,
-            pd.decision_status_code,
-            pd.reason_code,
-            pd.strategy_code,
-            pd.computed_price,
-            pd.final_price,
-            pd.previous_price,
-            pd.currency_code,
-            pd.currency_code AS decision_currency_code,
-            pd.comparable_count,
-            pd.confidence,
-            pd.notes,
-            pd.created_at AS decision_created_at,
-            pd.applied_at,
-            ps.captured_at AS snapshot_captured_at,
-            ps.listing_count AS snapshot_comparable_count
-            """;
-
-    /**
-     * Whether a newer shared market snapshot exists for the listing's item and New/Used condition than
-     * the one the decision used (HOMELAB-32). Kept out of REVIEW_COLUMNS because that list is passed in
-     * as a runtime parameter, where the ${marketplacePricingSchema} variable would not be substituted:
-     * it is concatenated into each review query's text instead.
-     */
-    String NEWER_SNAPSHOT_AVAILABLE_COLUMN = """
-            CASE
-                WHEN EXISTS (
-                    SELECT 1
-                    FROM ${marketplacePricingSchema}.market_snapshot newer_ps
-                    JOIN ${marketplacePricingSchema}.canonical_item newer_ci
-                      ON newer_ci.canonical_item_id = newer_ps.canonical_item_id
-                    WHERE newer_ps.marketplace_code = 'BRICKLINK'
-                      AND newer_ci.item_type_code = eci.item_type_code
-                      AND newer_ci.item_number = eci.external_item_key
-                      AND newer_ps.query_condition_code = CASE UPPER(TRIM(ii.new_or_used))
-                            WHEN 'NEW' THEN 'N' WHEN 'N' THEN 'N' WHEN 'USED' THEN 'U' WHEN 'U' THEN 'U' ELSE NULL END
-                      AND (ps.captured_at IS NULL OR newer_ps.captured_at > ps.captured_at)
-                )
-                THEN TRUE
-                ELSE FALSE
-            END AS newer_snapshot_available
             """;
 
     @Select("SELECT " + ALL_COLUMNS + " FROM pricing_decision")
@@ -165,171 +103,9 @@ public interface PricingDecisionMapper {
         return findLatestByMarketplaceListingId(marketplaceListingId, ALL_COLUMNS);
     }
 
-    @Select("""
-            SELECT ${columns},
-            """ + NEWER_SNAPSHOT_AVAILABLE_COLUMN + """
-            FROM marketplace_listing ml
-            JOIN item_inventory ii
-              ON ii.item_inventory_id = ml.item_inventory_id
-            JOIN external_catalog_item eci
-              ON eci.external_catalog_item_id = ml.external_catalog_item_id
-            LEFT JOIN (
-                SELECT pd.*
-                FROM pricing_decision pd
-                JOIN (
-                    SELECT marketplace_listing_id,
-                           MAX(pricing_decision_id) AS pricing_decision_id
-                    FROM pricing_decision
-                    GROUP BY marketplace_listing_id
-                ) latest
-                  ON latest.pricing_decision_id = pd.pricing_decision_id
-            ) pd
-              ON pd.marketplace_listing_id = ml.marketplace_listing_id
-            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
-              ON ps.market_snapshot_id = pd.market_snapshot_id
-            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code = #{listingStatusCode}
-            ORDER BY ml.marketplace_listing_id
-            LIMIT #{limit}
-            """)
-    @ResultMap("pricingDecisionReviewResultMap")
-    Set<PricingDecisionReview> findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
-            @Param("listingExternalServiceId") Integer listingExternalServiceId,
-            @Param("listingStatusCode") String listingStatusCode,
-            @Param("limit") int limit,
-            @Param("columns") String columns
-    );
-
-    default Set<PricingDecisionReview> findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            int limit
-    ) {
-        return findLatestReviewsByListingExternalServiceIdAndListingStatusCode(
-                listingExternalServiceId,
-                listingStatusCode,
-                limit,
-                REVIEW_COLUMNS
-        );
-    }
-
-    @Select("""
-            SELECT ${columns},
-            """ + NEWER_SNAPSHOT_AVAILABLE_COLUMN + """
-            FROM marketplace_listing ml
-            JOIN item_inventory ii
-              ON ii.item_inventory_id = ml.item_inventory_id
-            JOIN external_catalog_item eci
-              ON eci.external_catalog_item_id = ml.external_catalog_item_id
-            JOIN (
-                SELECT pd.*
-                FROM pricing_decision pd
-                JOIN (
-                    SELECT marketplace_listing_id,
-                           MAX(pricing_decision_id) AS pricing_decision_id
-                    FROM pricing_decision
-                    GROUP BY marketplace_listing_id
-                ) latest
-                  ON latest.pricing_decision_id = pd.pricing_decision_id
-            ) pd
-              ON pd.marketplace_listing_id = ml.marketplace_listing_id
-            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
-              ON ps.market_snapshot_id = pd.market_snapshot_id
-            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code = #{listingStatusCode}
-              AND pd.decision_status_code = #{decisionStatusCode}
-              AND pd.applied_at IS NULL
-            ORDER BY pd.created_at DESC,
-                     pd.pricing_decision_id DESC
-            LIMIT #{limit}
-            """)
-    @ResultMap("pricingDecisionReviewResultMap")
-    Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-            @Param("listingExternalServiceId") Integer listingExternalServiceId,
-            @Param("listingStatusCode") String listingStatusCode,
-            @Param("decisionStatusCode") String decisionStatusCode,
-            @Param("limit") int limit,
-            @Param("columns") String columns
-    );
-
-    @Select("""
-            <script>
-            SELECT ${columns},
-            """ + NEWER_SNAPSHOT_AVAILABLE_COLUMN + """
-            FROM marketplace_listing ml
-            JOIN item_inventory ii
-              ON ii.item_inventory_id = ml.item_inventory_id
-            JOIN external_catalog_item eci
-              ON eci.external_catalog_item_id = ml.external_catalog_item_id
-            JOIN (
-                SELECT pd.*
-                FROM pricing_decision pd
-                JOIN (
-                    SELECT marketplace_listing_id,
-                           MAX(pricing_decision_id) AS pricing_decision_id
-                    FROM pricing_decision
-                    GROUP BY marketplace_listing_id
-                ) latest
-                  ON latest.pricing_decision_id = pd.pricing_decision_id
-            ) pd
-              ON pd.marketplace_listing_id = ml.marketplace_listing_id
-            LEFT JOIN ${marketplacePricingSchema}.market_snapshot ps
-              ON ps.market_snapshot_id = pd.market_snapshot_id
-            WHERE ml.listing_external_service_id = #{listingExternalServiceId}
-              AND ml.listing_status_code IN
-              <foreach item="listingStatusCode" collection="listingStatusCodes" open="(" separator="," close=")">
-                #{listingStatusCode}
-              </foreach>
-              AND pd.decision_status_code = #{decisionStatusCode}
-              AND pd.applied_at IS NULL
-            ORDER BY pd.created_at DESC,
-                     pd.pricing_decision_id DESC
-            LIMIT #{limit}
-            </script>
-            """)
-    @ResultMap("pricingDecisionReviewResultMap")
-    Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-            @Param("listingExternalServiceId") Integer listingExternalServiceId,
-            @Param("listingStatusCodes") Set<String> listingStatusCodes,
-            @Param("decisionStatusCode") String decisionStatusCode,
-            @Param("limit") int limit,
-            @Param("columns") String columns
-    );
-
-    default Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            String decisionStatusCode,
-            int limit
-    ) {
-        return findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-                listingExternalServiceId,
-                listingStatusCode,
-                decisionStatusCode,
-                limit,
-                REVIEW_COLUMNS
-        );
-    }
-
-    default Set<PricingDecisionReview> findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-            Integer listingExternalServiceId,
-            Set<String> listingStatusCodes,
-            String decisionStatusCode,
-            int limit
-    ) {
-        return findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-                listingExternalServiceId,
-                listingStatusCodes,
-                decisionStatusCode,
-                limit,
-                REVIEW_COLUMNS
-        );
-    }
-
     @Insert("""
             INSERT INTO pricing_decision (
                 marketplace_listing_id,
-                pricing_snapshot_id,
                 market_snapshot_id,
                 market_snapshot_captured_at,
                 algorithm_version,
@@ -351,7 +127,6 @@ public interface PricingDecisionMapper {
             )
             VALUES (
                 #{marketplaceListingId},
-                #{pricingSnapshotId},
                 #{marketSnapshotId},
                 #{marketSnapshotCapturedAt},
                 #{algorithmVersion},
@@ -378,7 +153,6 @@ public interface PricingDecisionMapper {
     @Update("""
             UPDATE pricing_decision
             SET marketplace_listing_id = #{marketplaceListingId},
-                pricing_snapshot_id = #{pricingSnapshotId},
                 market_snapshot_id = #{marketSnapshotId},
                 market_snapshot_captured_at = #{marketSnapshotCapturedAt},
                 algorithm_version = #{algorithmVersion},
@@ -435,7 +209,6 @@ public interface PricingDecisionMapper {
             INSERT INTO pricing_decision (
                 pricing_decision_id,
                 marketplace_listing_id,
-                pricing_snapshot_id,
                 market_snapshot_id,
                 market_snapshot_captured_at,
                 algorithm_version,
@@ -458,7 +231,6 @@ public interface PricingDecisionMapper {
             VALUES (
                 #{pricingDecisionId},
                 #{marketplaceListingId},
-                #{pricingSnapshotId},
                 #{marketSnapshotId},
                 #{marketSnapshotCapturedAt},
                 #{algorithmVersion},
@@ -480,7 +252,6 @@ public interface PricingDecisionMapper {
             )
             ON DUPLICATE KEY UPDATE
                 marketplace_listing_id = VALUES(marketplace_listing_id),
-                pricing_snapshot_id = VALUES(pricing_snapshot_id),
                 market_snapshot_id = VALUES(market_snapshot_id),
                 market_snapshot_captured_at = VALUES(market_snapshot_captured_at),
                 algorithm_version = VALUES(algorithm_version),

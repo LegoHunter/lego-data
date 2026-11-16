@@ -9,7 +9,6 @@ import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.Payment;
 import io.legohunter.data.dto.PaymentPlatform;
-import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.TransactionCost;
@@ -30,8 +29,6 @@ import io.legohunter.data.mybatis.mapper.MarketplaceListingSyncRequestMapper;
 import io.legohunter.data.mybatis.mapper.PartyMapper;
 import io.legohunter.data.mybatis.mapper.PaymentMapper;
 import io.legohunter.data.mybatis.mapper.PaymentPlatformMapper;
-import io.legohunter.data.mybatis.mapper.PricingApplyReadinessMapper;
-import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import io.legohunter.data.mybatis.mapper.PricingDecisionMapper;
 import io.legohunter.data.mybatis.mapper.TransactionCostMapper;
 import io.legohunter.data.mybatis.mapper.TransactionItemCostMapper;
@@ -293,15 +290,6 @@ class DaoDelegationCoverageTest {
         assertThat(dao.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCodes(1, Set.of(), 5, true))
                 .isEmpty();
 
-        when(mapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                1, Set.of("ACTIVE"), "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
-        )).thenReturn(Set.of(listing));
-        assertThat(dao.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
-                1, "ACTIVE", "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
-        )).containsExactly(listing);
-        assertThat(dao.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                1, Set.of(), "PENDING", "CLAIMED", ZonedDateTime.parse("2026-06-24T10:00:00Z"), 5
-        )).isEmpty();
 
         dao.findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 0);
         verify(mapper).findPricingHydrationGapsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 1);
@@ -378,128 +366,6 @@ class DaoDelegationCoverageTest {
                 .isEmpty();
         assertThat(dao.findClaimableByStatusCodeAndSyncRequestTypeCodes("PENDING", Set.of(), dueAt, 5))
                 .isEmpty();
-    }
-
-    @Test
-    void pricingDecisionDaoCoversLatestReviewLookup() {
-        PricingDecisionMapper mapper = mock(PricingDecisionMapper.class);
-        PricingDecisionDao dao = new PricingDecisionDao(mapper);
-
-        dao.countLatestByDecisionStatusCode("PROPOSED");
-        dao.countLatestUnappliedByDecisionStatusCode("PROPOSED");
-        dao.findLatestReviewsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 25);
-        dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-                1,
-                "ACTIVE",
-                "PROPOSED",
-                25
-        );
-        dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-                1,
-                Set.of("ACTIVE", "DRAFT"),
-                "PROPOSED",
-                25
-        );
-        assertThat(dao.findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-                1,
-                Set.of(),
-                "PROPOSED",
-                25
-        )).isEmpty();
-
-        verify(mapper).countLatestByDecisionStatusCode("PROPOSED");
-        verify(mapper).countLatestUnappliedByDecisionStatusCode("PROPOSED");
-        verify(mapper).findLatestReviewsByListingExternalServiceIdAndListingStatusCode(1, "ACTIVE", 25);
-        verify(mapper).findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodeAndDecisionStatusCode(
-                1,
-                "ACTIVE",
-                "PROPOSED",
-                25
-        );
-        verify(mapper).findLatestUnappliedDecisionReviewsByListingExternalServiceIdAndListingStatusCodesAndDecisionStatusCode(
-                1,
-                Set.of("ACTIVE", "DRAFT"),
-                "PROPOSED",
-                25
-        );
-    }
-
-    @Test
-    void pricingApplyReadinessDaoDelegatesAllOperations() {
-        PricingApplyReadinessMapper mapper = mock(PricingApplyReadinessMapper.class);
-        PricingApplyReadinessDao dao = new PricingApplyReadinessDao(mapper);
-        PricingApplyReadiness readiness = PricingApplyReadiness.builder()
-                .pricingApplyReadinessId(100L)
-                .pricingDecisionId(200L)
-                .marketplaceListingId(300)
-                .readinessStatusCode("READY_TO_APPLY")
-                .build();
-
-        when(mapper.findAll()).thenReturn(Set.of(readiness));
-        when(mapper.findByPricingApplyReadinessId(100L)).thenReturn(Optional.of(readiness));
-        when(mapper.findByPricingDecisionId(200L)).thenReturn(Optional.of(readiness));
-        when(mapper.findByMarketplaceListingId(300)).thenReturn(Set.of(readiness));
-        when(mapper.findByReadinessStatusCode("READY_TO_APPLY")).thenReturn(Set.of(readiness));
-        when(mapper.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).thenReturn(Set.of(readiness));
-        when(mapper.findLatestByMarketplaceListingId(300)).thenReturn(Optional.of(readiness));
-        when(mapper.countByReadinessStatusCode("READY_TO_APPLY")).thenReturn(1L);
-        when(mapper.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).thenReturn(1L);
-        when(mapper.countLatestByReadinessStatusCode("READY_TO_APPLY")).thenReturn(1L);
-        when(mapper.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).thenReturn(1L);
-
-        assertThat(dao.findAll()).containsExactly(readiness);
-        assertThat(dao.findByPricingApplyReadinessId(100L)).contains(readiness);
-        assertThat(dao.findByPricingDecisionId(200L)).contains(readiness);
-        assertThat(dao.findByMarketplaceListingId(300)).containsExactly(readiness);
-        assertThat(dao.findByReadinessStatusCode("READY_TO_APPLY")).containsExactly(readiness);
-        assertThat(dao.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).containsExactly(readiness);
-        assertThat(dao.findLatestByMarketplaceListingId(300)).contains(readiness);
-        assertThat(dao.findLatestReviews(null, null, 0)).isEmpty();
-        assertThat(dao.findLatestReadyToApplyReviews(0)).isEmpty();
-        assertThat(dao.countByReadinessStatusCode("READY_TO_APPLY")).isOne();
-        assertThat(dao.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
-        assertThat(dao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isOne();
-        assertThat(dao.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
-
-        dao.update(readiness);
-        dao.upsert(readiness);
-        dao.delete(100L);
-
-        verify(mapper).update(readiness);
-        verify(mapper).upsert(readiness);
-        verify(mapper).delete(100L);
-        verify(mapper).findLatestReviews(null, null, 1);
-        verify(mapper).findLatestReadyToApplyReviews(1);
-
-        PricingApplyReadiness generatedByDecision = PricingApplyReadiness.builder()
-                .pricingDecisionId(201L)
-                .build();
-        when(mapper.findByPricingDecisionId(201L)).thenReturn(Optional.of(generatedByDecision));
-        assertThat(dao.upsert(generatedByDecision)).isSameAs(generatedByDecision);
-        verify(mapper).upsert(generatedByDecision);
-    }
-
-    @Test
-    void pricingCrawlWorkItemDaoCoversObservabilityCounts() {
-        PricingCrawlWorkItemMapper mapper = mock(PricingCrawlWorkItemMapper.class);
-        PricingCrawlWorkItemDao dao = new PricingCrawlWorkItemDao(mapper);
-        ZonedDateTime now = ZonedDateTime.parse("2026-06-25T10:00:00Z");
-
-        dao.countByWorkStatusCode("PENDING");
-        dao.countDueByWorkStatusCode("PENDING", now);
-        dao.countRetryableByWorkStatusCode("PENDING");
-        dao.countStaleClaimed("CLAIMED", now.minusHours(2));
-        dao.summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
-        dao.findDuplicateMarketplaceListingWorkItems("PENDING", "CLAIMED", 0);
-        dao.findRecentFailures(0);
-
-        verify(mapper).countByWorkStatusCode("PENDING");
-        verify(mapper).countDueByWorkStatusCode("PENDING", now);
-        verify(mapper).countRetryableByWorkStatusCode("PENDING");
-        verify(mapper).countStaleClaimed("CLAIMED", now.minusHours(2));
-        verify(mapper).summarizeMaintenance("PENDING", "CLAIMED", "SUCCEEDED", now, now.minusHours(2));
-        verify(mapper).findDuplicateMarketplaceListingWorkItems("PENDING", "CLAIMED", 1);
-        verify(mapper).findRecentFailures(1);
     }
 
     @Test
