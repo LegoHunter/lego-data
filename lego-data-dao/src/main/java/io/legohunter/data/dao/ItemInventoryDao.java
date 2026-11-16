@@ -25,6 +25,11 @@ public class ItemInventoryDao {
         return itemInventoryMapper.findAll();
     }
 
+    /** Locks the item's row for the rest of the caller's transaction; false when there is no such item. */
+    public boolean lockForUpdate(Integer itemInventoryId) {
+        return itemInventoryMapper.lockByItemInventoryId(itemInventoryId) != null;
+    }
+
     public Optional<ItemInventory> findByItemInventoryId(Integer itemInventoryId) {
         return itemInventoryMapper.findByItemInventoryId(itemInventoryId);
     }

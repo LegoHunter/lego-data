@@ -177,6 +177,14 @@ public interface ItemInventoryMapper {
             @Param("fromClause") String fromClause
     );
 
+    /**
+     * Locks the item's row until the caller's transaction ends, so work that reads several of the item's rows
+     * and then writes (for example the photo keyword rules, HOMELAB-96) cannot interleave with another worker.
+     * Returns the id, or null when there is no such item.
+     */
+    @Select("SELECT item_inventory_id FROM item_inventory WHERE item_inventory_id = #{itemInventoryId} FOR UPDATE")
+    Integer lockByItemInventoryId(Integer itemInventoryId);
+
     default Optional<ItemInventory> findByItemInventoryId(Integer itemInventoryId) {
         return findByItemInventoryId(itemInventoryId, ALL_COLUMNS, FROM_CLAUSE);
     }

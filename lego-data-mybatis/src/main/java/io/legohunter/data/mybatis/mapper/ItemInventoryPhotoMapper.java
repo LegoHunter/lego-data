@@ -20,6 +20,9 @@ public interface ItemInventoryPhotoMapper {
             file_size,
             is_primary,
             caption,
+            sealed_keyword,
+            built_once_keyword,
+            keywords,
             status,
             created_at,
             updated_at,
@@ -143,6 +146,25 @@ public interface ItemInventoryPhotoMapper {
             boolean primary,
             String caption,
             PhotoStatus status);
+
+    /**
+     * Records what this photo's own keywords said (HOMELAB-96). Null for sealed or built once means the photo
+     * has no such keyword. Written after the photo row is inserted or updated, in the same transaction.
+     */
+    @Update("""
+            UPDATE item_inventory_photo
+            SET
+                sealed_keyword = #{sealedKeyword},
+                built_once_keyword = #{builtOnceKeyword},
+                keywords = #{keywords},
+                updated_at = CURRENT_TIMESTAMP
+            WHERE md5 = #{md5}
+            """)
+    int updateKeywordsByMd5(
+            @Param("md5") String md5,
+            @Param("sealedKeyword") Boolean sealedKeyword,
+            @Param("builtOnceKeyword") Boolean builtOnceKeyword,
+            @Param("keywords") String keywords);
 
     @Delete("""
             DELETE FROM item_inventory_photo
