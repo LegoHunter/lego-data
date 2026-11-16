@@ -9,11 +9,7 @@ DROP TABLE IF EXISTS marketplace_order_item;
 DROP TABLE IF EXISTS marketplace_order;
 DROP TABLE IF EXISTS marketplace_order_sync_run;
 DROP TABLE IF EXISTS marketplace_listing_sync_request;
-DROP TABLE IF EXISTS pricing_apply_readiness;
 DROP TABLE IF EXISTS pricing_decision;
-DROP TABLE IF EXISTS pricing_snapshot_listing;
-DROP TABLE IF EXISTS pricing_snapshot;
-DROP TABLE IF EXISTS pricing_crawl_work_item;
 DROP TABLE IF EXISTS ebay_listing_item_specific;
 DROP TABLE IF EXISTS ebay_marketplace_listing;
 DROP TABLE IF EXISTS bricklink_marketplace_listing;
@@ -218,63 +214,9 @@ CREATE TABLE marketplace_listing (
     UNIQUE (listing_external_service_id, external_listing_id)
 );
 
-CREATE TABLE pricing_crawl_work_item (
-    pricing_crawl_work_item_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    marketplace_listing_id INT NOT NULL,
-    external_catalog_item_id INT NOT NULL,
-    source_external_service_id INT NOT NULL,
-    work_status_code VARCHAR(32) NOT NULL,
-    attempt_count INT NOT NULL DEFAULT 0,
-    max_attempts INT NOT NULL DEFAULT 3,
-    next_attempt_at TIMESTAMP NOT NULL,
-    claimed_at TIMESTAMP,
-    completed_at TIMESTAMP,
-    source_request_url VARCHAR(1024),
-    source_request_parameters CLOB,
-    last_error_message CLOB,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE pricing_snapshot (
-    pricing_snapshot_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    pricing_crawl_work_item_id BIGINT,
-    marketplace_listing_id INT,
-    external_catalog_item_id INT NOT NULL,
-    source_external_service_id INT NOT NULL,
-    source_item_key VARCHAR(255) NOT NULL,
-    source_unique_key VARCHAR(255),
-    item_condition_code VARCHAR(32),
-    completeness_code VARCHAR(64),
-    source_request_url VARCHAR(1024),
-    source_request_parameters CLOB,
-    raw_payload_hash VARCHAR(64),
-    comparable_count INT,
-    captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE pricing_snapshot_listing (
-    pricing_snapshot_listing_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    pricing_snapshot_id BIGINT NOT NULL,
-    external_listing_id VARCHAR(255),
-    seller_name VARCHAR(255),
-    seller_country_code VARCHAR(8),
-    item_condition_code VARCHAR(32),
-    completeness_code VARCHAR(64),
-    quantity_available INT,
-    unit_price DECIMAL(12,2) NOT NULL,
-    currency_code VARCHAR(8) NOT NULL,
-    description CLOB,
-    extended_description CLOB,
-    source_listing_payload CLOB,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 CREATE TABLE pricing_decision (
     pricing_decision_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     marketplace_listing_id INT NOT NULL,
-    pricing_snapshot_id BIGINT,
     market_snapshot_id BIGINT,
     market_snapshot_captured_at TIMESTAMP,
     algorithm_version VARCHAR(64) NOT NULL,
@@ -293,29 +235,6 @@ CREATE TABLE pricing_decision (
     notes CLOB,
     applied_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE pricing_apply_readiness (
-    pricing_apply_readiness_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    marketplace_listing_id INT NOT NULL,
-    pricing_decision_id BIGINT NOT NULL,
-    pricing_snapshot_id BIGINT,
-    market_snapshot_id BIGINT,
-    market_snapshot_captured_at TIMESTAMP,
-    readiness_status_code VARCHAR(64) NOT NULL,
-    block_reason_code VARCHAR(64),
-    current_price DECIMAL(12,2),
-    proposed_price DECIMAL(12,2),
-    delta_amount DECIMAL(12,2),
-    delta_percent DECIMAL(9,6),
-    minimum_required_delta DECIMAL(12,2),
-    currency_code VARCHAR(8),
-    confidence DECIMAL(5,4),
-    comparable_count INT,
-    evaluated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (pricing_decision_id)
 );
 
 CREATE TABLE bricklink_marketplace_listing (
@@ -352,7 +271,6 @@ CREATE TABLE marketplace_listing_sync_request (
     marketplace_listing_id INT NOT NULL,
     listing_external_service_id INT NOT NULL,
     pricing_decision_id BIGINT,
-    pricing_apply_readiness_id BIGINT,
     sync_request_type_code VARCHAR(64) NOT NULL,
     sync_request_status_code VARCHAR(64) NOT NULL,
     sync_reason_code VARCHAR(64) NOT NULL,
@@ -625,28 +543,12 @@ CREATE INDEX idx_marketplace_order_transaction_link_transaction_item
     ON marketplace_order_transaction_link (transaction_item_id);
 CREATE INDEX idx_marketplace_order_transaction_link_type_status
     ON marketplace_order_transaction_link (link_type_code, link_status_code);
-CREATE INDEX idx_pricing_crawl_work_item_status_due
-    ON pricing_crawl_work_item (work_status_code, next_attempt_at);
-CREATE INDEX idx_pricing_crawl_work_item_listing
-    ON pricing_crawl_work_item (marketplace_listing_id);
-CREATE INDEX idx_pricing_snapshot_listing
-    ON pricing_snapshot (marketplace_listing_id, captured_at);
-CREATE INDEX idx_pricing_snapshot_catalog
-    ON pricing_snapshot (external_catalog_item_id, captured_at);
-CREATE INDEX idx_pricing_snapshot_listing_snapshot
-    ON pricing_snapshot_listing (pricing_snapshot_id);
 CREATE INDEX idx_pricing_decision_listing
     ON pricing_decision (marketplace_listing_id, created_at);
 CREATE INDEX idx_pricing_decision_status
     ON pricing_decision (decision_status_code);
 CREATE INDEX idx_pricing_decision_reason
     ON pricing_decision (reason_code);
-CREATE INDEX idx_pricing_apply_readiness_listing
-    ON pricing_apply_readiness (marketplace_listing_id, evaluated_at);
-CREATE INDEX idx_pricing_apply_readiness_status
-    ON pricing_apply_readiness (readiness_status_code);
-CREATE INDEX idx_pricing_apply_readiness_block_reason
-    ON pricing_apply_readiness (block_reason_code);
 
 CREATE TABLE party (
     party_id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -850,69 +752,9 @@ ALTER TABLE marketplace_listing
     FOREIGN KEY (external_catalog_item_id) REFERENCES external_catalog_item (external_catalog_item_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
-ALTER TABLE pricing_crawl_work_item
-    ADD CONSTRAINT fk_pricing_crawl_work_item_marketplace_listing1
-    FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_crawl_work_item
-    ADD CONSTRAINT fk_pricing_crawl_work_item_catalog_item1
-    FOREIGN KEY (external_catalog_item_id) REFERENCES external_catalog_item (external_catalog_item_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_crawl_work_item
-    ADD CONSTRAINT fk_pricing_crawl_work_item_source_service1
-    FOREIGN KEY (source_external_service_id) REFERENCES external_service (external_service_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_snapshot
-    ADD CONSTRAINT fk_pricing_snapshot_work_item1
-    FOREIGN KEY (pricing_crawl_work_item_id) REFERENCES pricing_crawl_work_item (pricing_crawl_work_item_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_snapshot
-    ADD CONSTRAINT fk_pricing_snapshot_marketplace_listing1
-    FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_snapshot
-    ADD CONSTRAINT fk_pricing_snapshot_catalog_item1
-    FOREIGN KEY (external_catalog_item_id) REFERENCES external_catalog_item (external_catalog_item_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_snapshot
-    ADD CONSTRAINT fk_pricing_snapshot_source_service1
-    FOREIGN KEY (source_external_service_id) REFERENCES external_service (external_service_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_snapshot_listing
-    ADD CONSTRAINT fk_pricing_snapshot_listing_snapshot1
-    FOREIGN KEY (pricing_snapshot_id) REFERENCES pricing_snapshot (pricing_snapshot_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
 ALTER TABLE pricing_decision
     ADD CONSTRAINT fk_pricing_decision_marketplace_listing1
     FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_decision
-    ADD CONSTRAINT fk_pricing_decision_snapshot1
-    FOREIGN KEY (pricing_snapshot_id) REFERENCES pricing_snapshot (pricing_snapshot_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_apply_readiness
-    ADD CONSTRAINT fk_pricing_apply_readiness_marketplace_listing1
-    FOREIGN KEY (marketplace_listing_id) REFERENCES marketplace_listing (marketplace_listing_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_apply_readiness
-    ADD CONSTRAINT fk_pricing_apply_readiness_decision1
-    FOREIGN KEY (pricing_decision_id) REFERENCES pricing_decision (pricing_decision_id)
-    ON DELETE RESTRICT ON UPDATE RESTRICT;
-
-ALTER TABLE pricing_apply_readiness
-    ADD CONSTRAINT fk_pricing_apply_readiness_snapshot1
-    FOREIGN KEY (pricing_snapshot_id) REFERENCES pricing_snapshot (pricing_snapshot_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE bricklink_marketplace_listing

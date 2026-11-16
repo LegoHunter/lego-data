@@ -10,12 +10,10 @@ import io.legohunter.data.dto.CrawlTarget;
 import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
-import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDataQualityGap;
 import io.legohunter.data.dto.WantedCatalogItem;
 import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingDecision;
-import io.legohunter.data.dto.PricingSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -160,7 +158,7 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-DEDUPE");
 
-        PricingDecision decision = pricingDecision(listing.getMarketplaceListingId(), null);
+        PricingDecision decision = pricingDecision(listing.getMarketplaceListingId());
         decision.setMarketSnapshotId(firstSnapshot.getMarketSnapshotId());
         decision.setMarketSnapshotCapturedAt(firstSnapshot.getCapturedAt());
         pricingDecisionMapper.insert(decision);
@@ -187,22 +185,13 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         listing.setFixedPrice(true);
         listing.setUnitPrice(new BigDecimal("25.00"));
         marketplaceListingMapper.insert(listing);
-        PricingSnapshot snapshot = pricingSnapshot(
-                null,
-                listing.getMarketplaceListingId(),
-                fixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT
-        );
-        snapshot.setItemConditionCode("U");
-        snapshot.setCompletenessCode("C");
-        pricingSnapshotMapper.insert(snapshot);
+        insertMarketSnapshot(fixture.item(), "U", CRAWL_AT);
 
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-FIXED-DEDUPE");
 
-        PricingDecision fixedPriceDecision = pricingDecision(listing.getMarketplaceListingId(), null);
+        PricingDecision fixedPriceDecision = pricingDecision(listing.getMarketplaceListingId());
         fixedPriceDecision.setDecisionStatusCode("SKIPPED");
         fixedPriceDecision.setReasonCode("FIXED_PRICE_OVERRIDE");
         fixedPriceDecision.setComputedPrice(null);
@@ -224,120 +213,6 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         assertThat(marketplaceListingMapper.findPricingDecisionCandidatesWithCurrentSnapshotByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
                 .extracting(MarketplaceListing::getExternalListingId)
                 .containsExactly("BL-FIXED-DEDUPE");
-    }
-
-    @Test
-    void pricingCrawlSchedulingCandidatesSkipOpenAndFutureScheduledWork() {
-        ListingFixture availableFixture = listingFixture("crawl-available");
-        MarketplaceListing availableListing = marketplaceListing(
-                availableFixture.inventory().getItemInventoryId(),
-                availableFixture.item().getExternalCatalogItemId(),
-                2,
-                "BL-CRAWL-AVAILABLE"
-        );
-        marketplaceListingMapper.insert(availableListing);
-
-        ListingFixture pendingFixture = listingFixture("crawl-pending");
-        MarketplaceListing pendingListing = marketplaceListing(
-                pendingFixture.inventory().getItemInventoryId(),
-                pendingFixture.item().getExternalCatalogItemId(),
-                2,
-                "BL-CRAWL-PENDING"
-        );
-        marketplaceListingMapper.insert(pendingListing);
-        pricingCrawlWorkItemMapper.insert(pricingCrawlWorkItem(
-                pendingListing.getMarketplaceListingId(),
-                pendingFixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT.minusMinutes(1)
-        ));
-
-        ListingFixture futureFixture = listingFixture("crawl-future");
-        MarketplaceListing futureListing = marketplaceListing(
-                futureFixture.inventory().getItemInventoryId(),
-                futureFixture.item().getExternalCatalogItemId(),
-                2,
-                "BL-CRAWL-FUTURE"
-        );
-        marketplaceListingMapper.insert(futureListing);
-        PricingCrawlWorkItem futureWorkItem = pricingCrawlWorkItem(
-                futureListing.getMarketplaceListingId(),
-                futureFixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT.plusHours(1)
-        );
-        futureWorkItem.setWorkStatusCode("SUCCEEDED");
-        pricingCrawlWorkItemMapper.insert(futureWorkItem);
-
-        ListingFixture dueFixture = listingFixture("crawl-due");
-        MarketplaceListing dueListing = marketplaceListing(
-                dueFixture.inventory().getItemInventoryId(),
-                dueFixture.item().getExternalCatalogItemId(),
-                2,
-                "BL-CRAWL-DUE"
-        );
-        marketplaceListingMapper.insert(dueListing);
-        PricingCrawlWorkItem dueWorkItem = pricingCrawlWorkItem(
-                dueListing.getMarketplaceListingId(),
-                dueFixture.item().getExternalCatalogItemId(),
-                2,
-                CRAWL_AT.minusHours(1)
-        );
-        dueWorkItem.setWorkStatusCode("SUCCEEDED");
-        pricingCrawlWorkItemMapper.insert(dueWorkItem);
-
-        ListingFixture draftFixture = listingFixture("crawl-draft");
-        MarketplaceListing draftListing = marketplaceListing(
-                draftFixture.inventory().getItemInventoryId(),
-                draftFixture.item().getExternalCatalogItemId(),
-                2,
-                "BL-CRAWL-DRAFT"
-        );
-        draftListing.setListingStatusCode("DRAFT");
-        marketplaceListingMapper.insert(draftListing);
-
-        assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
-                2,
-                "ACTIVE",
-                "PENDING",
-                "CLAIMED",
-                CRAWL_AT,
-                10
-        )).extracting(MarketplaceListing::getExternalListingId)
-                .containsExactlyInAnyOrder("BL-CRAWL-AVAILABLE", "BL-CRAWL-DUE");
-        assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                2,
-                Set.of("ACTIVE", "DRAFT"),
-                "PENDING",
-                "CLAIMED",
-                CRAWL_AT,
-                10
-        )).extracting(MarketplaceListing::getExternalListingId)
-                .containsExactlyInAnyOrder("BL-CRAWL-AVAILABLE", "BL-CRAWL-DUE", "BL-CRAWL-DRAFT");
-    }
-
-    @Test
-    void pricingCrawlSchedulingCandidatesSkipListingsWithoutPriceableCondition() {
-        insertedListingWithCondition("crawl-priceable", "BL-CRAWL-PRICEABLE", "USED", "COMPLETE");
-        insertedListingWithCondition("crawl-short-codes", "BL-CRAWL-SHORT-CODES", " n ", "S");
-        insertedListingWithCondition("crawl-no-condition", "BL-CRAWL-NO-CONDITION", null, "COMPLETE");
-        insertedListingWithCondition("crawl-blank-condition", "BL-CRAWL-BLANK-CONDITION", "  ", "COMPLETE");
-        insertedListingWithCondition("crawl-unknown-condition", "BL-CRAWL-UNKNOWN-CONDITION", "MINT", "COMPLETE");
-        insertedListingWithCondition("crawl-no-completeness", "BL-CRAWL-NO-COMPLETENESS", "NEW", null);
-        insertedListingWithCondition("crawl-blank-completeness", "BL-CRAWL-BLANK-COMPLETENESS", "NEW", " ");
-
-        assertThat(marketplaceListingMapper.findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
-                2,
-                "ACTIVE",
-                "PENDING",
-                "CLAIMED",
-                CRAWL_AT,
-                10
-        )).extracting(MarketplaceListing::getExternalListingId)
-                .containsExactlyInAnyOrder("BL-CRAWL-PRICEABLE", "BL-CRAWL-SHORT-CODES");
-        assertThat(marketplaceListingMapper.findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(2, "ACTIVE", 10))
-                .extracting(MarketplaceListing::getExternalListingId)
-                .containsExactlyInAnyOrder("BL-CRAWL-PRICEABLE", "BL-CRAWL-SHORT-CODES");
     }
 
     @Test

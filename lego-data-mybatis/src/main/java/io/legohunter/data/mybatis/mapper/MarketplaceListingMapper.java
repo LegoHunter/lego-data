@@ -148,38 +148,6 @@ public interface MarketplaceListingMapper {
         );
     }
 
-    /**
-     * Listings due for a market crawl. Defined in MarketplaceListingMapper.xml so it shares the
-     * inventory condition/completeness predicate with the pricing decision candidate queries:
-     * a listing the decision stage can never price is not crawled either.
-     */
-    Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-            @Param("listingExternalServiceId") Integer listingExternalServiceId,
-            @Param("listingStatusCodes") Set<String> listingStatusCodes,
-            @Param("pendingStatusCode") String pendingStatusCode,
-            @Param("claimedStatusCode") String claimedStatusCode,
-            @Param("asOf") ZonedDateTime asOf,
-            @Param("limit") int limit
-    );
-
-    default Set<MarketplaceListing> findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCode(
-            Integer listingExternalServiceId,
-            String listingStatusCode,
-            String pendingStatusCode,
-            String claimedStatusCode,
-            ZonedDateTime asOf,
-            int limit
-    ) {
-        return findPricingCrawlSchedulingCandidatesByListingExternalServiceIdAndListingStatusCodes(
-                listingExternalServiceId,
-                Set.of(listingStatusCode),
-                pendingStatusCode,
-                claimedStatusCode,
-                asOf,
-                limit
-        );
-    }
-
     Set<MarketplaceListing> findPricingDecisionCandidatesByListingExternalServiceIdAndListingStatusCode(
             @Param("listingExternalServiceId") Integer listingExternalServiceId,
             @Param("listingStatusCode") String listingStatusCode,

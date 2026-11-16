@@ -5,14 +5,12 @@ import io.legohunter.data.dto.ExternalImage;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceOrder;
 import io.legohunter.data.dto.MarketplaceOrderItem;
-import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.enums.ExternalSyncStatus;
 import io.legohunter.data.mybatis.mapper.ExternalCatalogItemMapper;
 import io.legohunter.data.mybatis.mapper.ExternalImageMapper;
 import io.legohunter.data.mybatis.mapper.ItemInventoryMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceOrderItemMapper;
 import io.legohunter.data.mybatis.mapper.MarketplaceOrderMapper;
-import io.legohunter.data.mybatis.mapper.PricingCrawlWorkItemMapper;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
@@ -119,23 +117,6 @@ class DaoBranchCoverageTest {
 
         verify(mapper).findFulfillmentCandidatesByStatus("BRICKLINK", "PAID", 1);
         verify(mapper, never()).findFulfillmentCandidatesByStatus("BRICKLINK", "PACKED", 0);
-    }
-
-    @Test
-    void pricingCrawlWorkItemDaoSkipsCandidatesThatCannotBeClaimed() {
-        PricingCrawlWorkItemMapper mapper = mock(PricingCrawlWorkItemMapper.class);
-        PricingCrawlWorkItemDao dao = new PricingCrawlWorkItemDao(mapper);
-        ZonedDateTime dueAt = ZonedDateTime.parse("2026-06-24T10:00:00Z");
-        PricingCrawlWorkItem candidate = PricingCrawlWorkItem.builder()
-                .pricingCrawlWorkItemId(1L)
-                .nextAttemptAt(dueAt)
-                .build();
-
-        when(mapper.findClaimableByWorkStatusCode("PENDING", dueAt, 1)).thenReturn(Set.of(candidate));
-        when(mapper.claim(1L, "PENDING", "CLAIMED", dueAt, dueAt)).thenReturn(0);
-
-        assertThat(dao.claimDueWorkItems("PENDING", "CLAIMED", dueAt, dueAt, 1)).isEmpty();
-        verify(mapper, never()).findByPricingCrawlWorkItemId(1L);
     }
 
     @Test

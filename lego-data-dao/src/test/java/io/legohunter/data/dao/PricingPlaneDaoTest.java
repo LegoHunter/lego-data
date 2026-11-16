@@ -8,12 +8,7 @@ import io.legohunter.data.dto.ExternalService;
 import io.legohunter.data.dto.ItemInventory;
 import io.legohunter.data.dto.MarketplaceListing;
 import io.legohunter.data.dto.MarketplaceListingSyncRequest;
-import io.legohunter.data.dto.PricingApplyReadiness;
-import io.legohunter.data.dto.PricingApplyReadinessReview;
-import io.legohunter.data.dto.PricingCrawlWorkItem;
 import io.legohunter.data.dto.PricingDecision;
-import io.legohunter.data.dto.PricingSnapshot;
-import io.legohunter.data.dto.PricingSnapshotListing;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,61 +41,14 @@ class PricingPlaneDaoTest {
     @Autowired ExternalServiceDao externalServiceDao;
     @Autowired ItemInventoryDao itemInventoryDao;
     @Autowired MarketplaceListingDao marketplaceListingDao;
-    @Autowired PricingCrawlWorkItemDao pricingCrawlWorkItemDao;
-    @Autowired PricingSnapshotDao pricingSnapshotDao;
-    @Autowired PricingSnapshotListingDao pricingSnapshotListingDao;
     @Autowired PricingDecisionDao pricingDecisionDao;
-    @Autowired PricingApplyReadinessDao pricingApplyReadinessDao;
     @Autowired MarketplaceListingSyncRequestDao marketplaceListingSyncRequestDao;
 
     @Test
     void pricingDaosSupportPhaseOneCrudAndLookups() {
         PricingFixture fixture = pricingFixture();
 
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItem(fixture);
-        workItem = pricingCrawlWorkItemDao.insert(workItem);
-        workItem.setWorkStatusCode("CLAIMED");
-        workItem = pricingCrawlWorkItemDao.update(workItem);
-        assertThat(workItem.getWorkStatusCode()).isEqualTo("CLAIMED");
-        assertThat(pricingCrawlWorkItemDao.findByPricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId())).isPresent();
-        assertThat(pricingCrawlWorkItemDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
-        assertThat(pricingCrawlWorkItemDao.findByWorkStatusCode("CLAIMED")).hasSize(1);
-        assertThat(pricingCrawlWorkItemDao.countByWorkStatusCode("CLAIMED")).isOne();
-        assertThat(pricingCrawlWorkItemDao.countDueByWorkStatusCode("CLAIMED", CRAWL_AT.plusMinutes(1))).isOne();
-        assertThat(pricingCrawlWorkItemDao.countRetryableByWorkStatusCode("CLAIMED")).isZero();
-        assertThat(pricingCrawlWorkItemDao.findDueByWorkStatusCode("CLAIMED", CRAWL_AT.plusMinutes(1), 5)).hasSize(1);
-        assertThat(pricingCrawlWorkItemDao.findAll()).hasSize(1);
-        workItem.setWorkStatusCode("SUCCEEDED");
-        assertThat(pricingCrawlWorkItemDao.upsert(workItem).getWorkStatusCode()).isEqualTo("SUCCEEDED");
-
-        PricingSnapshot snapshot = pricingSnapshot(workItem, fixture);
-        snapshot = pricingSnapshotDao.insert(snapshot);
-        snapshot.setComparableCount(3);
-        snapshot = pricingSnapshotDao.update(snapshot);
-        assertThat(snapshot.getComparableCount()).isEqualTo(3);
-        assertThat(pricingSnapshotDao.findByPricingSnapshotId(snapshot.getPricingSnapshotId())).isPresent();
-        assertThat(pricingSnapshotDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
-        assertThat(pricingSnapshotDao.findByExternalCatalogItemId(fixture.catalogItem().getExternalCatalogItemId())).hasSize(1);
-        assertThat(pricingSnapshotDao.findLatestByMarketplaceListingId(fixture.listing().getMarketplaceListingId()))
-                .map(PricingSnapshot::getPricingSnapshotId)
-                .contains(snapshot.getPricingSnapshotId());
-        assertThat(pricingSnapshotDao.findAll()).hasSize(1);
-        snapshot.setComparableCount(4);
-        assertThat(pricingSnapshotDao.upsert(snapshot).getComparableCount()).isEqualTo(4);
-
-        PricingSnapshotListing snapshotListing = pricingSnapshotListing(snapshot);
-        snapshotListing = pricingSnapshotListingDao.insert(snapshotListing);
-        snapshotListing.setUnitPrice(new BigDecimal("215.00"));
-        snapshotListing = pricingSnapshotListingDao.update(snapshotListing);
-        assertThat(snapshotListing.getUnitPrice()).isEqualByComparingTo("215.00");
-        assertThat(pricingSnapshotListingDao.findByPricingSnapshotListingId(snapshotListing.getPricingSnapshotListingId())).isPresent();
-        assertThat(pricingSnapshotListingDao.findByPricingSnapshotId(snapshot.getPricingSnapshotId())).hasSize(1);
-        assertThat(pricingSnapshotListingDao.findByPricingSnapshotIdAndExternalListingId(snapshot.getPricingSnapshotId(), "remote-listing-1")).isPresent();
-        assertThat(pricingSnapshotListingDao.findAll()).hasSize(1);
-        snapshotListing.setQuantityAvailable(2);
-        assertThat(pricingSnapshotListingDao.upsert(snapshotListing).getQuantityAvailable()).isEqualTo(2);
-
-        PricingDecision decision = pricingDecision(snapshot, fixture);
+        PricingDecision decision = pricingDecision(fixture);
         decision = pricingDecisionDao.insert(decision);
         decision.setDecisionStatusCode("APPLIED");
         decision.setAppliedAt(SNAPSHOT_AT.plusMinutes(1));
@@ -119,52 +67,14 @@ class PricingPlaneDaoTest {
         decision.setReasonCode("FIXED_PRICE_OVERRIDE");
         assertThat(pricingDecisionDao.upsert(decision).getReasonCode()).isEqualTo("FIXED_PRICE_OVERRIDE");
 
-        PricingApplyReadiness applyReadiness = pricingApplyReadiness(decision, snapshot, fixture);
-        applyReadiness = pricingApplyReadinessDao.insert(applyReadiness);
-        applyReadiness.setReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT");
-        applyReadiness.setBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT");
-        applyReadiness.setMinimumRequiredDelta(new BigDecimal("4.50"));
-        applyReadiness = pricingApplyReadinessDao.update(applyReadiness);
-        assertThat(applyReadiness.getBlockReasonCode()).isEqualTo("BELOW_MINIMUM_DELTA_PERCENT");
-        assertThat(pricingApplyReadinessDao.findByPricingApplyReadinessId(applyReadiness.getPricingApplyReadinessId())).isPresent();
-        assertThat(pricingApplyReadinessDao.findByPricingDecisionId(decision.getPricingDecisionId()))
-                .map(PricingApplyReadiness::getReadinessStatusCode)
-                .contains("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT");
-        assertThat(pricingApplyReadinessDao.findByMarketplaceListingId(fixture.listing().getMarketplaceListingId())).hasSize(1);
-        assertThat(pricingApplyReadinessDao.findByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).hasSize(1);
-        assertThat(pricingApplyReadinessDao.findByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).hasSize(1);
-        assertThat(pricingApplyReadinessDao.countByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isOne();
-        assertThat(pricingApplyReadinessDao.countByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isOne();
-        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("BLOCKED_BELOW_MINIMUM_DELTA_PERCENT")).isZero();
-        assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("BELOW_MINIMUM_DELTA_PERCENT")).isZero();
-        assertThat(pricingApplyReadinessDao.findLatestByMarketplaceListingId(fixture.listing().getMarketplaceListingId()))
-                .map(PricingApplyReadiness::getPricingApplyReadinessId)
-                .contains(applyReadiness.getPricingApplyReadinessId());
-        assertThat(pricingApplyReadinessDao.findAll()).hasSize(1);
-        applyReadiness.setReadinessStatusCode("READY_TO_APPLY");
-        applyReadiness.setBlockReasonCode(null);
-        assertThat(pricingApplyReadinessDao.upsert(applyReadiness).getReadinessStatusCode()).isEqualTo("READY_TO_APPLY");
-        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
-        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
-
-        pricingApplyReadinessDao.delete(applyReadiness.getPricingApplyReadinessId());
         pricingDecisionDao.delete(decision.getPricingDecisionId());
-        pricingSnapshotListingDao.delete(snapshotListing.getPricingSnapshotListingId());
-        pricingSnapshotDao.delete(snapshot.getPricingSnapshotId());
-        pricingCrawlWorkItemDao.delete(workItem.getPricingCrawlWorkItemId());
         assertThat(pricingDecisionDao.findAll()).isEmpty();
-        assertThat(pricingApplyReadinessDao.findAll()).isEmpty();
-        assertThat(pricingSnapshotListingDao.findAll()).isEmpty();
-        assertThat(pricingSnapshotDao.findAll()).isEmpty();
-        assertThat(pricingCrawlWorkItemDao.findAll()).isEmpty();
     }
 
     @Test
     void marketplaceListingSyncRequestDaoSupportsCrudClaimAndMetricsCounts() {
         PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
-        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
+        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(fixture));
         MarketplaceListingSyncRequest syncRequest = marketplaceListingSyncRequest(fixture, decision);
 
         syncRequest = marketplaceListingSyncRequestDao.insert(syncRequest);
@@ -227,88 +137,15 @@ class PricingPlaneDaoTest {
     }
 
     @Test
-    void pricingApplyReadinessDaoReportsOnlyLatestReadinessPerListing() {
-        PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
-        PricingDecision oldDecision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
-        PricingApplyReadiness oldReadiness = pricingApplyReadiness(oldDecision, snapshot, fixture);
-        oldReadiness.setReadinessStatusCode("BLOCKED_STALE_DECISION");
-        oldReadiness.setBlockReasonCode("STALE_DECISION");
-        oldReadiness.setEvaluatedAt(SNAPSHOT_AT.plusMinutes(1));
-        pricingApplyReadinessDao.insert(oldReadiness);
-
-        PricingDecision latestDecision = pricingDecision(snapshot, fixture);
-        latestDecision.setFinalPrice(new BigDecimal("218.00"));
-        latestDecision = pricingDecisionDao.insert(latestDecision);
-        PricingApplyReadiness latestReadiness = pricingApplyReadiness(latestDecision, snapshot, fixture);
-        latestReadiness.setEvaluatedAt(SNAPSHOT_AT.plusMinutes(2));
-        latestReadiness = pricingApplyReadinessDao.insert(latestReadiness);
-
-        assertThat(pricingApplyReadinessDao.findLatestReviews(null, null, 10))
-                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
-                .containsExactly(latestReadiness.getPricingApplyReadinessId());
-        assertThat(pricingApplyReadinessDao.findLatestReviews("BLOCKED_STALE_DECISION", null, 10)).isEmpty();
-        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10))
-                .extracting(PricingApplyReadinessReview::getPricingApplyReadinessId)
-                .containsExactly(latestReadiness.getPricingApplyReadinessId());
-        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isOne();
-        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("BLOCKED_STALE_DECISION")).isZero();
-    }
-
-    @Test
-    void pricingApplyReadinessDaoExcludesReadinessForSupersededDecisionFromCurrentReports() {
-        PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
-        PricingDecision readyDecision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
-        PricingApplyReadiness readyReadiness = pricingApplyReadiness(readyDecision, snapshot, fixture);
-        readyReadiness = pricingApplyReadinessDao.insert(readyReadiness);
-
-        PricingDecision failedDecision = pricingDecision(snapshot, fixture);
-        failedDecision.setDecisionStatusCode("FAILED");
-        failedDecision.setReasonCode("NO_CURRENT_COMPARABLES");
-        failedDecision.setFinalPrice(null);
-        pricingDecisionDao.insert(failedDecision);
-
-        assertThat(pricingApplyReadinessDao.findByPricingApplyReadinessId(readyReadiness.getPricingApplyReadinessId())).isPresent();
-        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
-        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
-        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
-        assertThat(pricingApplyReadinessDao.countLatestByBlockReasonCode("STALE_DECISION")).isZero();
-    }
-
-    @Test
-    void pricingApplyReadinessDaoExcludesAlreadyAppliedDecisionFromCurrentReports() {
-        PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
-        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
-        PricingApplyReadiness readiness = pricingApplyReadinessDao.insert(pricingApplyReadiness(decision, snapshot, fixture));
-
-        assertThat(pricingDecisionDao.markApplied(decision.getPricingDecisionId(), SNAPSHOT_AT.plusMinutes(5))).isPresent();
-
-        assertThat(pricingApplyReadinessDao.findByPricingApplyReadinessId(readiness.getPricingApplyReadinessId())).isPresent();
-        assertThat(pricingApplyReadinessDao.findLatestReviews("READY_TO_APPLY", null, 10)).isEmpty();
-        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
-        assertThat(pricingApplyReadinessDao.countLatestByReadinessStatusCode("READY_TO_APPLY")).isZero();
-    }
-
-    @Test
     void pricingDecisionDaoMovesAProposedDecisionThroughAcceptedToApplied() {
         PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        PricingSnapshot snapshot = pricingSnapshotDao.insert(pricingSnapshot(workItem, fixture));
-        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(snapshot, fixture));
-        pricingApplyReadinessDao.insert(pricingApplyReadiness(decision, snapshot, fixture));
+        PricingDecision decision = pricingDecisionDao.insert(pricingDecision(fixture));
 
         assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "PROPOSED", "ACCEPTED", null))
                 .hasValueSatisfying(accepted -> {
                     assertThat(accepted.getDecisionStatusCode()).isEqualTo("ACCEPTED");
                     assertThat(accepted.getAppliedAt()).isNull();
                 });
-        // An accepted decision is waiting on BrickLink: apply must not pick it up again.
-        assertThat(pricingApplyReadinessDao.findLatestReadyToApplyReviews(10)).isEmpty();
         // A second worker that still thinks it is PROPOSED loses the race.
         assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "PROPOSED", "ACCEPTED", null)).isEmpty();
 
@@ -319,116 +156,6 @@ class PricingPlaneDaoTest {
                 });
         // Applied is final.
         assertThat(pricingDecisionDao.transitionStatus(decision.getPricingDecisionId(), "APPLIED", "ACCEPTED", null)).isEmpty();
-    }
-
-    @Test
-    void pricingCrawlDaoClaimsDueWorkAndRequeuesStaleClaims() {
-        PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItem(fixture);
-        workItem.setNextAttemptAt(CRAWL_AT.minusMinutes(1));
-        workItem = pricingCrawlWorkItemDao.insert(workItem);
-
-        assertThat(pricingCrawlWorkItemDao.claimDueWorkItems("PENDING", "CLAIMED", CRAWL_AT, CRAWL_AT, 5))
-                .extracting(PricingCrawlWorkItem::getPricingCrawlWorkItemId)
-                .containsExactly(workItem.getPricingCrawlWorkItemId());
-        assertThat(pricingCrawlWorkItemDao.claimDueWorkItems("PENDING", "CLAIMED", CRAWL_AT, CRAWL_AT.plusSeconds(1), 5))
-                .isEmpty();
-
-        assertThat(pricingCrawlWorkItemDao.findByPricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId()))
-                .hasValueSatisfying(found -> {
-                    assertThat(found.getWorkStatusCode()).isEqualTo("CLAIMED");
-                    assertThat(found.getAttemptCount()).isOne();
-                    assertThat(found.getClaimedAt()).isEqualTo(CRAWL_AT);
-                });
-        assertThat(pricingCrawlWorkItemDao.countStaleClaimed("CLAIMED", CRAWL_AT.plusMinutes(10))).isOne();
-
-        assertThat(pricingCrawlWorkItemDao.requeueStaleClaimed(
-                "CLAIMED",
-                "PENDING",
-                CRAWL_AT.plusMinutes(10),
-                CRAWL_AT.plusHours(1),
-                "Recovered stale pricing crawl claim"
-        )).isOne();
-        assertThat(pricingCrawlWorkItemDao.findByPricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId()))
-                .hasValueSatisfying(found -> {
-                    assertThat(found.getWorkStatusCode()).isEqualTo("PENDING");
-                    assertThat(found.getClaimedAt()).isNull();
-                    assertThat(found.getNextAttemptAt()).isEqualTo(CRAWL_AT.plusHours(1));
-                });
-    }
-
-    @Test
-    void pricingCrawlDaoLatestCountsIgnoreSupersededHistoricalRows() {
-        PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem historicalFailed = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        historicalFailed.setWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH");
-        pricingCrawlWorkItemDao.update(historicalFailed);
-
-        PricingCrawlWorkItem latestPending = pricingCrawlWorkItem(fixture);
-        latestPending.setNextAttemptAt(CRAWL_AT.minusMinutes(5));
-        latestPending.setAttemptCount(1);
-        latestPending.setMaxAttempts(3);
-        pricingCrawlWorkItemDao.insert(latestPending);
-
-        assertThat(pricingCrawlWorkItemDao.countByWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH")).isOne();
-        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("FAILED_ITEM_ID_LOOKUP_NO_MATCH")).isZero();
-        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusPattern("FAILED%")).isZero();
-        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("PENDING")).isOne();
-        assertThat(pricingCrawlWorkItemDao.countLatestDueByWorkStatusCode("PENDING", CRAWL_AT)).isOne();
-        assertThat(pricingCrawlWorkItemDao.countLatestRetryableByWorkStatusCode("PENDING")).isOne();
-
-        PricingCrawlWorkItem latestClaimed = pricingCrawlWorkItem(fixture);
-        latestClaimed.setWorkStatusCode("CLAIMED");
-        latestClaimed.setAttemptCount(1);
-        latestClaimed.setMaxAttempts(3);
-        latestClaimed.setClaimedAt(CRAWL_AT.minusHours(3));
-        pricingCrawlWorkItemDao.insert(latestClaimed);
-
-        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("PENDING")).isZero();
-        assertThat(pricingCrawlWorkItemDao.countLatestStaleClaimed("CLAIMED", CRAWL_AT.minusHours(1))).isOne();
-
-        PricingCrawlWorkItem latestSucceeded = pricingCrawlWorkItem(fixture);
-        latestSucceeded.setWorkStatusCode("SUCCEEDED");
-        pricingCrawlWorkItemDao.insert(latestSucceeded);
-
-        assertThat(pricingCrawlWorkItemDao.countLatestStaleClaimed("CLAIMED", CRAWL_AT.minusHours(1))).isZero();
-        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusCode("SUCCEEDED")).isOne();
-        assertThat(pricingCrawlWorkItemDao.countLatestByWorkStatusPattern("SKIPPED%")).isZero();
-    }
-
-    @Test
-    void pricingDaosExposeExactConditionAndCompletenessComparables() {
-        PricingFixture fixture = pricingFixture();
-        PricingCrawlWorkItem workItem = pricingCrawlWorkItemDao.insert(pricingCrawlWorkItem(fixture));
-        PricingSnapshot snapshot = pricingSnapshot(workItem, fixture);
-        snapshot.setItemConditionCode("N");
-        snapshot.setCompletenessCode("S");
-        snapshot = pricingSnapshotDao.insert(snapshot);
-
-        PricingSnapshotListing sealedComparable = pricingSnapshotListing(snapshot);
-        sealedComparable.setExternalListingId("sealed-comparable");
-        sealedComparable.setItemConditionCode("N");
-        sealedComparable.setCompletenessCode("S");
-        sealedComparable.setUnitPrice(new BigDecimal("30.00"));
-        pricingSnapshotListingDao.insert(sealedComparable);
-
-        PricingSnapshotListing completeComparable = pricingSnapshotListing(snapshot);
-        completeComparable.setExternalListingId("complete-comparable");
-        completeComparable.setItemConditionCode("N");
-        completeComparable.setCompletenessCode("C");
-        completeComparable.setUnitPrice(new BigDecimal("20.00"));
-        pricingSnapshotListingDao.insert(completeComparable);
-
-        assertThat(pricingSnapshotDao.findLatestByMarketplaceListingIdAndConditionAndCompleteness(
-                fixture.listing().getMarketplaceListingId(), "N", "S"
-        )).map(PricingSnapshot::getPricingSnapshotId).contains(snapshot.getPricingSnapshotId());
-        assertThat(pricingSnapshotDao.findLatestByExternalCatalogItemIdAndConditionAndCompleteness(
-                fixture.catalogItem().getExternalCatalogItemId(), "N", "S"
-        )).map(PricingSnapshot::getPricingSnapshotId).contains(snapshot.getPricingSnapshotId());
-        assertThat(pricingSnapshotListingDao.findByPricingSnapshotId(snapshot.getPricingSnapshotId())).hasSize(2);
-        assertThat(pricingSnapshotListingDao.findExactComparablesByPricingSnapshotId(snapshot.getPricingSnapshotId()))
-                .extracting(PricingSnapshotListing::getExternalListingId)
-                .containsExactly("sealed-comparable");
     }
 
     private PricingFixture pricingFixture() {
@@ -478,59 +205,9 @@ class PricingPlaneDaoTest {
         return new PricingFixture(bricklink, catalogItem, inventory, listing);
     }
 
-    private PricingCrawlWorkItem pricingCrawlWorkItem(PricingFixture fixture) {
-        return PricingCrawlWorkItem.builder()
-                .marketplaceListingId(fixture.listing().getMarketplaceListingId())
-                .externalCatalogItemId(fixture.catalogItem().getExternalCatalogItemId())
-                .sourceExternalServiceId(fixture.bricklink().getExternalServiceId())
-                .workStatusCode("PENDING")
-                .attemptCount(0)
-                .maxAttempts(3)
-                .nextAttemptAt(CRAWL_AT)
-                .sourceRequestUrl("https://bricklink.example/ajax/clone/catalogifs.ajax")
-                .sourceRequestParameters("itemid=4997&rpp=500&iconly=0")
-                .build();
-    }
-
-    private PricingSnapshot pricingSnapshot(PricingCrawlWorkItem workItem, PricingFixture fixture) {
-        return PricingSnapshot.builder()
-                .pricingCrawlWorkItemId(workItem.getPricingCrawlWorkItemId())
-                .marketplaceListingId(fixture.listing().getMarketplaceListingId())
-                .externalCatalogItemId(fixture.catalogItem().getExternalCatalogItemId())
-                .sourceExternalServiceId(fixture.bricklink().getExternalServiceId())
-                .sourceItemKey("6390-1")
-                .sourceUniqueKey("4997")
-                .itemConditionCode("U")
-                .completenessCode("COMPLETE")
-                .sourceRequestUrl("https://bricklink.example/ajax/clone/catalogifs.ajax")
-                .sourceRequestParameters("itemid=4997&rpp=500&iconly=0")
-                .rawPayloadHash("hash-1")
-                .comparableCount(2)
-                .capturedAt(SNAPSHOT_AT)
-                .build();
-    }
-
-    private PricingSnapshotListing pricingSnapshotListing(PricingSnapshot snapshot) {
-        return PricingSnapshotListing.builder()
-                .pricingSnapshotId(snapshot.getPricingSnapshotId())
-                .externalListingId("remote-listing-1")
-                .sellerName("seller-one")
-                .sellerCountryCode("US")
-                .itemConditionCode("U")
-                .completenessCode("COMPLETE")
-                .quantityAvailable(1)
-                .unitPrice(new BigDecimal("220.00"))
-                .currencyCode("USD")
-                .description("Main Street")
-                .extendedDescription("Complete with box")
-                .sourceListingPayload("{\"id\":\"remote-listing-1\"}")
-                .build();
-    }
-
-    private PricingDecision pricingDecision(PricingSnapshot snapshot, PricingFixture fixture) {
+    private PricingDecision pricingDecision(PricingFixture fixture) {
         return PricingDecision.builder()
                 .marketplaceListingId(fixture.listing().getMarketplaceListingId())
-                .pricingSnapshotId(snapshot.getPricingSnapshotId())
                 .algorithmVersion("BRICKLINK_COMPETITIVE_V1")
                 .decisionStatusCode("PROPOSED")
                 .reasonCode("MATCHED_LOWEST_COMPETITOR")
@@ -543,24 +220,6 @@ class PricingPlaneDaoTest {
                 .confidence(new BigDecimal("0.7500"))
                 .sourceSummaryJson("{\"snapshot\":true}")
                 .notes("Initial recommendation")
-                .build();
-    }
-
-    private PricingApplyReadiness pricingApplyReadiness(PricingDecision decision, PricingSnapshot snapshot, PricingFixture fixture) {
-        return PricingApplyReadiness.builder()
-                .marketplaceListingId(fixture.listing().getMarketplaceListingId())
-                .pricingDecisionId(decision.getPricingDecisionId())
-                .pricingSnapshotId(snapshot.getPricingSnapshotId())
-                .readinessStatusCode("READY_TO_APPLY")
-                .currentPrice(new BigDecimal("225.00"))
-                .proposedPrice(new BigDecimal("219.00"))
-                .deltaAmount(new BigDecimal("6.00"))
-                .deltaPercent(new BigDecimal("0.026667"))
-                .minimumRequiredDelta(new BigDecimal("0.01"))
-                .currencyCode("USD")
-                .confidence(new BigDecimal("0.7500"))
-                .comparableCount(2)
-                .evaluatedAt(SNAPSHOT_AT.plusMinutes(1))
                 .build();
     }
 

@@ -10,7 +10,6 @@ import io.legohunter.data.dto.MarketSnapshot;
 import io.legohunter.data.dto.Marketplace;
 import io.legohunter.data.dto.MarketplaceItem;
 import io.legohunter.data.dto.MarketplaceListing;
-import io.legohunter.data.dto.PricingApplyReadiness;
 import io.legohunter.data.dto.PricingDecision;
 import io.legohunter.data.dto.WantListItem;
 import org.junit.jupiter.api.Test;
@@ -319,7 +318,7 @@ class MarketplacePricingMapperTest extends MapperTestSupport {
                 "listing-market-snapshot-ref");
         marketplaceListingMapper.insert(listing);
 
-        PricingDecision decision = pricingDecision(listing.getMarketplaceListingId(), null);
+        PricingDecision decision = pricingDecision(listing.getMarketplaceListingId());
         decision.setMarketSnapshotId(42L);
         decision.setMarketSnapshotCapturedAt(NOW);
         pricingDecisionMapper.insert(decision);
@@ -332,20 +331,6 @@ class MarketplacePricingMapperTest extends MapperTestSupport {
         assertThat(pricingDecisionMapper.findByPricingDecisionId(decision.getPricingDecisionId()).orElseThrow().getMarketSnapshotId())
                 .isEqualTo(43L);
 
-        PricingApplyReadiness readiness = PricingApplyReadiness.builder()
-                .marketplaceListingId(listing.getMarketplaceListingId())
-                .pricingDecisionId(decision.getPricingDecisionId())
-                .marketSnapshotId(43L)
-                .marketSnapshotCapturedAt(NOW)
-                .readinessStatusCode("READY_TO_APPLY")
-                .currencyCode("USD")
-                .evaluatedAt(NOW)
-                .build();
-        pricingApplyReadinessMapper.insert(readiness);
-        PricingApplyReadiness storedReadiness = pricingApplyReadinessMapper
-                .findByPricingApplyReadinessId(readiness.getPricingApplyReadinessId()).orElseThrow();
-        assertThat(storedReadiness.getMarketSnapshotId()).isEqualTo(43L);
-        assertThat(storedReadiness.getMarketSnapshotCapturedAt().toInstant()).isEqualTo(NOW.toInstant());
     }
 
     private CanonicalItem canonicalItem(String type, String number) {

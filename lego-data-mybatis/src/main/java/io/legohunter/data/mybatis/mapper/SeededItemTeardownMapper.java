@@ -68,24 +68,12 @@ public interface SeededItemTeardownMapper {
     @Delete("DELETE FROM marketplace_listing_sync_request WHERE marketplace_listing_id IN (" + SEEDED_LISTINGS + ")")
     int deleteSyncRequests(@Param("itemInventoryId") Integer itemInventoryId);
 
-    @Delete("DELETE FROM pricing_apply_readiness WHERE marketplace_listing_id IN (" + SEEDED_LISTINGS + ")")
-    int deletePricingApplyReadiness(@Param("itemInventoryId") Integer itemInventoryId);
 
     @Delete("DELETE FROM pricing_decision WHERE marketplace_listing_id IN (" + SEEDED_LISTINGS + ")")
     int deletePricingDecisions(@Param("itemInventoryId") Integer itemInventoryId);
 
-    @Delete("""
-            DELETE FROM pricing_snapshot_listing
-            WHERE pricing_snapshot_id IN (SELECT ps.pricing_snapshot_id
-                                          FROM pricing_snapshot ps
-                                          WHERE ps.marketplace_listing_id IN (""" + SEEDED_LISTINGS + "))")
-    int deletePricingSnapshotListings(@Param("itemInventoryId") Integer itemInventoryId);
 
-    @Delete("DELETE FROM pricing_snapshot WHERE marketplace_listing_id IN (" + SEEDED_LISTINGS + ")")
-    int deletePricingSnapshots(@Param("itemInventoryId") Integer itemInventoryId);
 
-    @Delete("DELETE FROM pricing_crawl_work_item WHERE marketplace_listing_id IN (" + SEEDED_LISTINGS + ")")
-    int deletePricingCrawlWorkItems(@Param("itemInventoryId") Integer itemInventoryId);
 
     @Delete("DELETE FROM bricklink_marketplace_listing WHERE marketplace_listing_id IN (" + SEEDED_LISTINGS + ")")
     int deleteBricklinkListings(@Param("itemInventoryId") Integer itemInventoryId);

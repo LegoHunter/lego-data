@@ -17,7 +17,6 @@ public class MarketplaceListingSyncRequest {
     private Integer marketplaceListingId;
     private Integer listingExternalServiceId;
     private Long pricingDecisionId;
-    private Long pricingApplyReadinessId;
     private String syncRequestTypeCode;
     private String syncRequestStatusCode;
     private String syncReasonCode;

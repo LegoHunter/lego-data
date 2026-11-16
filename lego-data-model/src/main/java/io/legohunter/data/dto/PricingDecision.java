@@ -15,7 +15,6 @@ import java.time.ZonedDateTime;
 public class PricingDecision {
     private Long pricingDecisionId;
     private Integer marketplaceListingId;
-    private Long pricingSnapshotId;
     /** marketplace_pricing.market_snapshot this row was made from; no foreign key (shared schema). */
     private Long marketSnapshotId;
     private ZonedDateTime marketSnapshotCapturedAt;
