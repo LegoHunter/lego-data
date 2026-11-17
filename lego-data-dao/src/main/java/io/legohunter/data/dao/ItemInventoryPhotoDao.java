@@ -6,6 +6,7 @@ import io.legohunter.data.enums.PhotoStatus;
 import io.legohunter.data.mybatis.mapper.ItemInventoryPhotoMapper;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -280,6 +281,11 @@ public class ItemInventoryPhotoDao {
 
     public Optional<ItemInventoryPhoto> findPrimaryByItemInventoryId(Integer itemInventoryId) {
         return itemInventoryPhotoMapper.findPrimaryByItemInventoryId(itemInventoryId);
+    }
+
+    /** Every processed primary photo of the item, oldest row first. Normally one; see the mapper. */
+    public List<ItemInventoryPhoto> findProcessedPrimariesByItemInventoryId(Integer itemInventoryId) {
+        return itemInventoryPhotoMapper.findProcessedPrimariesByItemInventoryId(itemInventoryId);
     }
 
     public Set<ItemInventoryPhoto> findByStatus(PhotoStatus status) {

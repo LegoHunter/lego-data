@@ -27,5 +27,7 @@
     <result column="last_remote_verified_at"           property="lastRemoteVerifiedAt"/>
     <result column="last_remote_safety_status_code"    property="lastRemoteSafetyStatusCode"/>
     <result column="last_remote_safety_message"        property="lastRemoteSafetyMessage"/>
+    <result column="lot_image_md5"                     property="lotImageMd5"/>
+    <result column="lot_image_synced_at"               property="lotImageSyncedAt"/>
   </resultMap>
 </mapper>

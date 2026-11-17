@@ -72,6 +72,16 @@ public interface ItemInventoryPhotoMapper {
     @ResultMap("itemInventoryPhotoResultMap")
     Optional<ItemInventoryPhoto> findPrimaryByItemInventoryId(Integer itemInventoryId);
 
+    /**
+     * Every processed photo of the item that is marked primary, oldest row first. Normally one.
+     * Nothing in the database forbids several, and {@link #findPrimaryByItemInventoryId} fails on
+     * that; a caller that must cope with it uses this instead (HOMELAB-92).
+     */
+    @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory_photo WHERE item_inventory_id = #{itemInventoryId} "
+            + "AND is_primary = true AND status = 'PROCESSED' ORDER BY item_inventory_photo_id")
+    @ResultMap("itemInventoryPhotoResultMap")
+    List<ItemInventoryPhoto> findProcessedPrimariesByItemInventoryId(Integer itemInventoryId);
+
     @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory_photo WHERE status = #{status.name}")
     @ResultMap("itemInventoryPhotoResultMap")
     Set<ItemInventoryPhoto> findByStatus(PhotoStatus status);

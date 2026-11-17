@@ -9,7 +9,9 @@ import io.legohunter.data.dto.MarketSnapshot;
 import io.legohunter.data.dto.CrawlTarget;
 import io.legohunter.data.dto.ExternalCategory;
 import io.legohunter.data.dto.ItemInventory;
+import io.legohunter.data.dto.ItemInventoryPhoto;
 import io.legohunter.data.dto.MarketplaceListing;
+import io.legohunter.data.dto.MarketplaceListingSyncRequest;
 import io.legohunter.data.dto.PricingDataQualityGap;
 import io.legohunter.data.dto.WantedCatalogItem;
 import io.legohunter.data.dto.PricingDataQualitySummary;
@@ -438,6 +440,107 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         assertThat(ebayListingItemSpecificMapper.delete(listing.getMarketplaceListingId(), "Brand", "LEGO")).isOne();
 
         assertThat(ebayMarketplaceListingMapper.delete(listing.getMarketplaceListingId())).isOne();
+    }
+
+    @Test
+    void lotImageIsWrittenOnlyByItsOwnStatement() {
+        MarketplaceListing listing = insertedMarketplaceListing("lot-image-write", "BL-IMG-1", 2);
+        BricklinkMarketplaceListing bricklink = bricklinkMarketplaceListing(listing.getMarketplaceListingId(), 2101);
+        bricklinkMarketplaceListingMapper.insert(bricklink);
+        assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getLotImageMd5()).isNull();
+                    assertThat(found.getLotImageSyncedAt()).isNull();
+                });
+
+        ZonedDateTime syncedAt = ZonedDateTime.parse("2026-11-17T12:00:00Z");
+        assertThat(bricklinkMarketplaceListingMapper.updateLotImage(listing.getMarketplaceListingId(), "0123456789abcdef0123456789abcdef", syncedAt)).isOne();
+
+        // A general update or upsert from a copy read earlier must not wipe what was recorded.
+        bricklink.setColorName("Blue");
+        bricklinkMarketplaceListingMapper.update(bricklink);
+        bricklinkMarketplaceListingMapper.upsert(bricklink);
+        assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getColorName()).isEqualTo("Blue");
+                    assertThat(found.getLotImageMd5()).isEqualTo("0123456789abcdef0123456789abcdef");
+                    assertThat(found.getLotImageSyncedAt().toInstant()).isEqualTo(syncedAt.toInstant());
+                });
+
+        bricklinkMarketplaceListingMapper.updateLotImage(listing.getMarketplaceListingId(), null, null);
+        assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()).orElseThrow().getLotImageMd5()).isNull();
+    }
+
+    @Test
+    void listingsNeedingALotImageFollowThePrimaryPhotoAndSkipWhatIsAlreadyQueued() {
+        String type = "LOT_IMAGE_UPDATE";
+        ZonedDateTime retryNotBefore = ZonedDateTime.now().minusHours(6);
+        MarketplaceListing listing = insertedMarketplaceListing("lot-image-need", "BL-IMG-2", 2);
+        Integer listingId = listing.getMarketplaceListingId();
+        Integer itemId = listing.getItemInventoryId();
+        bricklinkMarketplaceListingMapper.insert(bricklinkMarketplaceListing(listingId, 2102));
+
+        // No photo at all, then a photo that is not primary: nothing to send.
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+        insertItemInventoryPhoto(itemId, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+
+        // A primary photo the lot does not show yet.
+        itemInventoryPhotoMapper.setPrimary(itemId, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        assertThat(needingLotImage(type, retryNotBefore)).containsExactly(listingId);
+        assertThat(bricklinkMarketplaceListingMapper.findMarketplaceListingIdsNeedingLotImage(2, "dev", type, retryNotBefore, 10)).isEmpty();
+        assertThat(bricklinkMarketplaceListingMapper.findMarketplaceListingIdsNeedingLotImage(3, "sandbox", type, retryNotBefore, 10)).isEmpty();
+
+        // A request already waiting: not queued twice. Another request type does not count.
+        MarketplaceListingSyncRequest request = marketplaceListingSyncRequest(listingId, 2, null);
+        marketplaceListingSyncRequestMapper.insert(request);
+        assertThat(needingLotImage(type, retryNotBefore)).containsExactly(listingId);
+        request.setSyncRequestTypeCode(type);
+        request.setMarketplaceListingSyncRequestId(null);
+        marketplaceListingSyncRequestMapper.insert(request);
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+
+        // A request that just ended without success holds the listing back until the retry time has passed.
+        request.setSyncRequestStatusCode("BLOCKED");
+        marketplaceListingSyncRequestMapper.update(request);
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+        assertThat(needingLotImage(type, ZonedDateTime.now().plusHours(1))).containsExactly(listingId);
+
+        // Once the lot shows the primary photo, nothing more is needed.
+        request.setSyncRequestStatusCode("SUCCEEDED");
+        marketplaceListingSyncRequestMapper.update(request);
+        bricklinkMarketplaceListingMapper.updateLotImage(listingId, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", ZonedDateTime.now());
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+
+        // A second primary photo does not disturb a lot that already shows one of them.
+        itemInventoryPhotoMapper.insert(ItemInventoryPhoto.builder()
+                .itemInventoryId(itemId)
+                .s3Bucket("lego-photos-sandbox")
+                .s3Key("3001/uuid/second.jpg")
+                .md5("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+                .metadataHash("metadata-second")
+                .fileName("second.jpg")
+                .fileSize(1000L)
+                .primary(true)
+                .status(io.legohunter.data.enums.PhotoStatus.PROCESSED)
+                .build());
+        assertThat(itemInventoryPhotoMapper.findProcessedPrimariesByItemInventoryId(itemId))
+                .extracting(ItemInventoryPhoto::getMd5)
+                .containsExactly("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+
+        // The primary moves to another photo: the lot needs the new one.
+        itemInventoryPhotoMapper.setPrimary(itemId, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+        assertThat(needingLotImage(type, retryNotBefore)).containsExactly(listingId);
+
+        // An ended listing is left alone.
+        listing.setListingStatusCode("ENDED");
+        marketplaceListingMapper.update(listing);
+        assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+    }
+
+    private java.util.List<Integer> needingLotImage(String type, ZonedDateTime retryNotBefore) {
+        return bricklinkMarketplaceListingMapper.findMarketplaceListingIdsNeedingLotImage(2, "sandbox", type, retryNotBefore, 10);
     }
 
     private MarketplaceListing insertedMarketplaceListing(String itemKey, String externalListingId, Integer serviceId) {
