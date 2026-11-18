@@ -95,6 +95,13 @@ public class ExternalImageDao {
                 externalImageMapper::findItemInventoryIdsWithMetadataDrift,
                 externalServiceId
         );
+        addCandidates(
+                candidates,
+                effectiveLimit,
+                ImageHostingSyncCandidateReason.CONTENT_CHANGED,
+                externalImageMapper::findItemInventoryIdsWithContentDrift,
+                externalServiceId
+        );
         return candidates.entrySet().stream()
                 .map(entry -> ImageHostingSyncCandidate.of(entry.getKey(), entry.getValue()))
                 .toList();

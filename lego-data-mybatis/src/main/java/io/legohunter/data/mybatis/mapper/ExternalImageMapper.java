@@ -200,6 +200,30 @@ public interface ExternalImageMapper {
             @Param("limit") int limit
     );
 
+    /**
+     * Items with a published photo whose stored file is no longer the one that was uploaded: the photo was
+     * re-uploaded with new pixels.
+     */
+    @Select("""
+            SELECT DISTINCT photo.item_inventory_id
+            FROM item_inventory_photo photo
+            INNER JOIN external_image image
+              ON image.item_inventory_photo_id = photo.item_inventory_photo_id
+             AND image.external_service_id = #{externalServiceId}
+            WHERE photo.status = 'PROCESSED'
+              AND image.external_service_image_id IS NOT NULL
+              AND image.external_service_image_id <> ''
+              AND photo.md5 IS NOT NULL
+              AND image.md5_at_upload IS NOT NULL
+              AND photo.md5 <> image.md5_at_upload
+            ORDER BY photo.item_inventory_id
+            LIMIT #{limit}
+            """)
+    List<Integer> findItemInventoryIdsWithContentDrift(
+            @Param("externalServiceId") Integer externalServiceId,
+            @Param("limit") int limit
+    );
+
     @Insert("""
             INSERT INTO external_image (
                 external_service_id,
