@@ -39,6 +39,15 @@ public class BricklinkMarketplaceListing {
     private ZonedDateTime lastRemoteVerifiedAt;
     private String lastRemoteSafetyStatusCode;
     private String lastRemoteSafetyMessage;
+    /**
+     * The md5 of the {@code item_inventory_photo} last stored as the lot's custom image; null when
+     * none has been stored (HOMELAB-92). Read-only here: the general insert and update leave it
+     * alone, so a stale copy of this row cannot overwrite it. It is written by
+     * {@code updateLotImage} only.
+     */
+    private String lotImageMd5;
+    /** When the web gateway confirmed the photo in {@link #lotImageMd5} on the lot. Written with it. */
+    private ZonedDateTime lotImageSyncedAt;
 }
 
 

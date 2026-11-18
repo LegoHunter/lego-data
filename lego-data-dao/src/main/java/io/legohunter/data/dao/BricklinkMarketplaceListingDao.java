@@ -5,6 +5,8 @@ import io.legohunter.data.mybatis.mapper.BricklinkMarketplaceListingMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -33,6 +35,19 @@ public class BricklinkMarketplaceListingDao {
     public BricklinkMarketplaceListing update(BricklinkMarketplaceListing bricklinkMarketplaceListing) {
         bricklinkMarketplaceListingMapper.update(bricklinkMarketplaceListing);
         return findByMarketplaceListingId(bricklinkMarketplaceListing.getMarketplaceListingId()).orElseThrow();
+    }
+
+    /** Records the photo now stored as the lot's custom image, or clears the record with nulls. */
+    public void updateLotImage(Integer marketplaceListingId, String lotImageMd5, ZonedDateTime lotImageSyncedAt) {
+        bricklinkMarketplaceListingMapper.updateLotImage(marketplaceListingId, lotImageMd5, lotImageSyncedAt);
+    }
+
+    /** See {@link BricklinkMarketplaceListingMapper#findMarketplaceListingIdsNeedingLotImage}. */
+    public List<Integer> findMarketplaceListingIdsNeedingLotImage(Integer listingExternalServiceId, String environmentCode,
+                                                                  String syncRequestTypeCode, ZonedDateTime retryNotBefore,
+                                                                  int limit) {
+        return bricklinkMarketplaceListingMapper.findMarketplaceListingIdsNeedingLotImage(
+                listingExternalServiceId, environmentCode, syncRequestTypeCode, retryNotBefore, limit);
     }
 
     public void delete(Integer marketplaceListingId) {
