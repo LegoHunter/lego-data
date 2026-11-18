@@ -35,6 +35,10 @@ public interface PartyExternalIdentityMapper {
             @Param("externalPartyId") String externalPartyId
     );
 
+    @Select("SELECT " + COLUMNS + " FROM party_external_identity WHERE party_id=#{partyId} ORDER BY party_external_identity_id")
+    @ResultMap("partyExternalIdentityResultMap")
+    List<PartyExternalIdentity> findByPartyId(Long partyId);
+
     @Insert("""
             INSERT INTO party_external_identity (party_id, transaction_platform_id, external_party_id)
             VALUES (#{partyId}, #{transactionPlatformId}, #{externalPartyId})
