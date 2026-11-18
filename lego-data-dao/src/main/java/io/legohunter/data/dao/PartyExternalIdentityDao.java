@@ -13,6 +13,7 @@ public class PartyExternalIdentityDao {
     public List<PartyExternalIdentity> findAll() { return mapper.findAll(); }
     public Optional<PartyExternalIdentity> findByPartyExternalIdentityId(Long partyExternalIdentityId) { return mapper.findByPartyExternalIdentityId(partyExternalIdentityId); }
     public Optional<PartyExternalIdentity> findByPlatformAndExternalPartyId(Integer platformId, String externalPartyId) { return mapper.findByPlatformAndExternalPartyId(platformId, externalPartyId); }
+    public List<PartyExternalIdentity> findByPartyId(Long partyId) { return mapper.findByPartyId(partyId); }
     public PartyExternalIdentity insert(PartyExternalIdentity identity) { mapper.insert(identity); return identity; }
     public PartyExternalIdentity upsert(PartyExternalIdentity identity) { mapper.upsert(identity); return identity; }
     public int delete(Long partyExternalIdentityId) { return mapper.delete(partyExternalIdentityId); }
