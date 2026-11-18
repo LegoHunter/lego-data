@@ -42,12 +42,19 @@ class ExternalImageDaoUnitTest {
                 .thenReturn(List.of(104, 105));
         when(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
                 .thenReturn(List.of(105, 106));
+        when(externalImageMapper.findItemInventoryIdsWithContentDrift(10, 10))
+                .thenReturn(List.of(106, 107));
 
         List<ImageHostingSyncCandidate> candidates = externalImageDao.findItemInventorySyncCandidates(10, true, 10);
 
         assertThat(candidates)
                 .extracting(ImageHostingSyncCandidate::itemInventoryId)
-                .containsExactly(100, 101, 102, 103, 104, 105, 106);
+                .containsExactly(100, 101, 102, 103, 104, 105, 106, 107);
+        assertThat(candidates.get(6).reasons()).containsExactlyInAnyOrder(
+                ImageHostingSyncCandidateReason.METADATA_CHANGED,
+                ImageHostingSyncCandidateReason.CONTENT_CHANGED
+        );
+        assertThat(candidates.get(7).reasons()).containsExactly(ImageHostingSyncCandidateReason.CONTENT_CHANGED);
         assertThat(candidates.get(1).reasons()).containsExactlyInAnyOrder(
                 ImageHostingSyncCandidateReason.MISSING_ALBUM_LINK,
                 ImageHostingSyncCandidateReason.MISSING_PHOTO_LINK

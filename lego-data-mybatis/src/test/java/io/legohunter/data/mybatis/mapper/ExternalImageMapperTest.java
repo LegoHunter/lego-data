@@ -156,6 +156,23 @@ class ExternalImageMapperTest extends MapperTestSupport {
         missingAlbumMembershipAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
         externalImageAlbumMapper.insert(missingAlbumMembershipAlbum);
 
+        // Re-uploaded with new pixels: the stored file is no longer the one that was published.
+        ItemInventory contentChangedInventory = insertItemInventory("uuid-content-changed");
+        ItemInventoryPhoto contentChangedPhoto = insertItemInventoryPhoto(contentChangedInventory.getItemInventoryId(), "abababababababababababababababab");
+        ExternalImage contentChangedImage = externalImage(10, contentChangedPhoto.getItemInventoryPhotoId(), "image-content-changed", "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd");
+        contentChangedImage.setMetadataHashAtSync(contentChangedPhoto.getMetadataHash());
+        contentChangedImage.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageMapper.insert(contentChangedImage);
+        ExternalImageAlbum contentChangedAlbum = externalImageAlbum(10, contentChangedInventory.getItemInventoryId(), "album-content-changed");
+        contentChangedAlbum.setSyncStatus(ExternalSyncStatus.SYNCED);
+        externalImageAlbumMapper.insert(contentChangedAlbum);
+        externalImageAlbumImageMapper.insert(externalImageAlbumImage(
+                contentChangedAlbum.getExternalImageAlbumId(),
+                contentChangedImage.getExternalImageId(),
+                1,
+                true
+        ));
+
         ItemInventory syncedInventory = insertItemInventory("uuid-synced");
         ItemInventoryPhoto syncedPhoto = insertItemInventoryPhoto(syncedInventory.getItemInventoryId(), "55555555555555555555555555555555");
         ExternalImage syncedImage = externalImage(10, syncedPhoto.getItemInventoryPhotoId(), "image-synced", "55555555555555555555555555555555");
@@ -195,6 +212,8 @@ class ExternalImageMapperTest extends MapperTestSupport {
                 .containsExactly(missingAlbumMembershipInventory.getItemInventoryId());
         assertThat(externalImageMapper.findItemInventoryIdsWithMetadataDrift(10, 10))
                 .containsExactly(metadataMismatchInventory.getItemInventoryId());
+        assertThat(externalImageMapper.findItemInventoryIdsWithContentDrift(10, 10))
+                .containsExactly(contentChangedInventory.getItemInventoryId());
         assertThat(externalImageMapper.findItemInventoryIdsMissingExternalImageLinks(10, 1))
                 .containsExactly(missingPhotoLinkInventory.getItemInventoryId());
     }

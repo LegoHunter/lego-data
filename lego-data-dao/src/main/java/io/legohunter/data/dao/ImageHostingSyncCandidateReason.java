@@ -6,5 +6,7 @@ public enum ImageHostingSyncCandidateReason {
     MISSING_ALBUM_MEMBERSHIP,
     FAILED_SYNC,
     PENDING_SYNC,
-    METADATA_CHANGED
+    METADATA_CHANGED,
+    /** A published photo's stored file differs from the one that was uploaded. */
+    CONTENT_CHANGED
 }
