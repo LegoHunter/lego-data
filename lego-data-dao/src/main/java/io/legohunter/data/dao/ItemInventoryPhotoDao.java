@@ -288,6 +288,11 @@ public class ItemInventoryPhotoDao {
         return itemInventoryPhotoMapper.findProcessedPrimariesByItemInventoryId(itemInventoryId);
     }
 
+    /** The non-blank captions of the item's PROCESSED photos, in photo order. */
+    public List<String> findProcessedCaptionsByItemInventoryId(Integer itemInventoryId) {
+        return itemInventoryPhotoMapper.findProcessedCaptionsByItemInventoryId(itemInventoryId);
+    }
+
     public Set<ItemInventoryPhoto> findByStatus(PhotoStatus status) {
         return itemInventoryPhotoMapper.findByStatus(status);
     }

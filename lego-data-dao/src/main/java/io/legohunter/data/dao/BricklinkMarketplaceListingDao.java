@@ -1,5 +1,6 @@
 package io.legohunter.data.dao;
 
+import io.legohunter.data.dto.BricklinkListingCaption;
 import io.legohunter.data.dto.BricklinkMarketplaceListing;
 import io.legohunter.data.mybatis.mapper.BricklinkMarketplaceListingMapper;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,21 @@ public class BricklinkMarketplaceListingDao {
                                                                   int limit) {
         return bricklinkMarketplaceListingMapper.findMarketplaceListingIdsNeedingLotImage(
                 listingExternalServiceId, environmentCode, syncRequestTypeCode, retryNotBefore, limit);
+    }
+
+    /** Records the Extended Description now stored on the lot by its hash, or clears the record with nulls. */
+    public void updateExtendedDescription(Integer marketplaceListingId, String extendedDescriptionHash,
+                                          ZonedDateTime extendedDescriptionSyncedAt) {
+        bricklinkMarketplaceListingMapper.updateExtendedDescription(marketplaceListingId, extendedDescriptionHash, extendedDescriptionSyncedAt);
+    }
+
+    /** See {@link BricklinkMarketplaceListingMapper#findListingCaptionsForExtendedDescription}. */
+    public List<BricklinkListingCaption> findListingCaptionsForExtendedDescription(Integer listingExternalServiceId,
+                                                                                  String environmentCode,
+                                                                                  String syncRequestTypeCode,
+                                                                                  ZonedDateTime retryNotBefore) {
+        return bricklinkMarketplaceListingMapper.findListingCaptionsForExtendedDescription(
+                listingExternalServiceId, environmentCode, syncRequestTypeCode, retryNotBefore);
     }
 
     public void delete(Integer marketplaceListingId) {

@@ -29,5 +29,7 @@
     <result column="last_remote_safety_message"        property="lastRemoteSafetyMessage"/>
     <result column="lot_image_md5"                     property="lotImageMd5"/>
     <result column="lot_image_synced_at"               property="lotImageSyncedAt"/>
+    <result column="extended_description_hash"         property="extendedDescriptionHash"/>
+    <result column="extended_description_synced_at"    property="extendedDescriptionSyncedAt"/>
   </resultMap>
 </mapper>

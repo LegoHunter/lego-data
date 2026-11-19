@@ -48,6 +48,14 @@ public class BricklinkMarketplaceListing {
     private String lotImageMd5;
     /** When the web gateway confirmed the photo in {@link #lotImageMd5} on the lot. Written with it. */
     private ZonedDateTime lotImageSyncedAt;
+    /**
+     * The SHA-256 (hex) of the Extended Description text last stored on the lot; null when none has
+     * been stored (HOMELAB-82). Read-only here, like {@link #lotImageMd5}: it is written by
+     * {@code updateExtendedDescription} only.
+     */
+    private String extendedDescriptionHash;
+    /** When the web gateway confirmed the text in {@link #extendedDescriptionHash} on the lot. Written with it. */
+    private ZonedDateTime extendedDescriptionSyncedAt;
 }
 
 

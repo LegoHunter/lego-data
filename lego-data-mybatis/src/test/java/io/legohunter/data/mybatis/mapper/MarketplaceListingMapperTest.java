@@ -1,5 +1,6 @@
 package io.legohunter.data.mybatis.mapper;
 
+import io.legohunter.data.dto.BricklinkListingCaption;
 import io.legohunter.data.dto.BricklinkMarketplaceListing;
 import io.legohunter.data.dto.Condition;
 import io.legohunter.data.dto.EbayListingItemSpecific;
@@ -16,6 +17,7 @@ import io.legohunter.data.dto.PricingDataQualityGap;
 import io.legohunter.data.dto.WantedCatalogItem;
 import io.legohunter.data.dto.PricingDataQualitySummary;
 import io.legohunter.data.dto.PricingDecision;
+import io.legohunter.data.enums.PhotoStatus;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -537,6 +539,107 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
         listing.setListingStatusCode("ENDED");
         marketplaceListingMapper.update(listing);
         assertThat(needingLotImage(type, retryNotBefore)).isEmpty();
+    }
+
+    @Test
+    void theExtendedDescriptionRecordIsWrittenOnlyByItsOwnStatement() {
+        MarketplaceListing listing = insertedMarketplaceListing("extended-description-record", "BL-ED-1", 2);
+        BricklinkMarketplaceListing bricklink = bricklinkMarketplaceListing(listing.getMarketplaceListingId(), 2201);
+        bricklinkMarketplaceListingMapper.insert(bricklink);
+        String hash = "a".repeat(64);
+        ZonedDateTime syncedAt = ZonedDateTime.parse("2026-11-19T12:00:00Z");
+
+        assertThat(bricklinkMarketplaceListingMapper.updateExtendedDescription(listing.getMarketplaceListingId(), hash, syncedAt)).isOne();
+
+        // A general update or upsert from a copy read earlier must not wipe what was recorded.
+        bricklink.setColorName("Red");
+        bricklinkMarketplaceListingMapper.update(bricklink);
+        bricklinkMarketplaceListingMapper.upsert(bricklink);
+        assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()))
+                .hasValueSatisfying(found -> {
+                    assertThat(found.getColorName()).isEqualTo("Red");
+                    assertThat(found.getExtendedDescriptionHash()).isEqualTo(hash);
+                    assertThat(found.getExtendedDescriptionSyncedAt().toInstant()).isEqualTo(syncedAt.toInstant());
+                });
+
+        bricklinkMarketplaceListingMapper.updateExtendedDescription(listing.getMarketplaceListingId(), null, null);
+        assertThat(bricklinkMarketplaceListingMapper.findByMarketplaceListingId(listing.getMarketplaceListingId()).orElseThrow()
+                .getExtendedDescriptionHash()).isNull();
+    }
+
+    @Test
+    void listingCaptionsComeInPhotoOrderAndSkipWhatIsAlreadyQueued() {
+        String type = "EXTENDED_DESCRIPTION_UPDATE";
+        ZonedDateTime retryNotBefore = ZonedDateTime.now().minusHours(6);
+        MarketplaceListing listing = insertedMarketplaceListing("extended-description-need", "BL-ED-2", 2);
+        Integer listingId = listing.getMarketplaceListingId();
+        Integer itemId = listing.getItemInventoryId();
+        bricklinkMarketplaceListingMapper.insert(bricklinkMarketplaceListing(listingId, 2202));
+
+        // No photo: the listing still appears once, so a lot that had captions can be cleared.
+        assertThat(captions(type, retryNotBefore))
+                .containsExactly(new BricklinkListingCaption(listingId, null, null, null));
+
+        // Only captioned PROCESSED photos, in photo order; blank captions and other statuses are left out.
+        ItemInventoryPhoto first = insertCaptionedPhoto(itemId, "11111111111111111111111111111111", "Box has a dent.", PhotoStatus.PROCESSED);
+        insertCaptionedPhoto(itemId, "22222222222222222222222222222222", "   ", PhotoStatus.PROCESSED);
+        insertCaptionedPhoto(itemId, "33333333333333333333333333333333", "Not processed yet.", PhotoStatus.UPLOADED);
+        ItemInventoryPhoto fourth = insertCaptionedPhoto(itemId, "44444444444444444444444444444444", "Sticker sheet applied.", PhotoStatus.PROCESSED);
+        assertThat(captions(type, retryNotBefore)).containsExactly(
+                new BricklinkListingCaption(listingId, null, first.getItemInventoryPhotoId(), "Box has a dent."),
+                new BricklinkListingCaption(listingId, null, fourth.getItemInventoryPhotoId(), "Sticker sheet applied."));
+        assertThat(itemInventoryPhotoMapper.findProcessedCaptionsByItemInventoryId(itemId))
+                .containsExactly("Box has a dent.", "Sticker sheet applied.");
+
+        // The recorded hash comes with every row; other environments and marketplaces see nothing.
+        bricklinkMarketplaceListingMapper.updateExtendedDescription(listingId, "b".repeat(64), ZonedDateTime.now());
+        assertThat(captions(type, retryNotBefore)).extracting(BricklinkListingCaption::getExtendedDescriptionHash)
+                .containsOnly("b".repeat(64));
+        assertThat(bricklinkMarketplaceListingMapper.findListingCaptionsForExtendedDescription(2, "dev", type, retryNotBefore)).isEmpty();
+        assertThat(bricklinkMarketplaceListingMapper.findListingCaptionsForExtendedDescription(3, "sandbox", type, retryNotBefore)).isEmpty();
+
+        // A request already waiting: left out. Another request type does not count.
+        MarketplaceListingSyncRequest request = marketplaceListingSyncRequest(listingId, 2, null);
+        marketplaceListingSyncRequestMapper.insert(request);
+        assertThat(captions(type, retryNotBefore)).isNotEmpty();
+        request.setSyncRequestTypeCode(type);
+        request.setMarketplaceListingSyncRequestId(null);
+        marketplaceListingSyncRequestMapper.insert(request);
+        assertThat(captions(type, retryNotBefore)).isEmpty();
+
+        // A request that just ended without success holds the listing back until the retry time has passed.
+        request.setSyncRequestStatusCode("BLOCKED");
+        marketplaceListingSyncRequestMapper.update(request);
+        assertThat(captions(type, retryNotBefore)).isEmpty();
+        assertThat(captions(type, ZonedDateTime.now().plusHours(1))).isNotEmpty();
+
+        // An ended listing is left alone.
+        request.setSyncRequestStatusCode("SUCCEEDED");
+        marketplaceListingSyncRequestMapper.update(request);
+        listing.setListingStatusCode("ENDED");
+        marketplaceListingMapper.update(listing);
+        assertThat(captions(type, retryNotBefore)).isEmpty();
+    }
+
+    private java.util.List<BricklinkListingCaption> captions(String type, ZonedDateTime retryNotBefore) {
+        return bricklinkMarketplaceListingMapper.findListingCaptionsForExtendedDescription(2, "sandbox", type, retryNotBefore);
+    }
+
+    private ItemInventoryPhoto insertCaptionedPhoto(Integer itemId, String md5, String caption, PhotoStatus status) {
+        ItemInventoryPhoto photo = ItemInventoryPhoto.builder()
+                .itemInventoryId(itemId)
+                .s3Bucket("lego-photos-sandbox")
+                .s3Key("3001/uuid/" + md5 + ".jpg")
+                .md5(md5)
+                .metadataHash("metadata-" + md5)
+                .fileName(md5 + ".jpg")
+                .fileSize(1000L)
+                .primary(false)
+                .caption(caption)
+                .status(status)
+                .build();
+        itemInventoryPhotoMapper.insert(photo);
+        return photo;
     }
 
     private java.util.List<Integer> needingLotImage(String type, ZonedDateTime retryNotBefore) {
