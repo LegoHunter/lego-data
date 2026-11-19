@@ -1,10 +1,13 @@
 package io.legohunter.data.mybatis.mapper;
 
+import io.legohunter.data.dto.BricklinkListingCaption;
 import io.legohunter.data.dto.BricklinkMarketplaceListing;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
+import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -42,8 +45,24 @@ public interface BricklinkMarketplaceListingMapper {
             last_remote_safety_status_code,
             last_remote_safety_message,
             lot_image_md5,
-            lot_image_synced_at
+            lot_image_synced_at,
+            extended_description_hash,
+            extended_description_synced_at
             """;
+
+    /**
+     * Records the Extended Description text now stored on the lot by its hash (HOMELAB-82), or clears
+     * the record with nulls. The only statement that writes these two columns.
+     */
+    @Update("""
+            UPDATE bricklink_marketplace_listing
+            SET extended_description_hash = #{extendedDescriptionHash},
+                extended_description_synced_at = #{extendedDescriptionSyncedAt}
+            WHERE marketplace_listing_id = #{marketplaceListingId}
+            """)
+    int updateExtendedDescription(@Param("marketplaceListingId") Integer marketplaceListingId,
+                                  @Param("extendedDescriptionHash") String extendedDescriptionHash,
+                                  @Param("extendedDescriptionSyncedAt") ZonedDateTime extendedDescriptionSyncedAt);
 
     /**
      * Records the photo now stored as the lot's custom image (HOMELAB-92), or clears it with nulls.
@@ -99,6 +118,48 @@ public interface BricklinkMarketplaceListingMapper {
                                                            @Param("syncRequestTypeCode") String syncRequestTypeCode,
                                                            @Param("retryNotBefore") ZonedDateTime retryNotBefore,
                                                            @Param("limit") int limit);
+
+    /**
+     * The input of the Extended Description comparison (HOMELAB-82): every ACTIVE listing of this
+     * marketplace and environment with a lot, with the hash recorded for its lot and the captioned
+     * PROCESSED photos of its item, one row per photo in photo order. A listing whose item has no
+     * captioned photo has one row with a null photo and caption: its lot may still need clearing.
+     *
+     * <p>Left out, as for the lot image: a listing with a request of the given type waiting or in
+     * progress, and one whose request of that type ended without success after {@code retryNotBefore}.
+     */
+    @Select("""
+            SELECT ml.marketplace_listing_id, bml.extended_description_hash, p.item_inventory_photo_id, p.caption
+            FROM marketplace_listing ml
+            JOIN bricklink_marketplace_listing bml ON bml.marketplace_listing_id = ml.marketplace_listing_id
+            LEFT JOIN item_inventory_photo p
+                   ON p.item_inventory_id = ml.item_inventory_id
+                  AND p.status = 'PROCESSED'
+                  AND p.caption IS NOT NULL
+                  AND TRIM(p.caption) <> ''
+            WHERE ml.listing_status_code = 'ACTIVE'
+              AND ml.listing_external_service_id = #{listingExternalServiceId}
+              AND bml.bricklink_inventory_id IS NOT NULL
+              AND bml.environment_code = #{environmentCode}
+              AND NOT EXISTS (
+                    SELECT 1 FROM marketplace_listing_sync_request r
+                    WHERE r.marketplace_listing_id = ml.marketplace_listing_id
+                      AND r.sync_request_type_code = #{syncRequestTypeCode}
+                      AND (r.sync_request_status_code IN ('PENDING', 'CLAIMED')
+                           OR (r.sync_request_status_code <> 'SUCCEEDED' AND r.updated_at > #{retryNotBefore})))
+            ORDER BY ml.marketplace_listing_id, p.item_inventory_photo_id
+            """)
+    @Results(id = "bricklinkListingCaptionResultMap", value = {
+            @Result(column = "marketplace_listing_id", property = "marketplaceListingId"),
+            @Result(column = "extended_description_hash", property = "extendedDescriptionHash"),
+            @Result(column = "item_inventory_photo_id", property = "itemInventoryPhotoId"),
+            @Result(column = "caption", property = "caption")
+    })
+    List<BricklinkListingCaption> findListingCaptionsForExtendedDescription(
+            @Param("listingExternalServiceId") Integer listingExternalServiceId,
+            @Param("environmentCode") String environmentCode,
+            @Param("syncRequestTypeCode") String syncRequestTypeCode,
+            @Param("retryNotBefore") ZonedDateTime retryNotBefore);
 
     @Select("SELECT " + ALL_COLUMNS + " FROM bricklink_marketplace_listing")
     @ResultMap("bricklinkMarketplaceListingResultMap")

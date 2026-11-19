@@ -265,7 +265,9 @@ CREATE TABLE bricklink_marketplace_listing (
     last_remote_safety_status_code VARCHAR(64),
     last_remote_safety_message CLOB,
     lot_image_md5 CHAR(32),
-    lot_image_synced_at TIMESTAMP
+    lot_image_synced_at TIMESTAMP,
+    extended_description_hash CHAR(64),
+    extended_description_synced_at TIMESTAMP
 );
 
 CREATE TABLE marketplace_listing_sync_request (

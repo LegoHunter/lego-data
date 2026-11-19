@@ -82,6 +82,17 @@ public interface ItemInventoryPhotoMapper {
     @ResultMap("itemInventoryPhotoResultMap")
     List<ItemInventoryPhoto> findProcessedPrimariesByItemInventoryId(Integer itemInventoryId);
 
+    /** The non-blank captions of an item's PROCESSED photos, in photo order (HOMELAB-82). */
+    @Select("""
+            SELECT caption FROM item_inventory_photo
+            WHERE item_inventory_id = #{itemInventoryId}
+              AND status = 'PROCESSED'
+              AND caption IS NOT NULL
+              AND TRIM(caption) <> ''
+            ORDER BY item_inventory_photo_id
+            """)
+    List<String> findProcessedCaptionsByItemInventoryId(Integer itemInventoryId);
+
     @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory_photo WHERE status = #{status.name}")
     @ResultMap("itemInventoryPhotoResultMap")
     Set<ItemInventoryPhoto> findByStatus(PhotoStatus status);
