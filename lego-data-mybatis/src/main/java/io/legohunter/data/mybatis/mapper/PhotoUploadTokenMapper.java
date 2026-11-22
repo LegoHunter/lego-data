@@ -65,4 +65,24 @@ public interface PhotoUploadTokenMapper {
               AND revoked_at IS NULL
             """)
     int revoke(@Param("photoUploadTokenId") long photoUploadTokenId, @Param("revokedAt") ZonedDateTime revokedAt);
+
+    /** Revokes every token of one login family, so a reused refresh token takes the whole login with it. */
+    @Update("""
+            UPDATE photo_upload_token
+            SET revoked_at = #{revokedAt}
+            WHERE family_id = #{familyId}
+              AND revoked_at IS NULL
+            """)
+    int revokeFamily(@Param("familyId") String familyId, @Param("revokedAt") ZonedDateTime revokedAt);
+
+    /** Revokes every live token issued to one name in one environment (the admin revoke). */
+    @Update("""
+            UPDATE photo_upload_token
+            SET revoked_at = #{revokedAt}
+            WHERE environment = #{environment}
+              AND token_name = #{tokenName}
+              AND revoked_at IS NULL
+            """)
+    int revokeByName(@Param("environment") String environment, @Param("tokenName") String tokenName,
+                     @Param("revokedAt") ZonedDateTime revokedAt);
 }

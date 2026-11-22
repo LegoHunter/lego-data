@@ -30,4 +30,14 @@ public class PhotoUploadTokenDao {
     public boolean revoke(long photoUploadTokenId, ZonedDateTime revokedAt) {
         return photoUploadTokenMapper.revoke(photoUploadTokenId, revokedAt) == 1;
     }
+
+    /** Revokes every token of a login family. Returns how many rows changed. */
+    public int revokeFamily(String familyId, ZonedDateTime revokedAt) {
+        return photoUploadTokenMapper.revokeFamily(familyId, revokedAt);
+    }
+
+    /** Revokes every live token issued to a name in an environment. Returns how many rows changed. */
+    public int revokeByName(String environment, String tokenName, ZonedDateTime revokedAt) {
+        return photoUploadTokenMapper.revokeByName(environment, tokenName, revokedAt);
+    }
 }
