@@ -1,2 +1,3 @@
 io.legohunter.lego.data.autoconfigure.LegoDataAutoConfiguration
 io.legohunter.lego.data.environment.LegoEnvironmentAutoConfiguration
+io.legohunter.lego.data.pricing.PricingCrawlerAutoConfiguration
