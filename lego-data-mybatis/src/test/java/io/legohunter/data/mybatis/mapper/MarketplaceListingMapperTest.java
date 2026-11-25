@@ -590,6 +590,8 @@ class MarketplaceListingMapperTest extends MapperTestSupport {
                 new BricklinkListingCaption(listingId, null, fourth.getItemInventoryPhotoId(), "Sticker sheet applied."));
         assertThat(itemInventoryPhotoMapper.findProcessedCaptionsByItemInventoryId(itemId))
                 .containsExactly("Box has a dent.", "Sticker sheet applied.");
+        // Every PROCESSED photo counts, captioned or not; the UPLOADED one does not.
+        assertThat(itemInventoryPhotoMapper.countProcessedByItemInventoryId(itemId)).isEqualTo(3);
 
         // The recorded hash comes with every row; other environments and marketplaces see nothing.
         bricklinkMarketplaceListingMapper.updateExtendedDescription(listingId, "b".repeat(64), ZonedDateTime.now());

@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BricklinkLotTextTest {
     private static final String ALBUM = "https://www.flickr.com/photos/205153404@N04/sets/72177720336783526/";
-    private static final String LINK = "<a href=\"" + ALBUM + "\">View all photos</a>.";
+    private static final String LINK = "Visit " + ALBUM + " to see 6 photos.";
 
     @Test
     void shortTextIsTheDescriptionOtherwiseTheTitle() {
@@ -28,60 +28,74 @@ class BricklinkLotTextTest {
 
     @Test
     void textOnlyIsLeftAsTyped() {
-        assertThat(BricklinkLotText.description(" Test Car ", null, false, true).text()).isEqualTo("Test Car");
-        assertThat(BricklinkLotText.description("Test Car", null, true, false).text()).isEqualTo("Test Car");
+        assertThat(BricklinkLotText.description(" Test Car ", null, 0, false, true).text()).isEqualTo("Test Car");
+        assertThat(BricklinkLotText.description("Test Car", null, 0, true, false).text()).isEqualTo("Test Car");
     }
 
     @Test
     void textAndLink() {
-        assertThat(BricklinkLotText.description("Test Car", ALBUM, false, true).text()).isEqualTo("Test Car. " + LINK);
+        assertThat(BricklinkLotText.description("Test Car", ALBUM, 6, false, true).text()).isEqualTo("Test Car. " + LINK);
     }
 
     @Test
     void textLinkAndNoteWhenAPhotoHasACaption() {
-        assertThat(BricklinkLotText.description("Test Car", ALBUM, true, true).text())
+        assertThat(BricklinkLotText.description("Test Car", ALBUM, 6, true, true).text())
                 .isEqualTo("Test Car. " + LINK + " See Extended Description for additional Item Condition notes.");
     }
 
     @Test
     void noNoteWhereTheExtendedDescriptionIsNotWritten() {
-        assertThat(BricklinkLotText.description("Test Car", ALBUM, true, false).text()).isEqualTo("Test Car. " + LINK);
+        assertThat(BricklinkLotText.description("Test Car", ALBUM, 6, true, false).text()).isEqualTo("Test Car. " + LINK);
     }
 
     @Test
     void noteWithoutALinkYet() {
-        assertThat(BricklinkLotText.description("Test Car", null, true, true).text())
+        assertThat(BricklinkLotText.description("Test Car", null, 0, true, true).text())
                 .isEqualTo("Test Car. See Extended Description for additional Item Condition notes.");
     }
 
     @Test
     void aSentenceKeepsItsOwnEnding() {
-        assertThat(BricklinkLotText.description("Sealed!", ALBUM, false, true).text()).isEqualTo("Sealed! " + LINK);
-        assertThat(BricklinkLotText.description("Complete?", ALBUM, false, true).text()).isEqualTo("Complete? " + LINK);
-        assertThat(BricklinkLotText.description("Complete.", ALBUM, false, true).text()).isEqualTo("Complete. " + LINK);
+        assertThat(BricklinkLotText.description("Sealed!", ALBUM, 6, false, true).text()).isEqualTo("Sealed! " + LINK);
+        assertThat(BricklinkLotText.description("Complete?", ALBUM, 6, false, true).text()).isEqualTo("Complete? " + LINK);
+        assertThat(BricklinkLotText.description("Complete.", ALBUM, 6, false, true).text()).isEqualTo("Complete. " + LINK);
     }
 
     @Test
     void nothingToShowWithoutShortText() {
-        BricklinkLotText.Description description = BricklinkLotText.description(null, ALBUM, true, true);
+        BricklinkLotText.Description description = BricklinkLotText.description(null, ALBUM, 6, true, true);
         assertThat(description.present()).isFalse();
         assertThat(description.tooLong()).isFalse();
     }
 
     @Test
-    void aQuoteInTheAddressCannotEndTheAttribute() {
-        assertThat(BricklinkLotText.description("Test Car", "https://x.test/a\"b", false, true).text())
-                .contains("href=\"https://x.test/a%22b\"");
+    void theAddressIsPlainTextWithNoTagAndNoPeriodStuckToIt() {
+        // BrickLink's store shows an <a> tag as its words only, and a plain address in full (2026-11-19, 2026-11-25).
+        String text = BricklinkLotText.description("Test Car", "https://flic.kr/s/aHBqjDaRCA", 6, false, true).text();
+
+        assertThat(text).isEqualTo("Test Car. Visit https://flic.kr/s/aHBqjDaRCA to see 6 photos.");
+        assertThat(text).doesNotContain("<", ">", "https://flic.kr/s/aHBqjDaRCA.");
+    }
+
+    @Test
+    void thePhotoCountReadsAsEnglish() {
+        assertThat(BricklinkLotText.description("Test Car", "https://flic.kr/s/x", 1, false, true).text())
+                .isEqualTo("Test Car. Visit https://flic.kr/s/x to see 1 photo.");
+        assertThat(BricklinkLotText.description("Test Car", "https://flic.kr/s/x", 12, false, true).text())
+                .isEqualTo("Test Car. Visit https://flic.kr/s/x to see 12 photos.");
+        // An album address with no processed photo counted yet: no number rather than "0 photos".
+        assertThat(BricklinkLotText.description("Test Car", "https://flic.kr/s/x", 0, false, true).text())
+                .isEqualTo("Test Car. Visit https://flic.kr/s/x to see the photos.");
     }
 
     @Test
     void exactly255FitsAnd256IsTooLong() {
         String fits = "x".repeat(255);
-        BricklinkLotText.Description atLimit = BricklinkLotText.description(fits, null, false, true);
+        BricklinkLotText.Description atLimit = BricklinkLotText.description(fits, null, 0, false, true);
         assertThat(atLimit.length()).isEqualTo(255);
         assertThat(atLimit.tooLong()).isFalse();
 
-        BricklinkLotText.Description over = BricklinkLotText.description(fits + "x", null, false, true);
+        BricklinkLotText.Description over = BricklinkLotText.description(fits + "x", null, 0, false, true);
         assertThat(over.length()).isEqualTo(256);
         assertThat(over.tooLong()).isTrue();
         assertThat(over.tooLongMessage()).contains("256 characters", "allows 255", "at least 1 characters");
@@ -92,14 +106,15 @@ class BricklinkLotTextTest {
         // 2026-11-19: "M2 & check" came back as "M2 &amp; check" and the stored text was cut at 255.
         assertThat(BricklinkLotText.bricklinkLength("a & b")).isEqualTo(9);
         assertThat(BricklinkLotText.bricklinkLength("say \"hi\" it's <3>")).isEqualTo(3 + 1 + 6 + 2 + 6 + 1 + 2 + 5 + 1 + 1 + 4 + 1 + 4);
-        // The link's own tag is stored as sent.
+        // The album sentence is plain text; an & in an address counts as 5 like any other.
         assertThat(BricklinkLotText.bricklinkLength(LINK)).isEqualTo(LINK.length());
         assertThat(BricklinkLotText.bricklinkLength("A & B. " + LINK)).isEqualTo(11 + LINK.length());
+        assertThat(BricklinkLotText.bricklinkLength("Visit https://x.test/a?b=1&c=2 to see 6 photos.")).isEqualTo(47 + 4);
 
         // 252 characters as typed, 256 as stored: too long, although it would pass BrickLink's own check.
-        assertThat(BricklinkLotText.description("x".repeat(250) + " &", null, false, true).tooLong()).isTrue();
-        assertThat(BricklinkLotText.description("x".repeat(249) + " &", null, false, true).tooLong()).isFalse();
-        assertThat(BricklinkLotText.description("x".repeat(247) + " & y", null, false, true).length()).isEqualTo(255);
+        assertThat(BricklinkLotText.description("x".repeat(250) + " &", null, 0, false, true).tooLong()).isTrue();
+        assertThat(BricklinkLotText.description("x".repeat(249) + " &", null, 0, false, true).tooLong()).isFalse();
+        assertThat(BricklinkLotText.description("x".repeat(247) + " & y", null, 0, false, true).length()).isEqualTo(255);
     }
 
     @Test

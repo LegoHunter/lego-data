@@ -93,6 +93,10 @@ public interface ItemInventoryPhotoMapper {
             """)
     List<String> findProcessedCaptionsByItemInventoryId(Integer itemInventoryId);
 
+    /** How many PROCESSED photos an item has: the number the BrickLink lot Description names (HOMELAB-82). */
+    @Select("SELECT COUNT(*) FROM item_inventory_photo WHERE item_inventory_id = #{itemInventoryId} AND status = 'PROCESSED'")
+    int countProcessedByItemInventoryId(Integer itemInventoryId);
+
     @Select("SELECT " + ALL_COLUMNS + " FROM item_inventory_photo WHERE status = #{status.name}")
     @ResultMap("itemInventoryPhotoResultMap")
     Set<ItemInventoryPhoto> findByStatus(PhotoStatus status);

@@ -293,6 +293,11 @@ public class ItemInventoryPhotoDao {
         return itemInventoryPhotoMapper.findProcessedCaptionsByItemInventoryId(itemInventoryId);
     }
 
+    /** How many PROCESSED photos the item has. */
+    public int countProcessedByItemInventoryId(Integer itemInventoryId) {
+        return itemInventoryPhotoMapper.countProcessedByItemInventoryId(itemInventoryId);
+    }
+
     public Set<ItemInventoryPhoto> findByStatus(PhotoStatus status) {
         return itemInventoryPhotoMapper.findByStatus(status);
     }
