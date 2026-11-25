@@ -127,6 +127,23 @@ class BricklinkLotTextTest {
     }
 
     @Test
+    void anExtendedDescriptionOf20000CharactersFitsAndOneMoreIsTooLong() {
+        // 2026-11-25: BrickLink showed a 20,000-character Extended Description in full; longer is untested.
+        String atLimit = "x".repeat(20_000);
+        assertThat(BricklinkLotText.extendedDescriptionTooLong(atLimit)).isFalse();
+        assertThat(BricklinkLotText.extendedDescriptionTooLong(atLimit + "x")).isTrue();
+        assertThat(BricklinkLotText.extendedDescriptionTooLongMessage(atLimit + "x"))
+                .contains("20001 characters", "at most 20000", "at least 1 characters", "photo captions");
+        assertThat(BricklinkLotText.extendedDescriptionTooLong(null)).isFalse();
+        assertThat(BricklinkLotText.extendedDescriptionTooLong("")).isFalse();
+
+        // Counted as BrickLink stores it: an & takes 5, and each line end 1.
+        assertThat(BricklinkLotText.extendedDescriptionTooLong("x".repeat(19_995) + "&")).isFalse();
+        assertThat(BricklinkLotText.extendedDescriptionTooLong("x".repeat(19_996) + "&")).isTrue();
+        assertThat(BricklinkLotText.extendedDescriptionTooLong("x".repeat(9_999) + "\n" + "x".repeat(10_000))).isFalse();
+    }
+
+    @Test
     void hashIsSha256Hex() {
         assertThat(BricklinkLotText.hash("")).isEqualTo("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
         assertThat(BricklinkLotText.hash(null)).isEqualTo(BricklinkLotText.hash(""));

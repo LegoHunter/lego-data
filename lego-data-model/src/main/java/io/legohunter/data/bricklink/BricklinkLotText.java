@@ -26,7 +26,9 @@ import java.util.Set;
  * It must fit BrickLink's {@value #DESCRIPTION_MAX_LENGTH} characters. Nothing is ever trimmed: a text
  * that is too long is reported, and the owner shortens the listing's text.
  *
- * <p>The Extended Description holds the captions, one per line, in photo order, each once.
+ * <p>The Extended Description holds the captions, one per line, in photo order, each once. It must fit
+ * {@value #EXTENDED_DESCRIPTION_MAX_LENGTH} characters, and is never trimmed either: a text that is too long is
+ * reported, and the owner shortens the photo captions.
  *
  * <p>Pure functions, no I/O: the callers read the listing, the album and the captions.
  */
@@ -34,6 +36,12 @@ public final class BricklinkLotText {
     /** BrickLink refuses a longer Description with 409 RESOURCE_UPDATE_NOT_ALLOWED (measured 2026-11-14). */
     public static final int DESCRIPTION_MAX_LENGTH = 255;
     public static final String EXTENDED_DESCRIPTION_NOTE = "See Extended Description for additional Item Condition notes.";
+    /**
+     * The longest Extended Description LCMS sends. BrickLink names no limit; a text of this length was written to a
+     * SANDBOX lot and shown in full on its listing (measured 2026-11-25). Longer texts are untested, so they are not
+     * sent.
+     */
+    public static final int EXTENDED_DESCRIPTION_MAX_LENGTH = 20_000;
 
     /**
      * The album sentence, with the address as plain text. BrickLink's store pages no longer show a link in a
@@ -112,6 +120,21 @@ public final class BricklinkLotText {
         return String.join("\n", captions);
     }
 
+    /**
+     * Whether an Extended Description is over {@value #EXTENDED_DESCRIPTION_MAX_LENGTH} characters, counted like the
+     * Description, as BrickLink stores it ({@link #bricklinkLength}).
+     */
+    public static boolean extendedDescriptionTooLong(String text) {
+        return bricklinkLength(text) > EXTENDED_DESCRIPTION_MAX_LENGTH;
+    }
+
+    /** The error the owner sees for an Extended Description that is too long: what to fix and by how much. */
+    public static String extendedDescriptionTooLongMessage(String text) {
+        int length = bricklinkLength(text);
+        return "The BrickLink lot Extended Description would be %d characters; LCMS sends at most %d. Shorten the item's photo captions by at least %d characters."
+                .formatted(length, EXTENDED_DESCRIPTION_MAX_LENGTH, length - EXTENDED_DESCRIPTION_MAX_LENGTH);
+    }
+
     /** SHA-256 (64 hex characters) of a text, as recorded for the Extended Description last sent. */
     public static String hash(String text) {
         try {
@@ -123,7 +146,8 @@ public final class BricklinkLotText {
     }
 
     /**
-     * The number of characters the text takes on BrickLink, which is what must fit {@value #DESCRIPTION_MAX_LENGTH}.
+     * The number of characters a text takes on BrickLink, which is what must fit {@value #DESCRIPTION_MAX_LENGTH} for
+     * the Description and {@value #EXTENDED_DESCRIPTION_MAX_LENGTH} for the Extended Description.
      *
      * <p>Measured 2026-11-19 on a SANDBOX lot: BrickLink accepts a text of 255 characters as sent, stores it with
      * {@code &} written as {@code &amp;}, and then silently cuts the stored text at 255 characters, mid-link if need
