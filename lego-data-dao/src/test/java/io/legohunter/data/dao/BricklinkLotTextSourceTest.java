@@ -36,9 +36,10 @@ class BricklinkLotTextSourceTest {
         when(externalImageAlbumDao.findByExternalServiceIdAndItemInventoryId(FLICKR, 958))
                 .thenReturn(Optional.of(album("https://bit.ly/x", "https://www.flickr.com/photos/u/sets/1/")));
         when(itemInventoryPhotoDao.findProcessedCaptionsByItemInventoryId(958)).thenReturn(List.of("Small mark."));
+        when(itemInventoryPhotoDao.countProcessedByItemInventoryId(958)).thenReturn(6);
 
         assertThat(source.description(listing(null, "Test Car"), true).text()).isEqualTo(
-                "Test Car. <a href=\"https://bit.ly/x\">View all photos</a>. "
+                "Test Car. Visit https://bit.ly/x to see 6 photos. "
                         + "See Extended Description for additional Item Condition notes.");
         assertThat(source.extendedDescription(958)).isEqualTo("Small mark.");
     }
