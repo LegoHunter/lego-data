@@ -17,6 +17,8 @@ public class ExternalService {
 
     @Getter
     public enum Service {
+        /** LEGO itself. Its catalog is the wooden toys catalog from lego.com: entries have item type W (HOMELAB-157). */
+        LEGO(1, "LEGO"),
         BRICKLINK(2, "BRICKLINK"),
         EBAY(3, "EBAY"),
         REBRICKABLE(9, "REBRICKABLE"),
