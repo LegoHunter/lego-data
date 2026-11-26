@@ -23,8 +23,8 @@ public class LegoWoodenToyCatalogItem {
     public static final String ITEM_TYPE_CODE = "W";
     /** An entry captured from lego.com. A capture may change it. */
     public static final String SOURCE_LEGO_COM = "LEGO_COM";
-    /** An entry the owner added for a toy the catalog does not list. A capture never changes it. */
-    public static final String SOURCE_OWNER = "OWNER";
+    /** An entry added by hand for a toy the catalog does not list. A capture never changes it. */
+    public static final String SOURCE_CUSTOM = "CUSTOM";
 
     private Integer externalCatalogItemId;
     private String entrySource;

@@ -106,14 +106,14 @@ class LegoWoodenToyCatalogDaoTest {
     }
 
     @Test
-    void anEntryTheOwnerAddedIsMarkedAsSuch() {
-        ExternalCatalogItem entry = entry("owner-wooden-crane", null, "Crane", null);
-        legoWoodenToyCatalogDao.upsertItem(item(entry, "OWN-1", "Kran", "Crane", "1950")
-                .entrySource(LegoWoodenToyCatalogItem.SOURCE_OWNER).build());
+    void anEntryAddedByHandIsMarkedCustom() {
+        ExternalCatalogItem entry = entry("custom-wooden-crane", null, "Crane", null);
+        legoWoodenToyCatalogDao.upsertItem(item(entry, "C-1", "Kran", "Crane", "1950")
+                .entrySource(LegoWoodenToyCatalogItem.SOURCE_CUSTOM).build());
 
         assertThat(legoWoodenToyCatalogDao.findItem(entry.getExternalCatalogItemId()))
-                .get().extracting(LegoWoodenToyCatalogItem::getEntrySource).isEqualTo(LegoWoodenToyCatalogItem.SOURCE_OWNER);
-        assertThat(legoWoodenToyCatalogDao.countItemsBySource(LegoWoodenToyCatalogItem.SOURCE_OWNER)).isGreaterThanOrEqualTo(1);
+                .get().extracting(LegoWoodenToyCatalogItem::getEntrySource).isEqualTo(LegoWoodenToyCatalogItem.SOURCE_CUSTOM);
+        assertThat(legoWoodenToyCatalogDao.countItemsBySource(LegoWoodenToyCatalogItem.SOURCE_CUSTOM)).isGreaterThanOrEqualTo(1);
     }
 
     @Test
@@ -172,26 +172,26 @@ class LegoWoodenToyCatalogDaoTest {
     }
 
     @Test
-    void aCaptureCannotRemoveAPictureTheOwnerAdded() {
+    void aCaptureCannotRemoveACustomPicture() {
         ExternalCatalogItem entry = entry("a-76-goods-train-1941", "blta76", "Goods Train", 1941);
         legoWoodenToyCatalogDao.upsertItem(item(entry, "A/76", "Gods-Tog", "Goods Train", "1941").build());
         LegoWoodenToyCatalogItemImage fromLego = legoWoodenToyCatalogDao.insertImage(
                 image(entry, 0, "a76.png", "lego".getBytes(StandardCharsets.UTF_8), sha('e')).build());
-        LegoWoodenToyCatalogItemImage fromOwner = legoWoodenToyCatalogDao.insertImage(
+        LegoWoodenToyCatalogItemImage custom = legoWoodenToyCatalogDao.insertImage(
                 image(entry, 1, "community.jpg", "owner".getBytes(StandardCharsets.UTF_8), sha('f'))
-                        .imageSource(LegoWoodenToyCatalogItemImage.SOURCE_OWNER)
+                        .imageSource(LegoWoodenToyCatalogItemImage.SOURCE_CUSTOM)
                         .contentType("image/jpeg")
                         .sourceUrl("https://example.org/post/1")
                         .sourceNote("Posted in a collectors' group").build());
 
-        assertThat(legoWoodenToyCatalogDao.deleteImage(fromOwner.getLegoWoodenToyCatalogItemImageId(),
+        assertThat(legoWoodenToyCatalogDao.deleteImage(custom.getLegoWoodenToyCatalogItemImageId(),
                 LegoWoodenToyCatalogItemImage.SOURCE_LEGO_COM)).isFalse();
         assertThat(legoWoodenToyCatalogDao.deleteImage(fromLego.getLegoWoodenToyCatalogItemImageId(),
                 LegoWoodenToyCatalogItemImage.SOURCE_LEGO_COM)).isTrue();
 
         List<LegoWoodenToyCatalogItemImage> left = legoWoodenToyCatalogDao.findImages(entry.getExternalCatalogItemId());
         assertThat(left).extracting(LegoWoodenToyCatalogItemImage::getFileName).containsExactly("community.jpg");
-        assertThat(left.get(0).getImageSource()).isEqualTo(LegoWoodenToyCatalogItemImage.SOURCE_OWNER);
+        assertThat(left.get(0).getImageSource()).isEqualTo(LegoWoodenToyCatalogItemImage.SOURCE_CUSTOM);
         assertThat(left.get(0).getSourceNote()).isEqualTo("Posted in a collectors' group");
     }
 

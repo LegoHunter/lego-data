@@ -23,8 +23,8 @@ import java.time.ZonedDateTime;
 public class LegoWoodenToyCatalogItemImage {
     /** A picture captured from lego.com. A capture may replace or remove it. */
     public static final String SOURCE_LEGO_COM = "LEGO_COM";
-    /** A picture the owner added from another source. A capture never changes it. */
-    public static final String SOURCE_OWNER = "OWNER";
+    /** A picture added by hand from another source, such as a community post. A capture never changes it. */
+    public static final String SOURCE_CUSTOM = "CUSTOM";
 
     private Long legoWoodenToyCatalogItemImageId;
     private Integer externalCatalogItemId;
@@ -39,10 +39,10 @@ public class LegoWoodenToyCatalogItemImage {
     private Long byteSize;
     /** SHA-256 of the bytes, lower-case hex. Unique within an entry. */
     private String sha256;
-    /** The picture's id on lego.com. Null for a picture the owner added. */
+    /** The picture's id on lego.com. Null for a custom picture. */
     private String sourceAssetId;
     private String sourceUrl;
-    /** For a picture the owner added: who made or posted it, and where. */
+    /** For a custom picture: who made or posted it, and where. */
     private String sourceNote;
     private ZonedDateTime createdAt;
 }

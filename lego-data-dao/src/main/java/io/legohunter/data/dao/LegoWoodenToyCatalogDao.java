@@ -62,7 +62,7 @@ public class LegoWoodenToyCatalogDao {
 
     /**
      * Removes one picture, but only if it has the given source: a capture passes
-     * {@link LegoWoodenToyCatalogItemImage#SOURCE_LEGO_COM} and so can never remove a picture the owner added.
+     * {@link LegoWoodenToyCatalogItemImage#SOURCE_LEGO_COM} and so can never remove a custom picture.
      * True when the picture was removed.
      */
     public boolean deleteImage(Long imageId, String imageSource) {
