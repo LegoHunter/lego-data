@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS lego_wooden_toy_catalog_item_image;
+DROP TABLE IF EXISTS lego_wooden_toy_catalog_item;
 DROP TABLE IF EXISTS marketplace_order_transaction_link;
 DROP TABLE IF EXISTS transaction_item_shipment;
 DROP TABLE IF EXISTS transaction_item_revenue;
@@ -135,12 +137,54 @@ CREATE TABLE external_catalog_item (
     external_service_id INT NOT NULL,
     external_item_key VARCHAR(255) NOT NULL,
     external_unique_key VARCHAR(255),
-    item_name VARCHAR(1024),
-    item_type_code VARCHAR(64),
+    item_name VARCHAR(1024) NOT NULL,
+    item_type_code VARCHAR(64) NOT NULL,
     item_url VARCHAR(1024),
     year_released INT,
-    UNIQUE (external_service_id, external_item_key),
-    UNIQUE (external_service_id, external_unique_key)
+    UNIQUE (external_service_id, external_item_key)
+);
+
+-- LEGO's wooden toys catalog (deployer changeset 2.10.0-wooden-toys-catalog). MySQL has LONGBLOB for image.
+CREATE TABLE lego_wooden_toy_catalog_item (
+    external_catalog_item_id INT PRIMARY KEY,
+    entry_source VARCHAR(30) NOT NULL DEFAULT 'LEGO_COM',
+    product_number VARCHAR(30) NOT NULL,
+    product_number_sortable VARCHAR(30),
+    alternate_number_text VARCHAR(500),
+    original_title VARCHAR(250),
+    english_title VARCHAR(250),
+    launch_year_text VARCHAR(50),
+    exit_year_text VARCHAR(50),
+    average_size_text VARCHAR(100),
+    series_text VARCHAR(100),
+    notes_original CLOB,
+    notes_english CLOB,
+    source_version INT,
+    source_updated_at TIMESTAMP(3),
+    captured_at TIMESTAMP(3),
+    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+);
+
+CREATE INDEX ix_lego_wooden_toy_catalog_item_product_number ON lego_wooden_toy_catalog_item (product_number);
+
+CREATE TABLE lego_wooden_toy_catalog_item_image (
+    lego_wooden_toy_catalog_item_image_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    external_catalog_item_id INT NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    image_source VARCHAR(30) NOT NULL DEFAULT 'LEGO_COM',
+    image BLOB NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    file_name VARCHAR(255),
+    width INT,
+    height INT,
+    byte_size BIGINT NOT NULL,
+    sha256 CHAR(64) NOT NULL,
+    source_asset_id VARCHAR(50),
+    source_url VARCHAR(500),
+    source_note VARCHAR(500),
+    created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    CONSTRAINT uq_lego_wooden_toy_catalog_item_image_sha256 UNIQUE (external_catalog_item_id, sha256)
 );
 
 CREATE TABLE external_catalog_item_category (
@@ -702,6 +746,16 @@ ALTER TABLE external_category
 ALTER TABLE external_catalog_item
     ADD CONSTRAINT fk_external_catalog_item_external_service1
     FOREIGN KEY (external_service_id) REFERENCES external_service (external_service_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE lego_wooden_toy_catalog_item
+    ADD CONSTRAINT fk_lego_wooden_toy_catalog_item_catalog_item
+    FOREIGN KEY (external_catalog_item_id) REFERENCES external_catalog_item (external_catalog_item_id)
+    ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE lego_wooden_toy_catalog_item_image
+    ADD CONSTRAINT fk_lego_wooden_toy_catalog_item_image_item
+    FOREIGN KEY (external_catalog_item_id) REFERENCES lego_wooden_toy_catalog_item (external_catalog_item_id)
     ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE external_catalog_item_category

@@ -80,6 +80,7 @@ INSERT INTO external_service (external_service_id, service_code, display_name, s
     (10, 'FLICKR', 'Flickr', 'https://www.flickr.com', 5);
 
 INSERT INTO external_service_capability (external_service_id, capability_code) VALUES
+    (1, 'CATALOG'),
     (2, 'CATALOG'),
     (2, 'MARKETPLACE_LISTING'),
     (2, 'ORDER_SYNC'),
